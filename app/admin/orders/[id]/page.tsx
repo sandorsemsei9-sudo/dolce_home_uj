@@ -4,16 +4,6 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useParams, useRouter } from "next/navigation";
 
-// Bővített státusz opciók
-const statusOptions = [
-  { value: "waiting_for_payment", label: "Utalásra vár" },
-  { value: "pending", label: "Függőben / Fizetve" },
-  { value: "processing", label: "Feldolgozás alatt" },
-  { value: "shipped", label: "Feladva / Futárnál" },
-  { value: "delivered", label: "Kézbesítve" },
-  { value: "cancelled", label: "Törölve" },
-];
-
 export default function OrderDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -21,6 +11,7 @@ export default function OrderDetailsPage() {
   
   const [order, setOrder] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
+  const [customImages, setCustomImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("");
   const [isSavingStatus, setIsSavingStatus] = useState(false);
@@ -29,24 +20,39 @@ export default function OrderDetailsPage() {
     async function fetchOrderDetails() {
       setLoading(true);
       
-      const { data: orderData, error: oError } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (oError) console.error("Rendelés hiba:", oError.message);
-
-      const { data: itemsData, error: iError } = await supabase
-        .from("order_items")
-        .select("*") 
-        .eq("order_id", id);
-
-      if (iError) console.error("Tételek hiba:", iError.message);
-
+      // 1. Rendelés és tételek lekérése
+      const { data: orderData } = await supabase.from("orders").select("*").eq("id", id).single();
+      const { data: itemsData } = await supabase.from("order_items").select("*").eq("order_id", id);
+      
       if (orderData) {
         setOrder(orderData);
         setSelectedStatus(orderData.status);
+
+        // 2. Egyedi rendelési adatok (képek) lekérése
+        const { data: customData } = await supabase
+          .from("custom_orders")
+          .select("*")
+          .or(`order_id.eq.${id},customer_email.eq.${orderData.customer_email}`);
+
+        // 3. URL generálás a pontos mappaszerkezettel (previews/DÁTUM/fájlnév)
+        const imagesWithUrls = (customData || []).map(img => {
+          // Csak a fájlnevet tartjuk meg (pl. 69b8e860..._preview.jpg)
+          const fileName = (img.preview_url || img.original_image_url).split('/').pop();
+
+          // A képernyőmentésed alapján a mappa neve a rendelés dátuma (ÉÉÉÉ-HH-NN)
+          const orderDate = new Date(orderData.created_at).toISOString().split('T')[0];
+          
+          // A teljes útvonal összeállítása a Storage-hoz
+          const storagePath = `previews/${orderDate}/${fileName}`;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('custom-canvas') 
+            .getPublicUrl(storagePath);
+            
+          return { ...img, fullUrl: publicUrl };
+        });
+
+        setCustomImages(imagesWithUrls);
       }
       
       setItems(itemsData || []);
@@ -57,175 +63,135 @@ export default function OrderDetailsPage() {
 
   const handleStatusSave = async () => {
     setIsSavingStatus(true);
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: selectedStatus })
-      .eq("id", id);
-
-    if (!error) {
-      setOrder({ ...order, status: selectedStatus });
-      alert("Állapot sikeresen frissítve!");
-    } else {
-      alert("Hiba történt a mentés során: " + error.message);
-    }
+    await supabase.from("orders").update({ status: selectedStatus }).eq("id", id);
+    setOrder({ ...order, status: selectedStatus });
     setIsSavingStatus(false);
+    alert("Állapot frissítve!");
   };
 
   const formatPrice = (price: number) => new Intl.NumberFormat("hu-HU").format(price) + " Ft";
 
-  if (loading) return (
-    <div className="p-20 text-center text-gray-400 font-bold animate-pulse uppercase tracking-[0.3em]">
-      Adatok betöltése...
-    </div>
-  );
-  
-  if (!order) return (
-    <div className="p-20 text-center text-red-500 font-black uppercase italic">
-      Rendelés nem található!
-    </div>
-  );
+  if (loading) return <div className="p-10 text-center font-black uppercase animate-pulse text-gray-400">Betöltés...</div>;
+  if (!order) return <div className="p-10 text-center text-red-500 font-black uppercase">Rendelés nem található!</div>;
 
   return (
-    <div className="max-w-7xl mx-auto p-6 md:p-12 bg-[#fbfbfb] min-h-screen text-[#1a1a1a]">
+    <div className="min-h-screen bg-[#f8f8f8] pb-20 font-sans">
       
       {/* FEJLÉC */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-        <div>
-          <button 
-            onClick={() => router.back()} 
-            className="group mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-all"
-          >
-            <span className="group-hover:-translate-x-1 transition-transform">←</span> Vissza a rendelésekhez
-          </button>
-          <h1 className="text-5xl font-black tracking-tighter uppercase italic">
-            {/* JAVÍTOTT: String konverzió az ID-hoz */}
-            Rendelés <span className="text-blue-600">#{String(order.id).slice(0, 8)}</span>
-          </h1>
-          <p className="text-gray-400 font-medium mt-1 uppercase text-[10px] tracking-widest font-black">
-            Beérkezett: {new Date(order.created_at).toLocaleString('hu-HU')}
-          </p>
-        </div>
-
-        {/* STÁTUSZ KEZELŐ */}
-        <div className="bg-white p-2 rounded-[32px] border border-gray-100 shadow-xl shadow-gray-200/50 flex items-center gap-2">
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="bg-transparent text-[10px] font-black uppercase tracking-widest py-3 px-6 outline-none cursor-pointer"
-          >
-            {statusOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          <button
-            onClick={handleStatusSave}
-            disabled={isSavingStatus || selectedStatus === order.status}
-            className={`px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest transition-all ${
-              selectedStatus === order.status 
-              ? "bg-gray-50 text-gray-300" 
-              : "bg-black text-white hover:bg-emerald-500 hover:shadow-emerald-500/20 active:scale-95 shadow-lg"
-            }`}
-          >
-            {isSavingStatus ? "..." : "Frissítés"}
-          </button>
-        </div>
+      <div className="bg-white border-b px-4 py-6 sticky top-0 z-20 shadow-sm">
+        <button onClick={() => router.back()} className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-1">
+          ← Vissza
+        </button>
+        <h1 className="text-3xl font-black tracking-tighter italic uppercase leading-none">
+          Rendelés <span className="text-blue-600">#{String(order.id).slice(0, 6)}</span>
+        </h1>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-10">
+      <div className="max-w-4xl mx-auto p-4 space-y-6 mt-4">
         
-        {/* BAL OSZLOP: ÜGYFÉL INFÓK */}
-        <div className="space-y-8">
-          <div className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm">
-            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 italic underline decoration-blue-500 decoration-2 underline-offset-4">Számlázási adatok</h2>
-            <div className="space-y-6">
-              <div>
-                <p className="text-[10px] font-bold text-blue-500 uppercase mb-1">Vevő / Cégnév</p>
-                <p className="font-black text-gray-900 text-lg uppercase">{order.billing_name}</p>
-                {order.billing_tax_number && (
-                  <p className="text-xs font-bold text-gray-400 mt-1">Adószám: {order.billing_tax_number}</p>
-                )}
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Elérhetőség</p>
-                <p className="font-bold text-gray-800">{order.customer_email}</p>
-                <p className="font-bold text-gray-800">{order.customer_phone}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Cím</p>
-                <p className="font-bold text-gray-800">
-                  {order.billing_postcode} {order.billing_city}<br />
-                  {order.billing_address}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[#f0f0ee] p-8 rounded-[40px] border border-gray-200 shadow-inner">
-            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 italic">Szállítási cím</h2>
-            <div className="space-y-2 font-bold text-gray-700">
-              <p className="text-lg font-black text-black uppercase tracking-tight">📦 {order.customer_name}</p>
-              <p>{order.shipping_postcode} {order.shipping_city}</p>
-              <p>{order.shipping_address}</p>
-            </div>
+        {/* ÁLLAPOT MÓDOSÍTÁSA */}
+        <div className="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm space-y-4">
+          <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Rendelés állapota</p>
+          <div className="flex flex-col gap-2">
+            <select 
+              value={selectedStatus} 
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="w-full h-14 bg-gray-50 rounded-2xl px-5 text-xs font-black uppercase outline-none appearance-none border-2 border-transparent focus:border-blue-500 transition-all"
+            >
+              <option value="waiting_for_payment">Utalásra vár</option>
+              <option value="pending">Függőben / Fizetve</option>
+              <option value="processing">Feldolgozás alatt</option>
+              <option value="shipped">Feladva / Futárnál</option>
+              <option value="delivered">Kézbesítve</option>
+              <option value="cancelled">Törölve</option>
+            </select>
+            <button 
+              onClick={handleStatusSave}
+              disabled={isSavingStatus || selectedStatus === order.status}
+              className="w-full h-14 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest disabled:opacity-20 active:scale-95 transition-all shadow-lg"
+            >
+              {isSavingStatus ? "Mentés..." : "Állapot mentése"}
+            </button>
           </div>
         </div>
 
-        {/* JOBB OSZLOP: RENDELT TÉTELEK */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-[40px] border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full">
-            <div className="p-8 border-b border-gray-50 flex justify-between items-end">
-              <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Csomag tartalma</h2>
-              <span className="bg-gray-100 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">{items.length} tétel</span>
-            </div>
-            
-            <div className="divide-y divide-gray-50 flex-1">
-              {items.map((item) => (
-                <div key={item.id} className="p-8 flex items-center justify-between group hover:bg-gray-50/50 transition-colors">
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center font-black text-gray-300 border border-gray-100">
-                      🖼️
-                    </div>
+        {/* EGYEDI PREVIEW KÉPEK */}
+        {customImages.length > 0 && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+            <h2 className="text-[10px] font-black uppercase text-emerald-500 tracking-widest ml-4 italic underline decoration-2 underline-offset-4">Gyártási fájlok (Preview)</h2>
+            {customImages.map((img, index) => (
+              <div key={index} className="bg-white p-6 rounded-[35px] border-2 border-emerald-100 shadow-md">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-2xl border border-emerald-100">🖼️</div>
                     <div>
-                      <h3 className="font-black text-gray-900 uppercase tracking-tight text-lg">
-                        {item.product_name}
-                      </h3>
-                      <p className="text-xs font-bold text-gray-400 uppercase italic">
-                        Méret: {item.size_name}
-                      </p>
-                      <p className="text-xs font-bold text-blue-500 mt-2 bg-blue-50 w-fit px-2 py-1 rounded">
-                        {item.quantity} db × {formatPrice(item.price)}
-                      </p>
+                      <p className="text-[11px] font-black uppercase tracking-tight leading-none">{img.product_name || 'Vászonkép'}</p>
+                      <p className="text-[10px] font-bold text-emerald-600/50 uppercase mt-1 italic">Méret: {img.size}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-black text-2xl text-gray-900 tracking-tighter">
-                      {formatPrice(item.quantity * item.price)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* ÖSSZESÍTŐ SÁV - Most már Banki átutalással bővítve */}
-            <div className="bg-black p-10 flex justify-between items-center text-white">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">Végösszeg</p>
-                <div className="mt-2 flex items-center gap-3">
-                  <span className="text-[10px] font-black uppercase bg-gray-800 px-3 py-1 rounded-md text-gray-300">
-                    {order.payment_method === 'card' && '💳 Bankkártya'}
-                    {order.payment_method === 'cash_on_delivery' && '🚚 Utánvét'}
-                    {order.payment_method === 'transfer' && '🏦 Banki átutalás'}
-                  </span>
+                  <a 
+                    href={img.fullUrl} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="w-full bg-emerald-500 text-white text-center py-5 rounded-[20px] text-[11px] font-black uppercase tracking-widest hover:bg-emerald-600 active:scale-[0.98] transition-all shadow-lg shadow-emerald-200"
+                  >
+                    Kép megnyitása (Preview)
+                  </a>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-5xl font-black italic tracking-tighter text-[#c79a4a]">
-                  {formatPrice(order.total_amount)}
-                </span>
-              </div>
-            </div>
+            ))}
           </div>
+        )}
+
+        {/* VÁSÁRLÓ ADATAI */}
+        <div className="bg-white p-6 rounded-[40px] border border-gray-100 shadow-sm space-y-6">
+          <section>
+            <h2 className="text-[10px] font-black uppercase text-blue-500 tracking-widest mb-4">Vásárló adatai</h2>
+            <div className="space-y-1">
+              <p className="font-black text-2xl uppercase tracking-tighter leading-none">{order.billing_name}</p>
+              <p className="text-sm font-bold text-gray-500">{order.customer_email}</p>
+              <p className="text-sm font-bold text-gray-500">{order.customer_phone}</p>
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-50 text-sm font-bold text-gray-800">
+            <div>
+              <h3 className="text-[9px] font-black uppercase text-gray-300 mb-2">Számlázási cím</h3>
+              <p>{order.billing_postcode} {order.billing_city}, {order.billing_address}</p>
+            </div>
+            <div>
+              <h3 className="text-[9px] font-black uppercase text-gray-300 mb-2">Szállítási cím</h3>
+              <p>{order.shipping_postcode} {order.shipping_city}, {order.shipping_address}</p>
+            </div>
+          </section>
         </div>
+
+        {/* TERMÉKEK */}
+        <div className="space-y-3">
+          <h2 className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-4">Kosár tartalma</h2>
+          {items.map((item) => (
+            <div key={item.id} className="bg-white p-6 rounded-[30px] border border-gray-100 shadow-sm flex justify-between items-center">
+              <div>
+                <h3 className="font-black text-sm uppercase tracking-tight leading-tight">{item.product_name}</h3>
+                <p className="text-[10px] font-bold text-gray-400 uppercase italic">{item.size_name}</p>
+                <p className="text-[10px] font-black text-blue-500 mt-1">{item.quantity} db × {formatPrice(item.price)}</p>
+              </div>
+              <p className="font-black text-lg italic tracking-tighter">{formatPrice(item.quantity * item.price)}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ÖSSZESÍTŐ */}
+        <div className="bg-black p-10 rounded-[45px] text-white flex flex-col items-center shadow-2xl">
+          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-500 mb-2">Összesen fizetendő</p>
+          <p className="text-5xl font-black italic tracking-tighter text-[#c79a4a]">
+            {formatPrice(order.total_amount)}
+          </p>
+          <span className="text-[9px] font-black uppercase bg-white/10 px-4 py-2 rounded-full tracking-widest mt-4">
+            {order.payment_method === 'card' ? '💳 Bankkártya' : order.payment_method === 'transfer' ? '🏦 Átutalás' : '🚚 Utánvét'}
+          </span>
+        </div>
+
       </div>
     </div>
   );

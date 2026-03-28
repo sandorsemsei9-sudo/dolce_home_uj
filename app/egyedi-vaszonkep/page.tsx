@@ -150,13 +150,16 @@ export default function EgyediVaszonkepPage() {
       setIsSaving(true);
       const uniqueId = uuidv4();
       const safeName = sanitizeFileName(rawFile.name);
-      const originalPath = `originals/${uniqueId}_${safeName}`;
+      
+      // Mappa struktúra dátummal a jobb rendszerezésért
+      const datePath = new Date().toISOString().split('T')[0];
+      const originalPath = `originals/${datePath}/${uniqueId}_${safeName}`;
       
       const { error: upErr1 } = await supabase.storage.from("custom-canvas").upload(originalPath, rawFile);
       if (upErr1) throw upErr1;
 
       const croppedBlob = await getCroppedImage(image, croppedAreaPixels);
-      const previewPath = `previews/${uniqueId}_preview.jpg`;
+      const previewPath = `previews/${datePath}/${uniqueId}_preview.jpg`;
       const { error: upErr2 } = await supabase.storage.from("custom-canvas").upload(previewPath, croppedBlob);
       if (upErr2) throw upErr2;
 
@@ -173,29 +176,31 @@ export default function EgyediVaszonkepPage() {
     } finally { setIsSaving(false); }
   };
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
     if (!savedConfig) return;
     try {
       setIsAddingToCart(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: orderData, error: dbErr } = await supabase.from("custom_orders").insert({
-        user_id: user?.id || null,
-        original_image_url: savedConfig.originalStoragePath,
-        preview_url: savedConfig.previewUrl,
-        size: savedConfig.size, ratio: savedConfig.ratio, price: savedConfig.price,
-        config: { zoom: savedConfig.zoom, crop: savedConfig.croppedAreaPixels },
-        status: 'in_cart'
-      }).select().single();
-
-      if (dbErr) throw dbErr;
-
+      
+      // NEM írunk az adatbázisba, csak a kosárba tesszük az adatokat
       addItem({
-        id: orderData.id, name: "Egyedi Vászonkép", size: savedConfig.size,
-        price: savedConfig.price, image: savedConfig.previewUrl, quantity: 1, isCustom: true
+        id: uuidv4(), // Ideiglenes ID a kosárban
+        name: "Egyedi Vászonkép",
+        size: savedConfig.size,
+        price: savedConfig.price,
+        image: savedConfig.previewUrl,
+        quantity: 1,
+        isCustom: true,
+        // Eltároljuk a store-ban a későbbi mentéshez szükséges plusz adatokat:
+        customData: {
+            original_image_url: savedConfig.originalStoragePath,
+            ratio: savedConfig.ratio,
+            config: { zoom: savedConfig.zoom, crop: savedConfig.croppedAreaPixels }
+        }
       });
+      
       router.push('/kosar');
     } catch (err: any) {
-      setError("Hiba: " + err.message);
+      setError("Hiba a kosárba tételkor!");
     } finally { setIsAddingToCart(false); }
   };
 
@@ -219,7 +224,6 @@ export default function EgyediVaszonkepPage() {
                     activeRatio === "portrait" ? "aspect-[2/3] w-[42%]" : "aspect-[3/2] w-[72%]"
                   }`}>
                     
-                    {/* 3D HATÁS RÉTEGEZÉSE */}
                     <div className="relative h-full w-full group">
                       <div className="h-full w-full overflow-hidden bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all">
                         {savedConfig?.previewUrl ? (
@@ -231,7 +235,6 @@ export default function EgyediVaszonkepPage() {
                         )}
                       </div>
 
-                      {/* 3D Kontúr és mélység réteg */}
                       <div className="absolute inset-0 pointer-events-none">
                         <div className="absolute inset-0 border border-white/10" />
                         <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/25 opacity-80" />

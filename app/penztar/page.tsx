@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 import { useCartStore } from "../store/useCartStore";
@@ -15,10 +15,12 @@ export default function PenztarPage() {
   const [isSuccess, setIsSuccess] = useState(false); 
   const [acceptTerms, setAcceptTerms] = useState(false);
 
-  const { items, getTotalPrice, appliedCoupon, setCoupon, clearCart } = useCartStore();
+  const { items, getTotalPrice, setCoupon, clearCart } = useCartStore();
 
   const [differentShipping, setDifferentShipping] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("cash_on_delivery");
+  
+  // ALAPÉRTELMEZETT: Bankkártya (card)
+  const [paymentMethod, setPaymentMethod] = useState("card");
 
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", tax_number: "",
@@ -31,6 +33,18 @@ export default function PenztarPage() {
     setIsHydrated(true);
   }, []);
 
+  // DINAMIKUS ÖSSZEG SZÁMÍTÁSA
+  // A useMemo újraszámolja az összeget, ha változik a kosár vagy a fizetési mód
+  const { subtotal, codFee, finalTotal } = useMemo(() => {
+    const base = getTotalPrice();
+    const fee = paymentMethod === "cash_on_delivery" ? 790 : 0;
+    return {
+      subtotal: base,
+      codFee: fee,
+      finalTotal: base + fee
+    };
+  }, [items, paymentMethod, getTotalPrice]);
+
   useEffect(() => {
     if (isHydrated && items.length === 0 && !isSuccess) {
       router.push("/");
@@ -39,15 +53,11 @@ export default function PenztarPage() {
 
   if (!isHydrated) return null;
 
-  const subtotal = getTotalPrice();
-  const discountAmount = appliedCoupon ? (subtotal * appliedCoupon.discountValue) / 100 : 0;
-  const finalTotal = subtotal - discountAmount;
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!acceptTerms) return;
     
@@ -58,7 +68,7 @@ export default function PenztarPage() {
       const finalShippingCity = differentShipping ? formData.ship_city : formData.city;
       const finalShippingAddr = differentShipping ? formData.ship_address : formData.address;
 
-      // 1. Rendelés mentése a Supabase-be
+      // 1. FŐ RENDELÉS MENTÉSE (A finalTotal már tartalmazza a +790-et ha kell)
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .insert([{
@@ -75,7 +85,6 @@ export default function PenztarPage() {
           shipping_address: finalShippingAddr,
           total_amount: Math.round(finalTotal),
           payment_method: paymentMethod,
-          // Státusz: átutalásnál 'waiting_for_payment', kártyánál/utánvétnél 'pending'
           status: paymentMethod === "transfer" ? "waiting_for_payment" : "pending",
           note: formData.note
         }])
@@ -83,7 +92,7 @@ export default function PenztarPage() {
 
       if (orderError) throw orderError;
 
-      // 2. Tételek mentése
+      // 2. TÉTELEK MENTÉSE
       const orderItems = items.map(item => ({
         order_id: orderData.id,
         product_name: item.name,
@@ -95,12 +104,31 @@ export default function PenztarPage() {
       const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
       if (itemsError) throw itemsError;
 
-      // 3. Fizetési irányítás
+      // 3. EGYEDI KÉPEK MENTÉSE
+      const customItems = items.filter(item => item.isCustom);
+      if (customItems.length > 0) {
+        const customOrderRecords = customItems.map(item => ({
+          order_id: Number(orderData.id),
+          customer_email: formData.email,
+          product_name: item.name || 'Egyedi Vászonkép',
+          preview_url: item.image,
+          original_image_url: item.customData?.original_image_url || item.image, 
+          size: item.size,
+          ratio: item.customData?.ratio || "1:1",
+          price: Math.round(item.price),
+          config: item.customData?.config || {},
+          status: 'ordered'
+        }));
+        await supabase.from("custom_orders").insert(customOrderRecords);
+      }
+
+      // 4. BEFEJEZÉS ÉS FIZETÉS
       if (paymentMethod === "card") {
         const response = await fetch("/api/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: items, orderId: orderData.id }),
+          // Fontos: Itt is a finalTotal-t küldjük!
+          body: JSON.stringify({ items, orderId: orderData.id, totalAmount: finalTotal }),
         });
 
         const session = await response.json();
@@ -109,29 +137,31 @@ export default function PenztarPage() {
             return;
         }
       } else {
-        // ÁTUTALÁS ÉS UTÁNVÉT IS IDE FUT BE
         setIsSuccess(true); 
         clearCart();
         setCoupon(null);
-        window.location.href = "/penztar/siker";
+        router.push("/penztar/siker");
       }
 
     } catch (err: any) {
       console.error("Pénztár hiba:", err);
       alert("Hiba történt a rendelés során.");
+    } finally {
       setIsSubmitting(false);
     }
   };
+
+  const formatPrice = (p: number) => new Intl.NumberFormat("hu-HU").format(p) + " Ft";
 
   return (
     <main className="min-h-screen bg-[#fcfaf8] text-[#1f1f1f]">
       <Navbar />
       <section className="mx-auto max-w-6xl px-6 py-12 md:py-24">
         <form onSubmit={handleSubmit} className="grid gap-16 lg:grid-cols-5">
-          
           <div className="lg:col-span-3 space-y-12">
             <h1 className="text-5xl font-black uppercase tracking-tighter italic">Pénztár</h1>
             
+            {/* SZÁMLÁZÁSI ADATOK */}
             <div className="space-y-6">
               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#e3936e] border-b pb-2">Számlázási adatok</h2>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -147,21 +177,39 @@ export default function PenztarPage() {
                 <input required name="city" placeholder="Város *" onChange={handleChange} className="w-full h-14 bg-white border rounded-2xl px-5 outline-none font-medium sm:col-span-2 focus:border-[#e3936e] transition-colors" />
               </div>
               <input required name="address" placeholder="Utca, házszám *" onChange={handleChange} className="w-full h-14 bg-white border rounded-2xl px-5 outline-none font-medium focus:border-[#e3936e] transition-colors" />
+              
+              <div className="pt-4">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" checked={differentShipping} onChange={() => setDifferentShipping(!differentShipping)} className="w-5 h-5 accent-[#e3936e]" />
+                    <span className="text-xs font-bold uppercase tracking-tight text-gray-500 group-hover:text-black">Eltérő szállítási cím</span>
+                </label>
+              </div>
+
+              {differentShipping && (
+                <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-top-2">
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#e3936e] border-b pb-2">Szállítási adatok</h2>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        <input name="ship_zip" placeholder="Irsz. *" onChange={handleChange} className="w-full h-14 bg-white border rounded-2xl px-5 outline-none font-medium focus:border-[#e3936e] transition-colors" />
+                        <input name="ship_city" placeholder="Város *" onChange={handleChange} className="w-full h-14 bg-white border rounded-2xl px-5 outline-none font-medium sm:col-span-2 focus:border-[#e3936e] transition-colors" />
+                    </div>
+                    <input name="ship_address" placeholder="Utca, házszám *" onChange={handleChange} className="w-full h-14 bg-white border rounded-2xl px-5 outline-none font-medium focus:border-[#e3936e] transition-colors" />
+                </div>
+              )}
             </div>
 
+            {/* FIZETÉSI MÓDOK */}
             <div className="space-y-6">
               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#e3936e] border-b pb-2">Fizetési mód</h2>
               <div className="grid gap-4">
-                
-                <label className={`flex items-center justify-between p-6 rounded-3xl border-2 transition-all cursor-pointer ${paymentMethod === 'cash_on_delivery' ? 'border-[#e3936e] bg-orange-50/30' : 'bg-white border-gray-100 hover:border-gray-200'}`}>
+                <label className={`flex items-center justify-between p-6 rounded-3xl border-2 transition-all cursor-pointer ${paymentMethod === 'card' ? 'border-[#e3936e] bg-orange-50/30' : 'bg-white border-gray-100'}`}>
                   <div className="flex items-center gap-4">
-                    <input type="radio" name="payment" value="cash_on_delivery" checked={paymentMethod === 'cash_on_delivery'} onChange={() => setPaymentMethod('cash_on_delivery')} className="w-5 h-5 accent-[#e3936e]" />
-                    <span className="font-black text-xs uppercase tracking-widest">Utánvétel</span>
+                    <input type="radio" name="payment" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="w-5 h-5 accent-[#e3936e]" />
+                    <span className="font-black text-xs uppercase tracking-widest">Bankkártya</span>
                   </div>
-                  <span className="text-2xl">🚚</span>
+                  <span className="text-2xl">💳</span>
                 </label>
 
-                <label className={`flex items-center justify-between p-6 rounded-3xl border-2 transition-all cursor-pointer ${paymentMethod === 'transfer' ? 'border-[#e3936e] bg-orange-50/30' : 'bg-white border-gray-100 hover:border-gray-200'}`}>
+                <label className={`flex items-center justify-between p-6 rounded-3xl border-2 transition-all cursor-pointer ${paymentMethod === 'transfer' ? 'border-[#e3936e] bg-orange-50/30' : 'bg-white border-gray-100'}`}>
                   <div className="flex items-center gap-4">
                     <input type="radio" name="payment" value="transfer" checked={paymentMethod === 'transfer'} onChange={() => setPaymentMethod('transfer')} className="w-5 h-5 accent-[#e3936e]" />
                     <span className="font-black text-xs uppercase tracking-widest">Banki átutalás</span>
@@ -169,12 +217,15 @@ export default function PenztarPage() {
                   <span className="text-2xl">🏦</span>
                 </label>
 
-                <label className={`flex items-center justify-between p-6 rounded-3xl border-2 transition-all cursor-pointer ${paymentMethod === 'card' ? 'border-[#e3936e] bg-orange-50/30' : 'bg-white border-gray-100 hover:border-gray-200'}`}>
+                <label className={`flex items-center justify-between p-6 rounded-3xl border-2 transition-all cursor-pointer ${paymentMethod === 'cash_on_delivery' ? 'border-[#e3936e] bg-orange-50/30' : 'bg-white border-gray-100'}`}>
                   <div className="flex items-center gap-4">
-                    <input type="radio" name="payment" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="w-5 h-5 accent-[#e3936e]" />
-                    <span className="font-black text-xs uppercase tracking-widest">Bankkártya</span>
+                    <input type="radio" name="payment" value="cash_on_delivery" checked={paymentMethod === 'cash_on_delivery'} onChange={() => setPaymentMethod('cash_on_delivery')} className="w-5 h-5 accent-[#e3936e]" />
+                    <div className="flex flex-col">
+                        <span className="font-black text-xs uppercase tracking-widest">Utánvétel</span>
+                        <span className="text-[9px] font-bold text-[#e3936e] tracking-tight">+ 790 Ft kezelési költség</span>
+                    </div>
                   </div>
-                  <span className="text-2xl">💳</span>
+                  <span className="text-2xl">🚚</span>
                 </label>
               </div>
             </div>
@@ -194,21 +245,38 @@ export default function PenztarPage() {
             </div>
           </div>
 
+          {/* KOSÁR ÖSSZESÍTŐ */}
           <div className="lg:col-span-2">
-              <div className="bg-white p-10 rounded-[50px] border border-gray-50 h-fit sticky top-10 shadow-xl shadow-orange-100/10 space-y-8">
-                <h2 className="text-xl font-black uppercase italic">Kosár tartalma</h2>
+              <div className="bg-white p-10 rounded-[50px] border border-gray-50 h-fit sticky top-10 shadow-xl space-y-8">
+                <h2 className="text-xl font-black uppercase italic text-center">Összesítés</h2>
                 <div className="space-y-4">
                   {items.map((item) => (
                     <div key={`${item.id}-${item.size}`} className="flex justify-between items-center text-sm font-bold uppercase tracking-tight">
-                      <span className="text-gray-500">{item.quantity}x <span className="text-[#1f1f1f]">{item.name}</span></span>
-                      <span>{new Intl.NumberFormat("hu-HU").format(item.price * item.quantity)} Ft</span>
+                      <div className="flex flex-col">
+                        <span className="text-[#1f1f1f]">{item.quantity}x {item.name}</span>
+                        <span className="text-[10px] text-gray-400">{item.size} cm</span>
+                      </div>
+                      <span>{formatPrice(item.price * item.quantity)}</span>
                     </div>
                   ))}
                 </div>
-                <div className="pt-6 border-t border-dashed">
-                  <div className="flex justify-between text-2xl font-black italic">
-                    <span className="text-[10px] uppercase tracking-widest text-gray-400 self-center">Végösszeg</span>
-                    <span>{new Intl.NumberFormat("hu-HU").format(finalTotal)} Ft</span>
+
+                <div className="pt-6 border-t border-dashed space-y-3">
+                  <div className="flex justify-between text-[11px] font-bold uppercase text-gray-400">
+                    <span>Részösszeg</span>
+                    <span>{formatPrice(subtotal)}</span>
+                  </div>
+
+                  {codFee > 0 && (
+                    <div className="flex justify-between text-[11px] font-bold uppercase text-[#e3936e]">
+                        <span>Utánvét felár</span>
+                        <span>+ {formatPrice(codFee)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between text-2xl font-black italic pt-2 border-t border-gray-50">
+                    <span className="text-[10px] uppercase tracking-widest text-gray-400 self-center font-normal">Fizetendő</span>
+                    <span className="text-[#1a1a1a]">{formatPrice(finalTotal)}</span>
                   </div>
                 </div>
               </div>

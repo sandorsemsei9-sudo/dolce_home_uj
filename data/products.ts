@@ -52,7 +52,7 @@ export const products: Product[] = [
     slug: "japan-vaszonkep",
     price: 17990,
     category: "Modern & Absztrakt",
-    image: "/japan-stilus.png",
+    image: "/images/japan-stilus.png",
     description: "Lágy árnyalatok",
   },
   {
@@ -61,7 +61,7 @@ export const products: Product[] = [
     slug: "turkiz-eletfa",
     price: 14990,
     category: "Természet & Tájkép",
-    image: "/turkiz-eletfa.png",
+    image: "/images/turkiz-eletfa.png",
     description: "Modern, elegáns kompozíció",
   },
   {
@@ -70,7 +70,7 @@ export const products: Product[] = [
     slug: "japan-vaszonkep",
     price: 14990,
     category: "Természet & Tájkép",
-    image: "/japan-stilus-2.png",
+    image: "/images/japan-stilus-2.png",
     description: "Lágy árnyalatok",
   }
 ];

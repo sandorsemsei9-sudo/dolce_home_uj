@@ -26,29 +26,29 @@ export default function AdminLoginPage() {
       setError("Helytelen email vagy jelszó!");
       setLoading(false);
     } else {
-      router.push("/admin"); // Sikeres belépés után a dashboardra dob
+      router.push("/admin");
       router.refresh();
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-[40px] p-10 shadow-xl border border-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 sm:p-6">
+      <div className="max-w-md w-full bg-white rounded-[30px] md:rounded-[40px] p-6 md:p-10 shadow-xl border border-gray-100">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-black italic uppercase tracking-tighter">
+          <h1 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter">
             Dolce <span className="text-blue-600">Home</span>
           </h1>
-          <p className="text-gray-400 font-medium mt-2">Adminisztrátori belépés</p>
+          <p className="text-gray-400 font-medium mt-2 text-sm md:text-base">Adminisztrátori belépés</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4 md:space-y-5">
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase ml-4">Email cím</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none mt-1"
+              className="w-full p-3 md:p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none mt-1 text-sm md:text-base"
               placeholder="admin@dolcehome.hu"
               required
             />
@@ -60,18 +60,18 @@ export default function AdminLoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none mt-1"
+              className="w-full p-3 md:p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none mt-1 text-sm md:text-base"
               placeholder="••••••••"
               required
             />
           </div>
 
-          {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
+          {error && <p className="text-red-500 text-xs font-bold text-center bg-red-50 p-2 rounded-lg">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white font-black py-4 rounded-2xl hover:bg-blue-600 transition-all shadow-lg active:scale-95 disabled:bg-gray-300"
+            className="w-full bg-black text-white font-black py-3 md:py-4 rounded-2xl hover:bg-blue-600 transition-all shadow-lg active:scale-95 disabled:bg-gray-300 text-sm md:text-base"
           >
             {loading ? "Belépés..." : "Bejelentkezés"}
           </button>

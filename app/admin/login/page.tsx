@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 sm:p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="max-w-md w-full bg-white rounded-[30px] md:rounded-[40px] p-6 md:p-10 shadow-xl border border-gray-100">
         <div className="text-center mb-8">
           <h1 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter">
@@ -41,14 +41,14 @@ export default function AdminLoginPage() {
           <p className="text-gray-400 font-medium mt-2 text-sm md:text-base">Adminisztrátori belépés</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4 md:space-y-5">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="text-[10px] font-bold text-gray-400 uppercase ml-4">Email cím</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 md:p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none mt-1 text-sm md:text-base"
+              className="w-full p-3 md:p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none mt-1 text-sm"
               placeholder="admin@dolcehome.hu"
               required
             />
@@ -60,18 +60,18 @@ export default function AdminLoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 md:p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none mt-1 text-sm md:text-base"
+              className="w-full p-3 md:p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none mt-1 text-sm"
               placeholder="••••••••"
               required
             />
           </div>
 
-          {error && <p className="text-red-500 text-xs font-bold text-center bg-red-50 p-2 rounded-lg">{error}</p>}
+          {error && <p className="text-red-500 text-[10px] font-bold text-center">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white font-black py-3 md:py-4 rounded-2xl hover:bg-blue-600 transition-all shadow-lg active:scale-95 disabled:bg-gray-300 text-sm md:text-base"
+            className="w-full bg-black text-white font-black py-3 md:py-4 rounded-2xl hover:bg-blue-600 transition-all shadow-lg active:scale-95 disabled:bg-gray-300 text-sm"
           >
             {loading ? "Belépés..." : "Bejelentkezés"}
           </button>

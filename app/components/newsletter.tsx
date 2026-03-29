@@ -53,7 +53,6 @@ export default function NewsletterPopup() {
     expiresAt.setHours(expiresAt.getHours() + 24);
 
     try {
-      // 1. Feliratkozó mentése
       const { error: subError } = await supabase
         .from("newsletter_subs")
         .insert([{ email }]);
@@ -63,7 +62,6 @@ export default function NewsletterPopup() {
         throw subError;
       }
 
-      // 2. Egyedi kupon mentése (MINDEN kötelező mezővel)
       const { error: couponError } = await supabase
         .from("coupons")
         .insert([{ 
@@ -123,9 +121,10 @@ export default function NewsletterPopup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="E-mail címed"
-                className="h-14 flex-1 rounded-xl border border-[#dcc9b9] bg-white px-5 outline-none focus:border-[#d1845c]"
+                // w-full biztosítja a szélességet mobilon, text-base a zoom ellen
+                className="h-14 w-full sm:flex-1 rounded-xl border border-[#dcc9b9] bg-white px-5 text-base outline-none focus:border-[#d1845c]"
               />
-              <button type="submit" disabled={status === "loading"} className="h-14 rounded-xl bg-[#de8c63] px-8 font-bold text-white transition hover:bg-[#cc7b53] disabled:opacity-50">
+              <button type="submit" disabled={status === "loading"} className="h-14 w-full sm:w-auto rounded-xl bg-[#de8c63] px-8 font-bold text-white transition hover:bg-[#cc7b53] disabled:opacity-50">
                 {status === "loading" ? "..." : "Kérem a kódot"}
               </button>
             </form>

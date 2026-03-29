@@ -14,7 +14,6 @@ export default function KosarPage() {
   const [couponError, setCouponError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Pontosan a te store-odból kérjük le az elemeket
   const { items, removeItem, updateQuantity, getTotalPrice, appliedCoupon, setCoupon } = useCartStore();
 
   useEffect(() => {
@@ -30,23 +29,26 @@ export default function KosarPage() {
       const { data, error } = await supabase
         .from("coupons")
         .select("*")
-        .eq("code", couponInput.trim().toUpperCase())
-        .gt("expires_at", new Date().toISOString())
+        .ilike("code", couponInput.trim()) // .ilike = kis/nagybetű nem számít
+        .eq("is_used", false)
+        .eq("is_active", true)
         .single();
 
       if (error || !data) {
-        setCouponError("Érvénytelen vagy lejárt kód.");
+        setCouponError("Érvénytelen, lejárt vagy már felhasznált kód.");
         setCoupon(null);
       } else {
-        // Elmentjük a persist-elt store-ba
+        // Megnézzük melyik oszlopban van az érték (percent vagy value)
+        const discount = data.discount_percent || data.discount_value || 0;
+        
         setCoupon({
-          code: data.code,
-          discountValue: data.discount_value
+          code: data.code, // Az adatbázis szerinti pontos kódot mentjük el
+          discountValue: discount
         });
         setCouponInput("");
       }
     } catch (err) {
-      setCouponError("Hiba történt a kupon ellenőrzésekor.");
+      setCouponError("Hiba a kupon ellenőrzésekor.");
     } finally {
       setIsLoading(false);
     }
@@ -54,7 +56,7 @@ export default function KosarPage() {
 
   if (!isHydrated) return null;
 
-  const subtotal = getTotalPrice();
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discountAmount = appliedCoupon ? (subtotal * appliedCoupon.discountValue) / 100 : 0;
   const finalTotal = subtotal - discountAmount;
 
@@ -73,7 +75,6 @@ export default function KosarPage() {
           </div>
         ) : (
           <div className="grid gap-8 lg:grid-cols-[1fr_350px]">
-            {/* Terméklista */}
             <div className="space-y-4">
               {items.map((item) => (
                 <div key={`${item.id}-${item.size}`} className="flex gap-4 p-4 bg-white rounded-2xl border items-center">
@@ -82,29 +83,26 @@ export default function KosarPage() {
                     <h3 className="font-bold">{item.name}</h3>
                     <p className="text-xs text-gray-400">{item.size} cm</p>
                     <div className="flex items-center gap-4 mt-2">
-                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-2 border rounded">-</button>
+                      <button onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)} className="px-2 border rounded">-</button>
                       <span className="text-sm">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-2 border rounded">+</button>
+                      <button onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)} className="px-2 border rounded">+</button>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="font-bold">{formatPrice(item.price * item.quantity)}</p>
-                    <button onClick={() => removeItem(item.id)} className="text-xs text-red-500 underline">Törlés</button>
+                    <button onClick={() => removeItem(item.id, item.size)} className="text-xs text-red-500 underline">Törlés</button>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Összesítő */}
             <div className="bg-white p-6 rounded-3xl border h-fit space-y-4 shadow-sm">
               <h2 className="text-xl font-bold">Összesítés</h2>
-              
               <div className="flex justify-between text-sm">
                 <span>Részösszeg:</span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
 
-              {/* KUPON MEZŐ */}
               <div className="py-4 border-t border-b border-dashed">
                 {!appliedCoupon ? (
                   <div className="flex gap-2">
@@ -131,19 +129,12 @@ export default function KosarPage() {
                 {couponError && <p className="text-[10px] text-red-500 mt-1">{couponError}</p>}
               </div>
 
-              {appliedCoupon && (
-                <div className="flex justify-between text-green-600 font-bold">
-                  <span>Kedvezmény:</span>
-                  <span>-{formatPrice(discountAmount)}</span>
-                </div>
-              )}
-
               <div className="flex justify-between text-xl font-black border-t pt-4">
                 <span>Végösszeg:</span>
                 <span className="text-[#c79a4a]">{formatPrice(finalTotal)}</span>
               </div>
 
-              <Link href="/penztar" className="block w-full bg-[#e3936e] text-white text-center py-4 rounded-full font-bold hover:bg-[#d07f5b] transition shadow-md">
+              <Link href="/penztar" className="block w-full bg-[#e3936e] text-white text-center py-4 rounded-full font-bold">
                 Pénztárhoz lépek
               </Link>
             </div>

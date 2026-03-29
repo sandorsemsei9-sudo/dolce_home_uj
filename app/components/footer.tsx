@@ -1,8 +1,76 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+
+// Kupon generáló függvény
+const generateCouponCode = () => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let result = "";
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `DH-${result}`;
+};
 
 export default function Footer() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [generatedCode, setGeneratedCode] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const supabase = createClient();
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(generatedCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus("loading");
+    setErrorMessage("");
+
+    const newCode = generateCouponCode();
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    try {
+      // 1. Feliratkozás mentése
+      const { error: subError } = await supabase
+        .from("newsletter_subs")
+        .insert([{ email }]);
+
+      if (subError) {
+        if (subError.code === "23505") throw new Error("Ez az e-mail cím már feliratkozott!");
+        throw subError;
+      }
+
+      // 2. Kupon létrehozása
+      const { error: couponError } = await supabase
+        .from("coupons")
+        .insert([{ 
+          code: newCode, 
+          discount_value: 10, 
+          discount_type: 'percentage',
+          expires_at: expiresAt.toISOString(),
+          is_one_time: true 
+        }]);
+
+      if (couponError) throw couponError;
+
+      setGeneratedCode(newCode);
+      setStatus("success");
+      setEmail(""); // Input ürítése
+    } catch (err: any) {
+      setErrorMessage(err.message || "Hiba történt.");
+      setStatus("error");
+    }
+  };
+
   return (
     <footer className="border-t border-[#efebe6] bg-[#fdfbf9] text-[#2a211d]">
       <div className="mx-auto max-w-7xl px-6 py-16 md:py-24">
@@ -10,28 +78,60 @@ export default function Footer() {
         {/* FELSŐ RÉSZ: HÍRLEVÉL ÉS CÍMSOR */}
         <div className="mb-20 flex flex-col items-center text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-[#2a211d] md:text-5xl">
-            Maradj naprakész <br /> 
-            <span className="text-[#d17d58]">a Dolce Home újdonságaival</span>
+            {status === "success" ? "Üdvözlünk a körünkben!" : "Maradj naprakész"} <br /> 
+            <span className="text-[#d17d58]">
+              {status === "success" ? "Íme a kedvezményed" : "a Dolce Home újdonságaival"}
+            </span>
           </h2>
-          <p className="mt-4 max-w-md text-[#5e4d45]">
-            Iratkozz fel, és értesülj elsőként legújabb kollekcióinkról és exkluzív ajánlatainkról.
-          </p>
           
-          <div className="mt-10 flex w-full max-w-md flex-col gap-3 sm:flex-row">
-            <input
-              type="email"
-              placeholder="Email címed..."
-              className="w-full rounded-2xl border border-[#efebe6] bg-white px-6 py-4 text-sm outline-none transition-all focus:border-[#d17d58] focus:ring-1 focus:ring-[#d17d58] placeholder:text-[#b0a8a0]"
-            />
-            <button className="rounded-2xl bg-[#d17d58] px-8 py-4 text-sm font-bold text-white transition-all hover:bg-[#b06746] hover:shadow-lg active:scale-95 shrink-0">
-              Feliratkozás
-            </button>
+          <div className="mt-4 max-w-md">
+            {status === "success" ? (
+              <div className="flex flex-col items-center animate-in fade-in zoom-in duration-500">
+                <p className="mb-4 text-[#5e4d45]">Használd ezt a kódot a pénztárnál (24 óráig érvényes):</p>
+                <button 
+                  onClick={handleCopy}
+                  className="group relative flex items-center gap-3 rounded-2xl border-2 border-dashed border-[#d17d58] bg-white px-8 py-3 transition-all hover:bg-[#fdf8f5]"
+                >
+                  <span className="text-xl font-bold tracking-widest text-[#d17d58]">{generatedCode}</span>
+                  <span className="text-xs font-medium text-[#d17d58] opacity-60 group-hover:opacity-100">
+                    {copied ? "Másolva! ✓" : "Másolás"}
+                  </span>
+                </button>
+              </div>
+            ) : (
+              <p className="text-[#5e4d45]">
+                Iratkozz fel, és egy **-10%-os egyedi kupont** küldünk az első vásárlásodhoz!
+              </p>
+            )}
           </div>
+          
+          {status !== "success" && (
+            <form onSubmit={handleSubmit} className="mt-10 flex w-full max-w-md flex-col gap-3 sm:flex-row">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email címed..."
+                className="w-full rounded-2xl border border-[#efebe6] bg-white px-6 py-4 text-sm outline-none transition-all focus:border-[#d17d58] focus:ring-1 focus:ring-[#d17d58] placeholder:text-[#b0a8a0]"
+              />
+              <button 
+                type="submit"
+                disabled={status === "loading"}
+                className="rounded-2xl bg-[#d17d58] px-8 py-4 text-sm font-bold text-white transition-all hover:bg-[#b06746] hover:shadow-lg active:scale-95 shrink-0 disabled:opacity-50"
+              >
+                {status === "loading" ? "Folyamatban..." : "Kérem a kupont"}
+              </button>
+            </form>
+          )}
+
+          {status === "error" && (
+            <p className="mt-4 text-sm font-medium text-red-500">{errorMessage}</p>
+          )}
         </div>
 
         {/* KÖZÉPSŐ RÉSZ: LINKELÉS ÉS INFÓK */}
         <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
-          
           {/* Brand/Social */}
           <div className="flex flex-col gap-6">
             <h3 className="text-xl font-bold tracking-tight text-[#2a211d]">Dolce Home</h3>
@@ -54,8 +154,7 @@ export default function Footer() {
             <nav className="flex flex-col gap-3 text-sm font-medium">
               <Link href="/termekek" className="text-[#5e4d45] transition hover:text-[#d17d58]">Galéria</Link>
               <Link href="/egyedi-vaszonkep" className="text-[#5e4d45] transition hover:text-[#d17d58]">Egyedi készítés</Link>
-              <Link href="#" className="text-[#5e4d45] transition hover:text-[#d17d58]">Rólunk</Link>
-              <Link href="#" className="text-[#5e4d45] transition hover:text-[#d17d58]">Kapcsolat</Link>
+              <Link href="/kapcsolat" className="text-[#5e4d45] transition hover:text-[#d17d58]">Kapcsolat</Link>
             </nav>
           </div>
 
@@ -63,10 +162,10 @@ export default function Footer() {
           <div className="flex flex-col gap-4">
             <p className="text-xs font-black uppercase tracking-widest text-[#d17d58]">Információk</p>
             <nav className="flex flex-col gap-3 text-sm font-medium">
-              <Link href="#" className="text-[#5e4d45] transition hover:text-[#d17d58]">ÁSZF</Link>
-              <Link href="#" className="text-[#5e4d45] transition hover:text-[#d17d58]">Adatvédelem</Link>
-              <Link href="#" className="text-[#5e4d45] transition hover:text-[#d17d58]">Szállítási infók</Link>
-              <Link href="#" className="text-[#5e4d45] transition hover:text-[#d17d58]">Visszaküldés</Link>
+              <Link href="/aszf" className="text-[#5e4d45] transition hover:text-[#d17d58]">ÁSZF</Link>
+              <Link href="/adatvedelem" className="text-[#5e4d45] transition hover:text-[#d17d58]">Adatvédelem</Link>
+              <Link href="/szallitasi-infok" className="text-[#5e4d45] transition hover:text-[#d17d58]">Szállítási infók</Link>
+              <Link href="/visszakuldes" className="text-[#5e4d45] transition hover:text-[#d17d58]">Visszaküldés</Link>
             </nav>
           </div>
 
@@ -85,9 +184,9 @@ export default function Footer() {
               </p>
             </div>
           </div>
-
         </div>
 
+        {/* ALSÓ SÁV */}
         <div className="mt-20 flex flex-col items-center justify-between gap-6 border-t border-[#efebe6] pt-8 text-xs font-medium text-[#9a8f84] md:flex-row">
           <p>© {new Date().getFullYear()} Dolce Home. Minden jog fenntartva.</p>
           <div className="flex gap-8">

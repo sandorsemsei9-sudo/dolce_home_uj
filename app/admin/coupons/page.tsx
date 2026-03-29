@@ -8,12 +8,13 @@ export default function AdminCoupons() {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  // Új kupon állapota
+  // Új kupon állapota - hozzáadva az is_used: false
   const [newCoupon, setNewCoupon] = useState({
     code: "",
     discount_type: "percentage",
     discount_value: 0,
     min_order_amount: 0,
+    is_used: false, // <--- Alapértelmezett érték
   });
 
   useEffect(() => {
@@ -39,7 +40,13 @@ export default function AdminCoupons() {
     if (error) {
       alert("Hiba: Lehet, hogy ez a kód már létezik!");
     } else {
-      setNewCoupon({ code: "", discount_type: "percentage", discount_value: 0, min_order_amount: 0 });
+      setNewCoupon({ 
+        code: "", 
+        discount_type: "percentage", 
+        discount_value: 0, 
+        min_order_amount: 0, 
+        is_used: false 
+      });
       fetchCoupons();
     }
   }
@@ -65,7 +72,7 @@ export default function AdminCoupons() {
             <input
               type="text"
               placeholder="pl. NYAR20"
-              className="w-full p-3 border rounded-xl outline-none focus:border-orange-400"
+              className="w-full p-3 border rounded-xl outline-none focus:border-orange-400 text-black"
               value={newCoupon.code}
               onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase() })}
               required
@@ -74,7 +81,7 @@ export default function AdminCoupons() {
           <div>
             <label className="block text-xs font-bold uppercase text-gray-400 mb-2">Típus</label>
             <select
-              className="w-full p-3 border rounded-xl outline-none"
+              className="w-full p-3 border rounded-xl outline-none text-black"
               value={newCoupon.discount_type}
               onChange={(e) => setNewCoupon({ ...newCoupon, discount_type: e.target.value })}
             >
@@ -86,7 +93,7 @@ export default function AdminCoupons() {
             <label className="block text-xs font-bold uppercase text-gray-400 mb-2">Érték</label>
             <input
               type="number"
-              className="w-full p-3 border rounded-xl outline-none"
+              className="w-full p-3 border rounded-xl outline-none text-black"
               value={newCoupon.discount_value}
               onChange={(e) => setNewCoupon({ ...newCoupon, discount_value: Number(e.target.value) })}
               required
@@ -102,13 +109,13 @@ export default function AdminCoupons() {
       </div>
 
       {/* KUPONOK LISTÁJA */}
-      <div className="bg-white rounded-[24px] border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[24px] border border-gray-200 shadow-sm overflow-hidden text-black">
         <table className="w-full text-left">
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="p-4 text-xs font-bold uppercase text-gray-500">Kód</th>
               <th className="p-4 text-xs font-bold uppercase text-gray-500">Kedvezmény</th>
-              <th className="p-4 text-xs font-bold uppercase text-gray-500">Min. vásárlás</th>
+              <th className="p-4 text-xs font-bold uppercase text-gray-500">Állapot</th>
               <th className="p-4 text-xs font-bold uppercase text-gray-500 text-right">Műveletek</th>
             </tr>
           </thead>
@@ -126,7 +133,14 @@ export default function AdminCoupons() {
                       ? `${coupon.discount_value}%` 
                       : `${coupon.discount_value.toLocaleString()} Ft`}
                   </td>
-                  <td className="p-4 text-gray-500">{coupon.min_order_amount.toLocaleString()} Ft</td>
+                  {/* ÚJ OSZLOP: Felhasznált státusz */}
+                  <td className="p-4">
+                    {coupon.is_used ? (
+                      <span className="px-2 py-1 bg-red-100 text-red-600 text-[10px] font-bold rounded-full uppercase">Felhasználva</span>
+                    ) : (
+                      <span className="px-2 py-1 bg-green-100 text-green-600 text-[10px] font-bold rounded-full uppercase">Érvényes</span>
+                    )}
+                  </td>
                   <td className="p-4 text-right">
                     <button
                       onClick={() => deleteCoupon(coupon.id)}

@@ -2,10 +2,16 @@
 
 import React, { useEffect, useState, use } from "react";
 import Image from "next/image";
+import dynamic from 'next/dynamic';
 import { createClient } from "@/lib/supabase/client";
 import Navbar from "../../components/navbar";
 import Footer from "../../components/footer";
 import { useCartStore } from "../../store/useCartStore";
+
+const CanvasViewer = dynamic(() => import("../../components/3d/CanvasPoster"), { 
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-full italic text-[#9a8f84]">3D betöltése...</div>
+});
 
 function formatPrice(price: any) {
   const num = Number(price);
@@ -17,7 +23,6 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
   const resolvedParams = use(params);
   const slug = resolvedParams.slug;
   const supabase = createClient();
-  
   const addItem = useCartStore((state) => state.addItem);
 
   const [product, setProduct] = useState<any>(null);
@@ -27,53 +32,30 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
   const [mainImage, setMainImage] = useState<string>("");
   const [isChanging, setIsChanging] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
+  const [show3D, setShow3D] = useState(false);
 
   useEffect(() => {
     async function getFullProductData() {
       setLoading(true);
       try {
-        const { data: pData, error: pError } = await supabase
-          .from("products")
-          .select("*, categories(name)")
-          .eq("slug", slug)
-          .single();
-
-        if (pError) throw pError;
-
+        const { data: pData } = await supabase.from("products").select("*, categories(name)").eq("slug", slug).single();
         if (pData) {
           setProduct(pData);
           setMainImage(pData.cover_image);
-          
-          const { data: vData, error: vError } = await supabase
-            .from("product_variants")
-            .select("*")
-            .eq("product_id", pData.id)
-            .order("price", { ascending: true });
-
-          if (vError) throw vError;
-
-          if (vData && vData.length > 0) {
+          const { data: vData } = await supabase.from("product_variants").select("*").eq("product_id", pData.id).order("price", { ascending: true });
+          if (vData) {
             setVariants(vData);
             setSelectedVariant(vData[0]);
           }
         }
       } catch (err) {
-        console.error("Hiba az adatok betöltésekor:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     }
     getFullProductData();
   }, [slug, supabase]);
-
-  const handleImageChange = (newImage: string) => {
-    if (newImage === mainImage) return;
-    setIsChanging(true);
-    setTimeout(() => {
-      setMainImage(newImage);
-      setIsChanging(false);
-    }, 250);
-  };
 
   const handleAddToCart = () => {
     if (!product || !selectedVariant) return;
@@ -90,15 +72,7 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
     setTimeout(() => setIsAdded(false), 2000);
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f7f7f5]">
-        <div className="text-[#9a8f84] animate-pulse font-medium italic">Termék betöltése...</div>
-      </div>
-    );
-  }
-
-  if (!product) return null;
+  if (loading || !product) return <div className="flex min-h-screen items-center justify-center bg-[#f7f7f5] italic">Betöltés...</div>;
 
   return (
     <main className="min-h-screen bg-[#f7f7f5] text-[#1f1f1f]">
@@ -108,68 +82,73 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
         
         {/* BAL OLDAL: GALÉRIA */}
         <div className="lg:w-1/2 space-y-6 lg:sticky lg:top-24">
-          <div className="relative aspect-square w-full overflow-hidden rounded-[32px] bg-white shadow-sm border border-[#d9d5cf] flex items-center justify-center p-4">
-            <div className={`relative w-full h-full transition-all duration-500 ease-in-out ${isChanging ? 'opacity-0 scale-95 blur-sm' : 'opacity-100 scale-100 blur-0'}`}>
-              <Image 
-                src={mainImage || "/placeholder.jpg"} 
-                alt={product.name} 
-                fill 
-                className="object-cover"
-                priority
-              />
-            </div>
+          <div className="relative aspect-square w-full overflow-hidden rounded-[40px] bg-white shadow-sm border border-[#d9d5cf] flex items-center justify-center p-4">
+            
+            {/* 3D GOMB A JOBB FELSŐ SAROKBAN */}
+            {!show3D && (
+              <button 
+                onClick={() => setShow3D(true)}
+                className="absolute top-6 right-6 z-30 flex items-center gap-2 bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-[#d9d5cf] shadow-sm hover:scale-105 transition-all group"
+              >
+                <span className="text-xl group-hover:rotate-12 transition-transform">📦</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#1f1f1f]">3D Nézet</span>
+              </button>
+            )}
+
+            {show3D ? (
+              <div className="w-full h-full relative">
+                <CanvasViewer modelUrl={product.model_url || "/models/canvas_screen.glb"} />
+                <button 
+                  onClick={() => setShow3D(false)}
+                  className="absolute top-6 right-6 z-30 bg-black text-white w-10 h-10 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div className={`relative w-full h-full transition-all duration-500 ease-in-out ${isChanging ? 'opacity-0 scale-95 blur-sm' : 'opacity-100 scale-100'}`}>
+                <Image src={mainImage || "/placeholder.jpg"} alt={product.name} fill className="object-cover" priority />
+              </div>
+            )}
           </div>
 
-          <div className="flex justify-center gap-3">
+          {/* FOTÓ MINATŰRÖK */}
+          <div className="flex justify-center gap-4">
             <button 
-              onClick={() => handleImageChange(product.cover_image)}
-              className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${mainImage === product.cover_image ? 'border-[#e3936e] scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'}`}
+              onClick={() => { setShow3D(false); setMainImage(product.cover_image); }}
+              className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all ${!show3D && mainImage === product.cover_image ? 'border-[#e3936e] scale-105' : 'border-transparent opacity-60'}`}
             >
-              <Image src={product.cover_image} fill className="object-cover" alt="Nézet 1" />
+              <Image src={product.cover_image} fill className="object-cover" alt="Fotó 1" />
             </button>
-
             {product.hover_image && (
               <button 
-                onClick={() => handleImageChange(product.hover_image)}
-                className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${mainImage === product.hover_image ? 'border-[#e3936e] scale-105 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                onClick={() => { setShow3D(false); setMainImage(product.hover_image); }}
+                className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all ${!show3D && mainImage === product.hover_image ? 'border-[#e3936e] scale-105' : 'border-transparent opacity-60'}`}
               >
-                <Image src={product.hover_image} fill className="object-cover" alt="Nézet 2" />
+                <Image src={product.hover_image} fill className="object-cover" alt="Fotó 2" />
               </button>
             )}
           </div>
         </div>
 
-        {/* JOBB OLDAL: TERMÉKINFÓ */}
+        {/* JOBB OLDAL: INFÓK */}
         <div className="mt-8 lg:mt-0 lg:w-1/2 max-w-md mx-auto lg:mx-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#9a8f84]">
-            {product.categories?.name || "Kategória"}
-          </p>
-          
-          <h1 className="mt-2 text-3xl md:text-4xl font-semibold tracking-tight leading-tight text-[#1f1f1f]">
-            {product.name}
-          </h1>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#9a8f84]">{product.categories?.name}</p>
+          <h1 className="mt-2 text-3xl font-semibold text-[#1f1f1f]">{product.name}</h1>
           
           <div className="mt-6 border-b border-[#d9d5cf] pb-6">
-            <span className="text-3xl font-bold text-[#1f1f1f]">
-              {formatPrice(selectedVariant?.price)}
-            </span>
-            <p className="mt-1 text-[11px] text-[#7a746d]">ÁFA-val együtt • Ingyenes házhozszállítás</p>
+            <span className="text-3xl font-bold">{formatPrice(selectedVariant?.price)}</span>
           </div>
 
-          {/* MÉRET VÁLASZTÓ */}
           <div className="mt-8">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-[#4c4742]">
-              Választható méret (cm)
-            </h3>
+            <h3 className="text-[10px] font-black uppercase tracking-widest">Méretek</h3>
             <div className="mt-4 flex flex-wrap gap-2">
               {variants.map((v) => (
                 <button
                   key={v.id}
                   onClick={() => setSelectedVariant(v)}
-                  className={`flex h-12 min-w-[90px] items-center justify-center rounded-xl border-2 px-3 text-xs font-bold transition-all ${
-                    selectedVariant?.id === v.id 
-                      ? "border-black bg-black text-white" 
-                      : "border-[#d9d5cf] bg-white text-[#1f1f1f] hover:border-black"
+                  className={`flex h-12 min-w-[90px] items-center justify-center rounded-xl border-2 px-4 text-xs font-bold transition-all ${
+                    selectedVariant?.id === v.id ? "border-black bg-black text-white" : "border-[#d9d5cf] bg-white hover:border-black"
                   }`}
                 >
                   {v.size_name}
@@ -180,83 +159,19 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
 
           <button 
             onClick={handleAddToCart}
-            disabled={!selectedVariant || isAdded}
-            className={`mt-8 w-full rounded-2xl py-4 text-sm font-bold text-white transition-all active:scale-[0.98] shadow-lg ${
-              isAdded ? "bg-green-600" : "bg-[#e3936e] hover:bg-[#d07f5b]"
-            }`}
+            disabled={isAdded}
+            className={`mt-10 w-full rounded-2xl py-4 text-sm font-bold text-white shadow-lg transition-all active:scale-95 ${isAdded ? "bg-green-600" : "bg-[#e3936e] hover:bg-[#d07f5b]"}`}
           >
-            {isAdded ? "✓ KOSÁRBA KERÜLT" : `KOSÁRBA TESZEM`}
+            {isAdded ? "✓ KOSÁRBAN" : "KOSÁRBA TESZEM"}
           </button>
 
-          {/* INFORMÁCIÓS SZEKCIÓ */}
-          <div className="mt-10 space-y-8 border-t border-[#d9d5cf] pt-8">
-            
-            {/* Leírás */}
-            <div className="prose prose-sm text-[#4c4742]">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-[#1f1f1f] mb-3">Termékleírás</h4>
-              <p className="leading-relaxed text-sm">
-                {product.description || "Prémium minőségű vászonkép, kézzel feszített vakrámára. Minden darab egyedileg készül, hogy tökéletes dísze legyen otthonodnak."}
-              </p>
-            </div>
-
-            {/* Szállítás & Biztonság Grid */}
-            <div className="grid grid-cols-1 gap-y-6 border-y border-[#d9d5cf] py-8">
-              
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border border-[#d9d5cf] text-lg">
-                  🚚
-                </div>
-                <div>
-                  <div className="text-[11px] font-black uppercase tracking-wide text-[#1f1f1f]">Gyors Házhozszállítás</div>
-                  <p className="mt-1 text-[11px] leading-relaxed text-[#7a746d]">
-                    Rendelésed <strong>2-4 munkanapon</strong> belül házhoz szállítjuk. A feladásról e-mailben értesítünk.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border border-[#d9d5cf] text-lg">
-                  🔒
-                </div>
-                <div>
-                  <div className="text-[11px] font-black uppercase tracking-wide text-[#1f1f1f]">Biztonságos Fizetés</div>
-                  <p className="mt-1 text-[11px] leading-relaxed text-[#7a746d]">
-                    Fizess biztonságosan <strong>bankkártyával</strong> vagy válassz <strong>utánvétet</strong> a futárnál.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border border-[#d9d5cf] text-lg">
-                  📦
-                </div>
-                <div>
-                  <div className="text-[11px] font-black uppercase tracking-wide text-[#1f1f1f]">Gondos Csomagolás</div>
-                  <p className="mt-1 text-[11px] leading-relaxed text-[#7a746d]">
-                    Minden képet többrétegű védőfóliába és erős kartondobozba zárunk a sérülésmentes érkezés érdekében.
-                  </p>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Garancia doboz */}
-            <div className="rounded-2xl bg-white p-5 border border-[#d9d5cf] shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-green-600 text-lg">✨</span>
-                <span className="text-xs font-bold text-[#1f1f1f] uppercase tracking-wider">Pénzvisszafizetési garancia</span>
-              </div>
-              <p className="text-[11px] text-[#7a746d] leading-relaxed">
-                Ha nem vagy 100%-ig elégedett, 14 napon belül visszaküldheted a terméket, és mi kérdés nélkül visszafizetjük az árát.
-              </p>
-            </div>
+          <div className="mt-12 border-t border-[#d9d5cf] pt-8">
+            <h4 className="text-[10px] font-black uppercase mb-3">Leírás</h4>
+            <p className="text-sm leading-relaxed text-[#4c4742]">{product.description}</p>
           </div>
         </div>
-
       </div>
-      <div className="mt-12">
-        <Footer />
-      </div>
+      <Footer />
     </main>
   );
 }

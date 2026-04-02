@@ -135,41 +135,35 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
 {/* --- 3D MODAL --- */}
 {isModalOpen && (
   <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-300">
-    {/* Sötétített, homályos háttér */}
-    <div 
-      className="absolute inset-0 bg-black/60 backdrop-blur-md"
-      onClick={() => setIsModalOpen(false)} 
-    />
+    {/* Áttetsző háttér kattintásra bezárással */}
+    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
     
-    <div className="relative w-full h-full md:h-[90vh] max-w-6xl bg-[#f8f8f6] md:rounded-[40px] overflow-hidden shadow-2xl flex flex-col">
+    <div className="relative w-full h-full md:h-[85vh] max-w-5xl bg-[#f8f8f6] md:rounded-[32px] overflow-hidden shadow-2xl flex flex-col">
       
-      {/* MODAL FEJLÉC */}
-      <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-[110] pointer-events-none">
-        <div className="bg-white/80 backdrop-blur-md px-5 py-2 rounded-2xl border border-white/20 shadow-sm pointer-events-auto">
-          <p className="text-[10px] font-black uppercase tracking-widest text-black/40">Interaktív nézet</p>
+      {/* FEJLÉC (Hogy ne olvadjon össze semmivel) */}
+      <div className="relative p-5 border-b border-gray-200 flex justify-between items-center bg-white z-[110]">
+        <div>
           <h3 className="text-sm font-bold text-black">{product.name}</h3>
+          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter">3D Előnézet & AR</p>
         </div>
-
         <button 
           onClick={() => setIsModalOpen(false)}
-          className="bg-black text-white w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl hover:bg-gray-800 active:scale-90 transition-all pointer-events-auto font-bold text-xl"
+          className="bg-black text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md active:scale-90 transition-all font-bold"
         >
           ✕
         </button>
       </div>
 
-      {/* A 3D NÉZET */}
-      <div className="flex-1 w-full">
+      {/* A 3D NÉZET TARTALMA */}
+      <div className="flex-1 w-full relative">
         <CanvasViewer modelUrl={product.model_url || "/models/canvas_screen.glb"} />
       </div>
 
-      {/* ALSÓ SZEGÉLY / SEGÍTSÉG */}
-      <div className="absolute bottom-0 left-0 w-full p-8 flex justify-center pointer-events-none">
-        <div className="bg-black/5 backdrop-blur-sm px-4 py-2 rounded-full border border-black/5 shadow-inner">
-           <p className="text-[9px] font-bold uppercase tracking-widest text-black/60">
-             Forgatás 1 ujjal • Mozgatás 2 ujjal • Nagyítás csípéssel
-           </p>
-        </div>
+      {/* ALSÓ SEGÍTSÉG (Csak mobilon fontos igazán) */}
+      <div className="bg-white p-4 border-t border-gray-100 md:hidden">
+        <p className="text-[9px] text-center font-bold text-gray-400 uppercase tracking-widest">
+          Forgatás egy ujjal • Mozgatás két ujjal
+        </p>
       </div>
     </div>
   </div>

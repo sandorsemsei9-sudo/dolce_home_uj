@@ -1,8 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 export default function CanvasViewer({ modelUrl }: { modelUrl: string }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return <div className="w-full h-full bg-[#f8f8f6]" />;
+
   return (
     <div className="w-full h-full relative bg-[#f8f8f6]">
       <script 
@@ -20,9 +28,13 @@ export default function CanvasViewer({ modelUrl }: { modelUrl: string }) {
         'touch-action': "none",
         'ar-placement': "wall",
         'ar-scale': "auto",
-        'camera-orbit': "180deg 90deg 105%", // Ha háttal van, írd át 0deg-re
-        'min-polar-angle': "90deg",
-        'max-polar-angle': "90deg",
+        
+        // Ez a beállítás a webes nézetben szembefordítja, 
+        // miközben a fájl "fekszik" az AR-nek
+        'camera-orbit': "0deg 90deg 105%", 
+        
+        'min-polar-angle': "0deg",
+        'max-polar-angle': "180deg",
         'shadow-intensity': "1",
         'exposure': "1.2",
         style: { width: '100%', height: '100%', outline: 'none' }

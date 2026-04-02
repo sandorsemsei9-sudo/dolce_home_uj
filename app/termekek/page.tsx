@@ -155,7 +155,7 @@ export default function TermekekPage() {
                 <Link href={`/termekek/${product.slug}`} className="flex-grow">
                   
                   {/* KÉPKONTÉNER - MOCKUP HOVERREL */}
-                  <div className="relative mb-6 aspect-[4/5] overflow-hidden rounded-[32px] border border-[#efebe6] bg-white transition-all duration-500 group-hover:shadow-[0_20px_50px_rgba(42,33,29,0.08)]">
+                  <div className="relative mb-6 aspect-[4/5] overflow-hidden rounded-[32px] border border-[#efebe6] bg-[#fdfbf9] transition-all duration-500 group-hover:shadow-[0_20px_50px_rgba(42,33,29,0.08)]">
                     
                     {/* Eredeti kép */}
                     <div className="relative h-full w-full p-6 transition-all duration-700 ease-in-out group-hover:scale-110 group-hover:opacity-0 group-hover:blur-sm">

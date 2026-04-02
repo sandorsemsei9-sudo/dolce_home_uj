@@ -25,8 +25,7 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [mainImage, setMainImage] = useState<string>("");
-  const [isChanging, setIsChanging] = useState(false); // Képváltás animációhoz
-
+  const [isChanging, setIsChanging] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
 
   useEffect(() => {
@@ -67,14 +66,13 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
     getFullProductData();
   }, [slug, supabase]);
 
-  // Finom képváltás logika
   const handleImageChange = (newImage: string) => {
     if (newImage === mainImage) return;
     setIsChanging(true);
     setTimeout(() => {
       setMainImage(newImage);
       setIsChanging(false);
-    }, 250); // Félút az áttűnésnél váltunk képet
+    }, 250);
   };
 
   const handleAddToCart = () => {
@@ -106,23 +104,22 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
     <main className="min-h-screen bg-[#f7f7f5] text-[#1f1f1f]">
       <Navbar />
       
-      <div className="mx-auto max-w-6xl px-6 py-8 lg:flex lg:items-center lg:gap-12">
+      <div className="mx-auto max-w-6xl px-6 py-8 lg:flex lg:items-start lg:gap-12">
         
-        {/* BAL OLDAL: GALÉRIA - Kisebb méret, fekvőbarát elrendezés */}
-        <div className="lg:w-1/2 space-y-6">
+        {/* BAL OLDAL: GALÉRIA */}
+        <div className="lg:w-1/2 space-y-6 lg:sticky lg:top-24">
           <div className="relative aspect-square w-full overflow-hidden rounded-[32px] bg-white shadow-sm border border-[#d9d5cf] flex items-center justify-center p-4">
             <div className={`relative w-full h-full transition-all duration-500 ease-in-out ${isChanging ? 'opacity-0 scale-95 blur-sm' : 'opacity-100 scale-100 blur-0'}`}>
               <Image 
                 src={mainImage || "/placeholder.jpg"} 
                 alt={product.name} 
                 fill 
-                className="object-contain" // Ez biztosítja, hogy a fekvő/álló kép is kiférjen vágás nélkül
+                className="object-cover"
                 priority
               />
             </div>
           </div>
 
-          {/* Thumbnail választó */}
           <div className="flex justify-center gap-3">
             <button 
               onClick={() => handleImageChange(product.cover_image)}
@@ -191,27 +188,75 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
             {isAdded ? "✓ KOSÁRBA KERÜLT" : `KOSÁRBA TESZEM`}
           </button>
 
-          {/* INFORMÁCIÓK */}
-          <div className="mt-10 space-y-4 border-t border-[#d9d5cf] pt-6">
-             <p className="text-sm text-[#4c4742] leading-relaxed">
-                {product.description || "Prémium minőségű vászonkép, kézzel feszített vakrámára."}
-             </p>
-             
-             <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🚚</span>
-                  <div className="text-[10px] uppercase font-bold text-[#1f1f1f]">2-4 nap szállítás</div>
+          {/* INFORMÁCIÓS SZEKCIÓ */}
+          <div className="mt-10 space-y-8 border-t border-[#d9d5cf] pt-8">
+            
+            {/* Leírás */}
+            <div className="prose prose-sm text-[#4c4742]">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-[#1f1f1f] mb-3">Termékleírás</h4>
+              <p className="leading-relaxed text-sm">
+                {product.description || "Prémium minőségű vászonkép, kézzel feszített vakrámára. Minden darab egyedileg készül, hogy tökéletes dísze legyen otthonodnak."}
+              </p>
+            </div>
+
+            {/* Szállítás & Biztonság Grid */}
+            <div className="grid grid-cols-1 gap-y-6 border-y border-[#d9d5cf] py-8">
+              
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border border-[#d9d5cf] text-lg">
+                  🚚
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">✨</span>
-                  <div className="text-[10px] uppercase font-bold text-[#1f1f1f]">Prémium vászon</div>
+                <div>
+                  <div className="text-[11px] font-black uppercase tracking-wide text-[#1f1f1f]">Gyors Házhozszállítás</div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-[#7a746d]">
+                    Rendelésed <strong>2-4 munkanapon</strong> belül házhoz szállítjuk. A feladásról e-mailben értesítünk.
+                  </p>
                 </div>
-             </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border border-[#d9d5cf] text-lg">
+                  🔒
+                </div>
+                <div>
+                  <div className="text-[11px] font-black uppercase tracking-wide text-[#1f1f1f]">Biztonságos Fizetés</div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-[#7a746d]">
+                    Fizess biztonságosan <strong>bankkártyával</strong> vagy válassz <strong>utánvétet</strong> a futárnál.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border border-[#d9d5cf] text-lg">
+                  📦
+                </div>
+                <div>
+                  <div className="text-[11px] font-black uppercase tracking-wide text-[#1f1f1f]">Gondos Csomagolás</div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-[#7a746d]">
+                    Minden képet többrétegű védőfóliába és erős kartondobozba zárunk a sérülésmentes érkezés érdekében.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Garancia doboz */}
+            <div className="rounded-2xl bg-white p-5 border border-[#d9d5cf] shadow-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-green-600 text-lg">✨</span>
+                <span className="text-xs font-bold text-[#1f1f1f] uppercase tracking-wider">Pénzvisszafizetési garancia</span>
+              </div>
+              <p className="text-[11px] text-[#7a746d] leading-relaxed">
+                Ha nem vagy 100%-ig elégedett, 14 napon belül visszaküldheted a terméket, és mi kérdés nélkül visszafizetjük az árát.
+              </p>
+            </div>
           </div>
         </div>
 
       </div>
-      <Footer />
+      <div className="mt-12">
+        <Footer />
+      </div>
     </main>
   );
 }

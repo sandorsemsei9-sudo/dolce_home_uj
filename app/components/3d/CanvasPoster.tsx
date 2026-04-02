@@ -29,21 +29,29 @@ export default function CanvasViewer({ modelUrl }: { modelUrl: string }) {
         'ar-placement': "wall",
         'ar-scale': "auto",
         
-        // Ez a beállítás a webes nézetben szembefordítja, 
-        // miközben a fájl "fekszik" az AR-nek
-        'camera-orbit': "0deg 90deg 105%", 
+        // --- NÉZET BEÁLLÍTÁSA (Weboldalon) ---
+        // Fentről nézünk a "fekvő szőnyeg" modellre, 
+        // így szemből fogod látni a tájképet.
+        'camera-orbit': "0deg 0deg 105%", 
         
+        // Letiltjuk a függőleges dőlést, hogy ne lássunk a kép alá/fölé
         'min-polar-angle': "0deg",
-        'max-polar-angle': "180deg",
-        'shadow-intensity': "1",
-        'exposure': "1.2",
+        'max-polar-angle': "0deg",
+        
+        // Fények és árnyékok
+        'shadow-intensity': "1.2",
+        'environment-image': "neutral",
+        'exposure': "1.1",
+
         style: { width: '100%', height: '100%', outline: 'none' }
       } as any, 
+        /* Prémium AR Gomb */
         <button 
           slot="ar-button" 
-          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-[#e3936e] text-white px-10 py-4 rounded-2xl font-bold text-xs shadow-2xl z-[200] border-none active:scale-95 transition-all uppercase tracking-widest"
+          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-[#e3936e] text-white px-10 py-4 rounded-2xl font-bold text-xs shadow-2xl z-[200] border-none active:scale-95 transition-all uppercase tracking-widest whitespace-nowrap"
         >
-          <span>✨</span> Kihelyezés a falra
+          <span className="text-lg">✨</span>
+          Kihelyezés a falra
         </button>
       )}
     </div>

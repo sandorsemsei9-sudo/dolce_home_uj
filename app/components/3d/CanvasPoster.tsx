@@ -14,7 +14,7 @@ export default function CanvasViewer({ modelUrl }: { modelUrl: string }) {
         'camera-controls': true,
         'touch-action': "none", 
         'shadow-intensity': "1",
-        'camera-orbit': "0deg 90deg 105%", 
+        'camera-orbit': "180deg 90deg 105%", 
         'min-polar-angle': "90deg",
         'max-polar-angle': "90deg",
         style: { width: '100%', height: '100%', outline: 'none' }

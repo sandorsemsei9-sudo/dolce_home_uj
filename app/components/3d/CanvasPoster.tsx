@@ -4,8 +4,12 @@ import React from "react";
 
 export default function CanvasViewer({ modelUrl }: { modelUrl: string }) {
   return (
-    <div className="w-full h-full relative">
-      <script async type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <div className="w-full h-full relative bg-[#f8f8f6]">
+      <script 
+        async 
+        type="module" 
+        src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"
+      ></script>
 
       {React.createElement('model-viewer', {
         src: modelUrl,
@@ -13,22 +17,37 @@ export default function CanvasViewer({ modelUrl }: { modelUrl: string }) {
         'ar-modes': "scene-viewer quick-look",
         'camera-controls': true,
         
-        // --- STABILIZÁLÁS TELEFONRA ---
-        'touch-action': "none",      // Nem mozgatja a hátteret forgatás közben
-        'ar-placement': "wall",      // Falat keres, nem padlót
-        'ar-scale': "fixed",         // TILOS átméretezni a falon (ez okozza a rángatást)
-        'disable-zoom': true,        // Ne lehessen véletlenül belenagyítani pozicionáláskor
+        // --- MOBIL OPTIMALIZÁLÁS ---
+        'touch-action': "none",
+        'ar-placement': "wall",
         
-        // --- NÉZET BEÁLLÍTÁSA ---
-        // 180 fok, hogy a szemből látszódjon a Blender fix után
-        'camera-orbit': "180deg 90deg 105%", 
+        // MÉRETEZÉS: Most engedélyezzük (auto), hogy ne legyen túl kicsi a falon
+        'ar-scale': "auto", 
+        
+        // Finomabb mozgás, nem fog ugrálni az ujjad alatt
+        'interpolation-decay': "200", 
+        'orbit-sensitivity': "1",
+        
+        // --- NÉZET ---
+        // Ha Blenderben fixáltad és tükrözted, próbáld a 0deg-et vagy 180deg-et
+        'camera-orbit': "0deg 90deg 105%", 
         'min-polar-angle': "90deg",
         'max-polar-angle': "90deg",
+        
+        // Árnyék és fények
+        'shadow-intensity': "1.5",
+        'shadow-softness': "1",
+        'exposure': "1.2",
 
         style: { width: '100%', height: '100%', outline: 'none' }
       } as any, 
-        <button slot="ar-button" className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-4 rounded-full font-bold text-sm shadow-2xl z-[120]">
-          📱 PRÓBÁLD KI A FALADON
+        /* Modernizált AR Gomb */
+        <button 
+          slot="ar-button" 
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white text-black px-8 py-4 rounded-2xl font-bold text-sm shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-gray-100 active:scale-95 transition-all z-[120]"
+        >
+          <span className="text-xl">✨</span>
+          NÉZD MEG A FALADON
         </button>
       )}
     </div>

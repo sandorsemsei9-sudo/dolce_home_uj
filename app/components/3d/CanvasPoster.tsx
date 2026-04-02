@@ -17,37 +17,31 @@ export default function CanvasViewer({ modelUrl }: { modelUrl: string }) {
         'ar-modes': "scene-viewer quick-look",
         'camera-controls': true,
         
-        // --- MOBIL OPTIMALIZÁLÁS ---
-        'touch-action': "none",
-        'ar-placement': "wall",
+        // --- MOBIL & AR FIXEK ---
+        'touch-action': "none",      
+        'ar-placement': "wall",      
+        'ar-scale': "auto", // Most már engedjük a nagyítást a falon
         
-        // MÉRETEZÉS: Most engedélyezzük (auto), hogy ne legyen túl kicsi a falon
-        'ar-scale': "auto", 
+        // --- A KRITIKUS SOR: 180 FOKOS FORDÍTÁS ---
+        // Ez megmondja a kamerának, hogy a hátuljáról induljon (ami nálad az eleje)
+        'camera-orbit': "180deg 90deg 105%", 
         
-        // Finomabb mozgás, nem fog ugrálni az ujjad alatt
-        'interpolation-decay': "200", 
-        'orbit-sensitivity': "1",
-        
-        // --- NÉZET ---
-        // Ha Blenderben fixáltad és tükrözted, próbáld a 0deg-et vagy 180deg-et
-        'camera-orbit': "0deg 90deg 105%", 
+        // Letiltjuk a függőleges dőlést, hogy ne lássunk a kép alá/fölé
         'min-polar-angle': "90deg",
         'max-polar-angle': "90deg",
         
-        // Árnyék és fények
-        'shadow-intensity': "1.5",
-        'shadow-softness': "1",
-        'exposure': "1.2",
+        // Fények és árnyékok
+        'shadow-intensity': "1.2",
+        'environment-image': "neutral",
+        'exposure': "1.1",
 
         style: { width: '100%', height: '100%', outline: 'none' }
       } as any, 
-        /* Modernizált AR Gomb */
         <button 
           slot="ar-button" 
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white text-black px-8 py-4 rounded-2xl font-bold text-sm shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-gray-100 active:scale-95 transition-all z-[120]"
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-[120] uppercase tracking-widest active:scale-95 transition-all"
         >
-          <span className="text-xl">✨</span>
-          NÉZD MEG A FALADON
+          <span>📱</span> Próbáld ki a faladon
         </button>
       )}
     </div>

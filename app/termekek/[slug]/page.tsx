@@ -132,30 +132,48 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
       </div>
 
       {/* --- 3D MODAL (TELJES KÉPERNYŐS) --- */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 md:p-10">
-          <div className="relative w-full h-full max-w-5xl bg-[#f8f8f6] rounded-[40px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
-            
-            {/* BEZÁRÁS GOMB */}
-            <button 
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-6 right-6 z-[110] bg-black text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all font-bold"
-            >
-              ✕
-            </button>
-
-            {/* 3D NÉZET */}
-            <div className="w-full h-full">
-              <CanvasViewer modelUrl={product.model_url || "/models/canvas_screen.glb"} />
-            </div>
-
-            {/* KIS SEGÍTSÉG ALUL */}
-            <div className="absolute bottom-6 left-0 w-full text-center pointer-events-none">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-black/40">Forgatás az ujjaddal • AR a gombbal</p>
-            </div>
-          </div>
+{/* --- 3D MODAL --- */}
+{isModalOpen && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-300">
+    {/* Sötétített, homályos háttér */}
+    <div 
+      className="absolute inset-0 bg-black/60 backdrop-blur-md"
+      onClick={() => setIsModalOpen(false)} 
+    />
+    
+    <div className="relative w-full h-full md:h-[90vh] max-w-6xl bg-[#f8f8f6] md:rounded-[40px] overflow-hidden shadow-2xl flex flex-col">
+      
+      {/* MODAL FEJLÉC */}
+      <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-[110] pointer-events-none">
+        <div className="bg-white/80 backdrop-blur-md px-5 py-2 rounded-2xl border border-white/20 shadow-sm pointer-events-auto">
+          <p className="text-[10px] font-black uppercase tracking-widest text-black/40">Interaktív nézet</p>
+          <h3 className="text-sm font-bold text-black">{product.name}</h3>
         </div>
-      )}
+
+        <button 
+          onClick={() => setIsModalOpen(false)}
+          className="bg-black text-white w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl hover:bg-gray-800 active:scale-90 transition-all pointer-events-auto font-bold text-xl"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* A 3D NÉZET */}
+      <div className="flex-1 w-full">
+        <CanvasViewer modelUrl={product.model_url || "/models/canvas_screen.glb"} />
+      </div>
+
+      {/* ALSÓ SZEGÉLY / SEGÍTSÉG */}
+      <div className="absolute bottom-0 left-0 w-full p-8 flex justify-center pointer-events-none">
+        <div className="bg-black/5 backdrop-blur-sm px-4 py-2 rounded-full border border-black/5 shadow-inner">
+           <p className="text-[9px] font-bold uppercase tracking-widest text-black/60">
+             Forgatás 1 ujjal • Mozgatás 2 ujjal • Nagyítás csípéssel
+           </p>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
       <Footer />
     </main>

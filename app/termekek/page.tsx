@@ -163,7 +163,7 @@ export default function TermekekPage() {
                         src={product.cover_image || "/placeholder.jpg"}
                         alt={product.name}
                         fill
-                        className="object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.08)]"
+                        className="object-contain"
                       />
                     </div>
 

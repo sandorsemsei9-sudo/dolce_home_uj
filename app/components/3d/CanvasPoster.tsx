@@ -29,26 +29,21 @@ export default function CanvasViewer({ modelUrl }: { modelUrl: string }) {
         'ar-placement': "wall",
         'ar-scale': "auto",
         
-        // --- NÉZET BEÁLLÍTÁSA (Weboldalon) ---
-        // Fentről nézünk a "fekvő szőnyeg" modellre, 
-        // így szemből fogod látni a tájképet.
-        'camera-orbit': "0deg 0deg 105%", 
+        // --- A DÖNTÉS JAVÍTÁSA ---
+        // Az orbit második értéke (15deg) dönti meg a kamerát "lefelé"
+        'camera-orbit': "180deg 85deg 105%", 
         
-        // Letiltjuk a függőleges dőlést, hogy ne lássunk a kép alá/fölé
+        // Megengedjük, hogy a felhasználó egy kicsit mozgassa fel-le (0 és 30 fok között)
         'min-polar-angle': "0deg",
-        'max-polar-angle': "0deg",
+        'max-polar-angle': "30deg",
         
-        // Fények és árnyékok
         'shadow-intensity': "1.2",
-        'environment-image': "neutral",
         'exposure': "1.1",
-
         style: { width: '100%', height: '100%', outline: 'none' }
       } as any, 
-        /* Prémium AR Gomb */
         <button 
           slot="ar-button" 
-          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-[#e3936e] text-white px-10 py-4 rounded-2xl font-bold text-xs shadow-2xl z-[200] border-none active:scale-95 transition-all uppercase tracking-widest whitespace-nowrap"
+          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-[#e3936e] text-white px-10 py-4 rounded-2xl font-bold text-xs shadow-2xl z-[200] border-none uppercase tracking-widest active:scale-95 transition-all"
         >
           <span className="text-lg">✨</span>
           Kihelyezés a falra

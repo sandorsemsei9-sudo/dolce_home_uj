@@ -21,19 +21,28 @@ export default function CanvasViewer({ modelUrl }: { modelUrl: string }) {
           src: modelUrl,
           "ios-src": modelUrl.replace(".glb", ".usdz"),
 
+          // --- AR BEÁLLÍTÁSOK ---
           ar: true,
-          "ar-modes": "scene-viewer quick-look webxr",
+          "ar-modes": "webxr scene-viewer quick-look", // A WebXR-t tettem előre, ez a legstabilabb
           "ar-placement": "wall",
-          "ar-scale": "fixed",
+          // "ar-scale": "fixed", // <--- EZT TÖRÖLTÜK VAGY KOMMENTELTÜK
+          "ar-scale": "auto",    // Ez engedi az átméretezést
 
+          // --- KAMERA ÉS MEGJELENÍTÉS ---
           "camera-controls": true,
+          "auto-rotate": true,        // Egy kis mozgás vonzóbbá teszi
+          "rotation-per-second": "30deg",
           "camera-orbit": "0deg 75deg 2.2m",
           "field-of-view": "30deg",
-          "camera-target": "0m 0m 0m",
-
-          "shadow-intensity": "1",
-          exposure: "1",
+          
+          // --- VIZUÁLIS FINOMÍTÁS ---
+          "shadow-intensity": "1.5",  // Erősebb árnyék a mélységérzethez
+          "shadow-softness": "1",
+          exposure: "1.2",            // Kicsit világosabb, élettelibb színek
           "environment-image": "neutral",
+          
+          // --- INTERAKCIÓ ---
+          "touch-action": "pan-y",    // Jobb görgetési élmény mobilon
 
           style: {
             width: "100%",
@@ -41,14 +50,17 @@ export default function CanvasViewer({ modelUrl }: { modelUrl: string }) {
           },
         },
 
+        // --- EGYEDI AR GOMB (Látványosabb design) ---
         React.createElement(
           "button",
           {
             slot: "ar-button",
             className:
-              "absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#e3936e] text-white px-6 py-3 rounded-xl font-bold text-xs",
+              "absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-sm shadow-2xl flex items-center gap-2 transition-transform active:scale-95",
           },
-          "✨ Kihelyezés a falra"
+          <>
+            <span>✨</span> Próbáld ki a faladon!
+          </>
         )
       )}
     </div>

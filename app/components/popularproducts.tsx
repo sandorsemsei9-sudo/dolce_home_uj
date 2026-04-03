@@ -5,8 +5,7 @@ import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 
-import "swiper/css";
-import "swiper/css/navigation";
+
 
 type Product = {
   id: number;
@@ -64,11 +63,15 @@ export default function PopularProducts({
           {showNavigation && (
             <>
               <button className="popular-prev absolute -left-4 top-[35%] z-30 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#efebe6] bg-white text-[#2a211d] shadow-sm transition-all hover:bg-[#2a211d] hover:text-white lg:flex xl:-left-12">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
               </button>
 
               <button className="popular-next absolute -right-4 top-[35%] z-30 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#efebe6] bg-white text-[#2a211d] shadow-sm transition-all hover:bg-[#2a211d] hover:text-white lg:flex xl:-right-12">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
               </button>
             </>
           )}
@@ -91,28 +94,27 @@ export default function PopularProducts({
                   
                   {/* KÉP KONTÉNER - Extra kerekített sarok és mockup hover */}
                   <Link href={`/termekek/${product.slug}`} className="relative mb-6 block aspect-[4/5] overflow-hidden rounded-[48px] border border-[#efebe6] bg-white transition-all duration-500 hover:shadow-[0_20px_50px_rgba(42,33,29,0.06)]">
-                    
-                    {/* Badge a sarokban */}
-                    <div className="absolute top-6 left-8 z-10 text-[10px] font-bold uppercase tracking-widest text-[#2a211d]/40">
-                      NÉPSZERŰ TERMÉK
-                    </div>
+              
 
-                    {/* Alap kép */}
+                    {/* Alap kép - SIZES HOZZÁADVA */}
                     <div className="relative h-full w-full p-10 transition-all duration-700 ease-in-out group-hover:scale-110 group-hover:opacity-0 group-hover:blur-md">
                       <Image
                         src={product.image}
                         alt={product.name}
                         fill
+                        sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
                         className="object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.1)]"
+                        priority={product.id <= 4} // Az első pár képet előre töltjük a gyorsaságért
                       />
                     </div>
 
-                    {/* Mockup kép hoverre */}
+                    {/* Mockup kép hoverre - SIZES HOZZÁADVA */}
                     <div className="absolute inset-0 h-full w-full opacity-0 transition-all duration-700 ease-in-out scale-105 group-hover:opacity-100 group-hover:scale-100">
                       <Image
                         src={product.mockupImage || "/images/mockup.jpg"}
                         alt={`${product.name} mockup`}
                         fill
+                        sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
                         className="object-cover"
                       />
                     </div>
@@ -130,7 +132,7 @@ export default function PopularProducts({
                       40×60 • 60×120 cm
                     </p>
 
-                    {/* ÁR ÉS NYÍL - Egy sorban a kép szerint */}
+                    {/* ÁR ÉS NYÍL */}
                     <div className="mt-6 flex items-center justify-between border-t border-[#efebe6] pt-6">
                       <p className="text-xl font-black text-[#2a211d]">
                         {formatPrice(product.price)} Ft -tól

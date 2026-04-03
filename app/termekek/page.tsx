@@ -104,7 +104,6 @@ export default function TermekekPage() {
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             
-            {/* Kategóriák - Csúsztatható "pill" gombok */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
               {dbCategories.map(cat => (
                 <button
@@ -121,7 +120,6 @@ export default function TermekekPage() {
             </div>
 
             <div className="flex items-center gap-4">
-               {/* Rendezés választó */}
                <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -133,7 +131,6 @@ export default function TermekekPage() {
                  <option value="name-asc">Név: A-Z</option>
                </select>
 
-               {/* Találatok száma */}
                <span className="text-xs font-bold text-[#d17d58] uppercase tracking-widest border-l border-[#efebe6] pl-4">
                  {filteredProducts.length} termék
                </span>
@@ -154,25 +151,28 @@ export default function TermekekPage() {
               <article key={product.id} className="group relative flex flex-col">
                 <Link href={`/termekek/${product.slug}`} className="flex-grow">
                   
-                  {/* KÉPKONTÉNER - MOCKUP HOVERREL */}
+                  {/* KÉPKONTÉNER */}
                   <div className="relative mb-6 aspect-[4/5] overflow-hidden rounded-[32px] border border-[#efebe6] bg-[#fdfbf9] transition-all duration-500 group-hover:shadow-[0_20px_50px_rgba(42,33,29,0.08)]">
                     
-                    {/* Eredeti kép */}
+                    {/* Eredeti kép - SIZES HOZZÁADVA */}
                     <div className="relative h-full w-full p-6 transition-all duration-700 ease-in-out group-hover:scale-110 group-hover:opacity-0 group-hover:blur-sm">
                       <Image
                         src={product.cover_image || "/placeholder.jpg"}
                         alt={product.name}
                         fill
+                        // 1 oszlop mobil (90vw), 2 oszlop tablet (45vw), 3 oszlop desktop (30vw), 4 oszlop nagy monitor (22vw)
+                        sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
                         className="object-contain"
                       />
                     </div>
 
-                    {/* Mockup kép (hoverre) */}
+                    {/* Mockup kép (hoverre) - SIZES HOZZÁADVA */}
                     <div className="absolute inset-0 h-full w-full opacity-0 transition-all duration-700 ease-in-out scale-105 group-hover:scale-100 group-hover:opacity-100">
                       <Image
                         src={product.hover_image || "/images/mockup.jpg"}
                         alt={`${product.name} mockup`}
                         fill
+                        sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
                         className="object-cover"
                       />
                     </div>

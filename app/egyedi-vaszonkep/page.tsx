@@ -65,7 +65,7 @@ async function getCroppedImageDataUrl(imageSrc: string, pixelCrop: Area): Promis
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
   ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
-  return canvas.toDataURL("image/jpeg", 0.8);
+  return canvas.toDataURL("image/jpeg", 0.85);
 }
 
 export default function EgyediVaszonkepPage() {
@@ -86,7 +86,6 @@ export default function EgyediVaszonkepPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
-  // Az ár kalkulálása a kiválasztott méret alapján
   const price = useMemo(() => calculatePrice(size), [size]);
 
   useEffect(() => {
@@ -98,53 +97,27 @@ export default function EgyediVaszonkepPage() {
     }
   }, []);
 
-  // Textúrázás a 3D nézethez
+  // Textúra injektálás a 3D modellre
   useEffect(() => {
     if (is3DMode && savedConfig?.previewUrl && modelViewerRef.current) {
       const mv = modelViewerRef.current;
-      const apply = async () => {
+      const applyTexture = async () => {
         try {
           const texture = await mv.createTexture(savedConfig.previewUrl);
+          // Megkeressük a 'Canvas' nevű anyagot a modellben (vagy az elsőt)
           const material = mv.model?.materials.find((m: any) => m.name === "Canvas") || mv.model?.materials[0];
           if (material?.pbrMetallicRoughness?.baseColorTexture) {
             material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
           }
-        } catch (e) { console.error("Hiba a textúrázás során:", e); }
+        } catch (e) {
+          console.error("Textúra hiba:", e);
+        }
       };
-      if (mv.loaded) apply();
-      else mv.addEventListener("load", apply, { once: true });
+
+      if (mv.loaded) applyTexture();
+      else mv.addEventListener("load", applyTexture, { once: true });
     }
   }, [is3DMode, savedConfig?.previewUrl]);
-
-  // --- UNIVERZÁLIS AR INDÍTÓ ---
-  const handleStartAR = async () => {
-    const mv = modelViewerRef.current;
-    if (!mv) return;
-
-    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-
-    if (isIOS) {
-      // iPhone / Safari vonal
-      try {
-        const usdzBlob = await mv.exportScene({ format: 'usdz' });
-        const usdzUrl = URL.createObjectURL(usdzBlob);
-        const link = document.createElement("a");
-        link.setAttribute("rel", "ar");
-        link.href = usdzUrl + "#vaszonkep.usdz";
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(usdzUrl);
-        }, 3000);
-      } catch (err) {
-        alert("Hiba az iPhone AR indításakor. Próbáld meg egy másik böngészőben (Safari)!");
-      }
-    } else {
-      // Android / Chrome vonal
-      mv.activateAR();
-    }
-  };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -156,7 +129,6 @@ export default function EgyediVaszonkepPage() {
     setIsCropModalOpen(true);
   };
 
-  // Kép mentése (Itt javítva a TypeScript hiba az explicit price: price megadással)
   const handleSaveConfig = async () => {
     if (!image || !croppedAreaPixels) return;
     setIsSaving(true);
@@ -165,12 +137,12 @@ export default function EgyediVaszonkepPage() {
       setSavedConfig({ 
         ratio, 
         size, 
-        price: price, // <-- Explicit értékadás a TypeScript hiba miatt
+        price: price, 
         previewUrl: dataUrl 
       });
       setIsCropModalOpen(false);
     } catch (err) { 
-      alert("Hiba történt a kép feldolgozása közben!"); 
+      alert("Hiba történt!"); 
     } finally { 
       setIsSaving(false); 
     }
@@ -184,7 +156,7 @@ export default function EgyediVaszonkepPage() {
       <section className="mx-auto max-w-7xl px-6 py-10 md:py-14">
         <div className="grid gap-10 lg:grid-cols-[1.45fr_0.85fr]">
           
-          {/* 3D ÉS ELŐNÉZET */}
+          {/* ELŐNÉZET / 3D MEGJELENÍTŐ */}
           <div className="space-y-5">
             <div className="overflow-hidden rounded-[40px] border border-[#d9d5cf] bg-white shadow-2xl relative min-h-[500px]">
               {is3DMode && savedConfig ? (
@@ -192,6 +164,7 @@ export default function EgyediVaszonkepPage() {
                   <ModelViewerTag
                     ref={modelViewerRef}
                     src={MODEL_URLS[activeRatio]}
+                    // FONTOS: ios-src-t NEM adunk meg, így a model-viewer generálja le az USDZ-t dinamikusan!
                     ar
                     ar-modes="webxr scene-viewer quick-look"
                     ar-placement="wall"
@@ -200,12 +173,17 @@ export default function EgyediVaszonkepPage() {
                     shadow-intensity="1"
                     style={{ width: "100%", height: "100%", backgroundColor: "#efebe6" }}
                   >
-                    <button onClick={() => setIs3DMode(false)} className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm z-50">
+                    {/* Bezárás gomb */}
+                    <button 
+                      onClick={() => setIs3DMode(false)} 
+                      className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm z-50"
+                    >
                       Bezárás
                     </button>
                     
+                    {/* NATÍV AR GOMB: a slot="ar-button" attribútum aktiválja a model-viewer belső AR logikáját */}
                     <button 
-                      onClick={handleStartAR}
+                      slot="ar-button"
                       className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50 transition-transform active:scale-95"
                     >
                       ✨ Falra helyezés (AR)
@@ -241,7 +219,7 @@ export default function EgyediVaszonkepPage() {
             </div>
           </div>
 
-          {/* KONFIGURÁTOR */}
+          {/* KONFIGURÁCIÓS PANEL */}
           <div className="rounded-[35px] border border-[#d9d5cf] bg-white p-8 h-fit shadow-xl">
             <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-8 text-[#2a211d]">Egyedi Vászonkép</h1>
             <div className="space-y-10 text-black">
@@ -269,12 +247,30 @@ export default function EgyediVaszonkepPage() {
                   </label>
                 </div>
             </div>
+            
             <div className="mt-12 pt-8 border-t border-dashed flex justify-between items-center">
               <div>
                 <p className="text-[10px] uppercase font-black text-gray-300 italic mb-1">Végösszeg</p>
                 <p className="text-3xl font-black italic tracking-tighter text-[#2a211d]">{formatPrice(savedConfig?.price || price)}</p>
               </div>
-              <button disabled={!savedConfig} onClick={() => { addItem({ id: uuidv4(), name: "Egyedi Vászonkép", size: savedConfig.size, price: savedConfig?.price || price, image: savedConfig.previewUrl, quantity: 1, isCustom: true }); router.push('/kosar'); }} className="bg-[#d17d58] text-white px-10 py-5 rounded-[20px] font-black uppercase text-xs tracking-[0.15em] shadow-xl disabled:opacity-20 active:scale-95 transition-transform">Kosárba</button>
+              <button 
+                disabled={!savedConfig} 
+                onClick={() => { 
+                  addItem({ 
+                    id: uuidv4(), 
+                    name: "Egyedi Vászonkép", 
+                    size: savedConfig.size, 
+                    price: savedConfig.price, 
+                    image: savedConfig.previewUrl, 
+                    quantity: 1, 
+                    isCustom: true 
+                  }); 
+                  router.push('/kosar'); 
+                }} 
+                className="bg-[#d17d58] text-white px-10 py-5 rounded-[20px] font-black uppercase text-xs tracking-[0.15em] shadow-xl disabled:opacity-20 active:scale-95 transition-transform"
+              >
+                Kosárba
+              </button>
             </div>
           </div>
         </div>
@@ -289,14 +285,36 @@ export default function EgyediVaszonkepPage() {
                <button onClick={() => setIsCropModalOpen(false)} className="text-gray-400 p-2 text-xl">✕</button>
             </div>
             <div className="relative flex-1 bg-[#111] min-h-[300px]">
-              <Cropper image={image} crop={crop} zoom={zoom} aspect={ratios[ratio]} onCropChange={setCrop} onCropComplete={(_, p) => setCroppedAreaPixels(p)} onZoomChange={setZoom} />
+              <Cropper 
+                image={image} 
+                crop={crop} 
+                zoom={zoom} 
+                aspect={ratios[ratio]} 
+                onCropChange={setCrop} 
+                onCropComplete={(_, p) => setCroppedAreaPixels(p)} 
+                onZoomChange={setZoom} 
+              />
             </div>
             <div className="p-8 space-y-6 bg-white">
               <div className="flex items-center gap-4">
                 <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Zoom</span>
-                <input type="range" min={1} max={3} step={0.1} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-2 bg-gray-100 rounded-lg appearance-none accent-[#d17d58]" />
+                <input 
+                  type="range" 
+                  min={1} 
+                  max={3} 
+                  step={0.1} 
+                  value={zoom} 
+                  onChange={(e) => setZoom(Number(e.target.value))} 
+                  className="w-full h-2 bg-gray-100 rounded-lg appearance-none accent-[#d17d58]" 
+                />
               </div>
-              <button onClick={handleSaveConfig} disabled={isSaving} className="w-full bg-[#2a211d] text-white py-5 rounded-[20px] font-black uppercase text-xs tracking-[0.2em] shadow-xl"> Mentés </button>
+              <button 
+                onClick={handleSaveConfig} 
+                disabled={isSaving} 
+                className="w-full bg-[#2a211d] text-white py-5 rounded-[20px] font-black uppercase text-xs tracking-[0.2em] shadow-xl"
+              > 
+                Mentés 
+              </button>
             </div>
           </div>
         </div>

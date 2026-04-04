@@ -17,7 +17,8 @@ const MODEL_URLS: Record<Ratio, string> = {
   landscape: "/models/landscape.glb",
 };
 
-// --- SEGÉDFÜGGVÉNYEK ---
+const formatPrice = (p: number) => new Intl.NumberFormat("hu-HU").format(p) + " Ft";
+
 function calculatePrice(size: string) {
   if (size === "100x100" || size === "80x100") return 23490;
   if (size === "80x80" || size === "60x90" || size === "100x80") return 19990;
@@ -26,26 +27,17 @@ function calculatePrice(size: string) {
   return 11990;
 }
 
-const formatPrice = (p: number) => new Intl.NumberFormat("hu-HU").format(p) + " Ft";
-
-const createImage = (url: string): Promise<HTMLImageElement> =>
-  new Promise((resolve, reject) => {
-    const image = new Image();
-    image.addEventListener("load", () => resolve(image));
-    image.addEventListener("error", (error) => reject(error));
-    image.setAttribute("crossOrigin", "anonymous");
-    image.src = url;
-  });
-
 async function getCroppedImageDataUrl(imageSrc: string, pixelCrop: Area): Promise<string> {
-  const image = await createImage(imageSrc);
+  const image = new Image();
+  image.src = imageSrc;
+  await new Promise((res) => (image.onload = res));
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   if (!ctx) return "";
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
   ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
-  return canvas.toDataURL("image/jpeg", 0.7); // 0.7 minőség az AR stabilitásért
+  return canvas.toDataURL("image/jpeg", 0.8);
 }
 
 export default function EgyediVaszonkepPage() {
@@ -77,34 +69,46 @@ export default function EgyediVaszonkepPage() {
     }
   }, []);
 
-  // --- DINAMIKUS TEXTÚRÁZÁS (MINDEN FIX BENNE) ---
+  // --- ANDROID + IPHONE TEXTÚRA FIX ---
   useEffect(() => {
     if (is3DMode && savedConfig?.previewUrl && modelViewerRef.current) {
       const mv = modelViewerRef.current;
+
       const applyTexture = async () => {
         try {
           if (!mv.model) return;
-          const texture = await mv.createTexture(savedConfig.previewUrl);
+          
+          // Android Fix: Kényszerítjük a böngészőt, hogy új textúraként kezelje a képet
+          const texture = await mv.createTexture(savedConfig.previewUrl + "?t=" + Date.now());
 
           mv.model.materials.forEach((mat: any) => {
             const name = mat.name.toLowerCase();
-            // Csak a vászonra tesszük rá (ami nem a keret)
+            
+            // Keret kizárása
             if (!name.includes('frame') && !name.includes('keret')) {
               if (mat.pbrMetallicRoughness) {
-                // Android & iPhone textúra csere
-                if (mat.pbrMetallicRoughness.baseColorTexture) {
-                  mat.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
+                const pbr = mat.pbrMetallicRoughness;
+                
+                if (pbr.baseColorTexture) {
+                  pbr.baseColorTexture.setTexture(texture);
+                } else {
+                  // Ha nincs alap textúra, megpróbáljuk létrehozni
+                  pbr.baseColorTexture.setTexture(texture);
                 }
-                mat.pbrMetallicRoughness.setMetallicFactor(0);
-                mat.pbrMetallicRoughness.setRoughnessFactor(1);
+                
+                pbr.setMetallicFactor(0);
+                pbr.setRoughnessFactor(1);
               }
-              // iPhone AR Fix: Látszódjon akkor is, ha a modell "fordítva" van
+
+              // iPhone Fix: DoubleSided, de OPAQUE módban
               mat.setDoubleSided(true);
               mat.setAlphaMode("OPAQUE");
             }
           });
+          
+          console.log("Textúra alkalmazva!");
         } catch (e) {
-          console.error("Hiba az AR textúrázásnál:", e);
+          console.error("Hiba:", e);
         }
       };
 
@@ -131,13 +135,11 @@ export default function EgyediVaszonkepPage() {
       setSavedConfig({ ratio, size, price, previewUrl: dataUrl });
       setIsCropModalOpen(false);
     } catch (err) {
-      alert("Hiba történt!");
+      alert("Hiba!");
     } finally {
       setIsSaving(false);
     }
   };
-
-  const activeRatio = (savedConfig?.ratio || ratio) as Ratio;
 
   return (
     <main className="min-h-screen bg-[#f7f7f5] text-[#1f1f1f]">
@@ -152,7 +154,7 @@ export default function EgyediVaszonkepPage() {
                 <div className="relative w-full h-[500px]">
                   <ModelViewerTag
                     ref={modelViewerRef}
-                    src={MODEL_URLS[activeRatio]}
+                    src={MODEL_URLS[ratio as Ratio]}
                     ar
                     ar-modes="scene-viewer quick-look webxr"
                     ar-placement="wall"
@@ -162,10 +164,10 @@ export default function EgyediVaszonkepPage() {
                     shadow-intensity="1"
                     style={{ width: "100%", height: "100%", backgroundColor: "#efebe6" }}
                   >
-                    <button onClick={() => setIs3DMode(false)} className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest z-50">
+                    <button onClick={() => setIs3DMode(false)} className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest z-50 shadow-md">
                       Bezárás
                     </button>
-                    <button slot="ar-button" className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50 transition-transform active:scale-95 uppercase tracking-widest">
+                    <button slot="ar-button" className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50 uppercase tracking-widest active:scale-95 transition-transform">
                       ✨ Falra helyezés (AR)
                     </button>
                   </ModelViewerTag>
@@ -175,14 +177,14 @@ export default function EgyediVaszonkepPage() {
                   <img src="/images/mockup.jpg" alt="Mockup" className="h-full w-full object-cover" />
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8">
                     <div className={`transition-all duration-700 ease-in-out ${
-                      activeRatio === "square" ? "aspect-square w-[62%]" : 
-                      activeRatio === "portrait" ? "aspect-[2/3] w-[42%]" : "aspect-[3/2] w-[72%]"
+                      ratio === "square" ? "aspect-square w-[62%]" : 
+                      ratio === "portrait" ? "aspect-[2/3] w-[42%]" : "aspect-[3/2] w-[72%]"
                     }`}>
                       <div className="relative h-full w-full overflow-hidden bg-white shadow-2xl">
                         {savedConfig ? (
                           <img src={savedConfig.previewUrl} className="h-full w-full object-cover" />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-[#f2f0ed] text-[#c1bdb9] font-black uppercase text-[9px] italic text-center px-4 tracking-widest">A Te fotód helye</div>
+                          <div className="flex h-full w-full items-center justify-center bg-[#f2f0ed] text-[#c1bdb9] font-black uppercase text-[9px] italic text-center px-4 tracking-[0.2em]">A Te fotód helye</div>
                         )}
                       </div>
                     </div>
@@ -204,21 +206,19 @@ export default function EgyediVaszonkepPage() {
             <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-8 text-[#2a211d]">Egyedi Vászonkép</h1>
             
             <div className="space-y-10">
-              {/* Fotó feltöltés */}
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 italic">1. Fotó feltöltése</p>
                 <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-200 rounded-[25px] bg-gray-50 cursor-pointer hover:bg-orange-50/50 transition-all group">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#d17d58] group-hover:scale-110 transition-transform">{fileName || "Kép kiválasztása"}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#d17d58] group-hover:scale-105 transition-transform">{fileName || "Kép kiválasztása"}</span>
                   <input type="file" accept="image/*" onChange={onFileChange} className="hidden" />
                 </label>
               </div>
 
-              {/* Arány választó */}
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 italic">2. Arány kiválasztása</p>
                 <div className="grid grid-cols-3 gap-3">
                   {(["square", "portrait", "landscape"] as const).map((r) => (
-                    <button key={r} onClick={() => setRatio(r)} className={`py-4 rounded-2xl border-2 text-[10px] font-black uppercase tracking-tighter transition-all ${ratio === r ? "border-[#d17d58] bg-orange-50 text-[#d17d58]" : "border-gray-100 text-gray-400 hover:border-gray-200"}`}>
+                    <button key={r} onClick={() => { setRatio(r); setSavedConfig(null); }} className={`py-4 rounded-2xl border-2 text-[10px] font-black uppercase tracking-tighter transition-all ${ratio === r ? "border-[#d17d58] bg-orange-50 text-[#d17d58]" : "border-gray-100 text-gray-400 hover:border-gray-200"}`}>
                       {r === "square" ? "Négyzet" : r === "portrait" ? "Álló" : "Fekvő"}
                     </button>
                   ))}
@@ -226,7 +226,6 @@ export default function EgyediVaszonkepPage() {
               </div>
             </div>
             
-            {/* Ár és Kosár */}
             <div className="mt-12 pt-8 border-t border-dashed border-gray-200 flex justify-between items-center">
               <div>
                 <p className="text-[10px] uppercase font-black text-gray-300 italic mb-1">Végösszeg</p>
@@ -238,7 +237,7 @@ export default function EgyediVaszonkepPage() {
                   addItem({ id: uuidv4(), name: "Egyedi Vászonkép", size: savedConfig.size, price: savedConfig.price, image: savedConfig.previewUrl, quantity: 1, isCustom: true }); 
                   router.push('/kosar'); 
                 }} 
-                className="bg-[#d17d58] text-white px-10 py-6 rounded-[22px] font-black uppercase text-xs shadow-xl disabled:opacity-20 transition-all active:scale-95 hover:bg-[#b56645]"
+                className="bg-[#d17d58] text-white px-10 py-6 rounded-[22px] font-black uppercase text-xs shadow-xl disabled:opacity-20 transition-all hover:bg-[#b56645] active:scale-95"
               >
                 Kosárba
               </button>
@@ -266,7 +265,7 @@ export default function EgyediVaszonkepPage() {
               <button 
                 onClick={handleSaveConfig} 
                 disabled={isSaving} 
-                className="w-full bg-[#2a211d] text-white py-5 rounded-[22px] font-black uppercase text-xs tracking-[0.2em] shadow-xl active:scale-[0.98] transition-transform"
+                className="w-full bg-[#2a211d] text-white py-5 rounded-[22px] font-black uppercase text-xs tracking-[0.2em] shadow-xl transition-transform active:scale-95"
               > 
                 {isSaving ? "Feldolgozás..." : "Kép rögzítése és mentés"}
               </button>

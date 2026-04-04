@@ -65,7 +65,7 @@ async function getCroppedImageDataUrl(imageSrc: string, pixelCrop: Area): Promis
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
   ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
-  return canvas.toDataURL("image/jpeg", 0.9);
+  return canvas.toDataURL("image/jpeg", 0.8);
 }
 
 export default function EgyediVaszonkepPage() {
@@ -85,16 +85,10 @@ export default function EgyediVaszonkepPage() {
   const [is3DMode, setIs3DMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
+  // Az ár kalkulálása a kiválasztott méret alapján
   const price = useMemo(() => calculatePrice(size), [size]);
 
-  // Mobil detektálás
-  useEffect(() => {
-    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
-  }, []);
-
-  // Model-viewer betöltése
   useEffect(() => {
     if (typeof window !== "undefined" && !customElements.get("model-viewer")) {
       const script = document.createElement("script");
@@ -104,7 +98,7 @@ export default function EgyediVaszonkepPage() {
     }
   }, []);
 
-  // Textúra injektálás a böngészős 3D nézethez
+  // Textúrázás a 3D nézethez
   useEffect(() => {
     if (is3DMode && savedConfig?.previewUrl && modelViewerRef.current) {
       const mv = modelViewerRef.current;
@@ -115,59 +109,40 @@ export default function EgyediVaszonkepPage() {
           if (material?.pbrMetallicRoughness?.baseColorTexture) {
             material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
           }
-        } catch (e) { console.error("Textúrázási hiba:", e); }
+        } catch (e) { console.error("Hiba a textúrázás során:", e); }
       };
       if (mv.loaded) apply();
       else mv.addEventListener("load", apply, { once: true });
     }
   }, [is3DMode, savedConfig?.previewUrl]);
 
-  // --- IPHONE AR INDÍTÁS (Dinamikus generálással) ---
-  const handleARWithTexture = async () => {
+  // --- UNIVERZÁLIS AR INDÍTÓ ---
+  const handleStartAR = async () => {
     const mv = modelViewerRef.current;
-    if (!mv || !savedConfig?.previewUrl) return;
+    if (!mv) return;
 
-    try {
-      if (!mv.loaded) {
-        alert("A modell még töltődik, várj egy pillanatot!");
-        return;
-      }
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 
-      // 1. Exportálás USDZ-be (a már felvitt képpel együtt)
-      const usdzBlob = await mv.exportScene({ format: 'usdz' });
-      
-      if (!usdzBlob || usdzBlob.size < 500) {
-        throw new Error("Sérült fájl.");
-      }
-
-      // 2. Blob URL létrehozása
-      const usdzUrl = URL.createObjectURL(usdzBlob);
-
-      // 3. Rejtett AR link létrehozása
-      const link = document.createElement("a");
-      link.setAttribute("rel", "ar");
-      // Trükk: a kiterjesztés hozzáadása a hash-ben segít a Safarinak
-      link.href = usdzUrl + "#vaszonkep.usdz";
-      
-      const img = document.createElement("img");
-      img.src = savedConfig.previewUrl;
-      img.width = 1; img.height = 1;
-      link.appendChild(img);
-      
-      document.body.appendChild(link);
-      
-      // 4. Kattintás kényszerítése rövid késleltetéssel
-      setTimeout(() => {
+    if (isIOS) {
+      // iPhone / Safari vonal
+      try {
+        const usdzBlob = await mv.exportScene({ format: 'usdz' });
+        const usdzUrl = URL.createObjectURL(usdzBlob);
+        const link = document.createElement("a");
+        link.setAttribute("rel", "ar");
+        link.href = usdzUrl + "#vaszonkep.usdz";
+        document.body.appendChild(link);
         link.click();
         setTimeout(() => {
-          if (document.body.contains(link)) document.body.removeChild(link);
+          document.body.removeChild(link);
           URL.revokeObjectURL(usdzUrl);
-        }, 5000);
-      }, 100);
-
-    } catch (err) {
-      console.error("AR Hiba:", err);
-      alert("Hiba történt az AR indításakor. Próbáld újra!");
+        }, 3000);
+      } catch (err) {
+        alert("Hiba az iPhone AR indításakor. Próbáld meg egy másik böngészőben (Safari)!");
+      }
+    } else {
+      // Android / Chrome vonal
+      mv.activateAR();
     }
   };
 
@@ -181,14 +156,24 @@ export default function EgyediVaszonkepPage() {
     setIsCropModalOpen(true);
   };
 
+  // Kép mentése (Itt javítva a TypeScript hiba az explicit price: price megadással)
   const handleSaveConfig = async () => {
     if (!image || !croppedAreaPixels) return;
     setIsSaving(true);
     try {
       const dataUrl = await getCroppedImageDataUrl(image, croppedAreaPixels);
-      setSavedConfig({ ratio, size, price, previewUrl: dataUrl });
+      setSavedConfig({ 
+        ratio, 
+        size, 
+        price: price, // <-- Explicit értékadás a TypeScript hiba miatt
+        previewUrl: dataUrl 
+      });
       setIsCropModalOpen(false);
-    } catch (err) { alert("Hiba!"); } finally { setIsSaving(false); }
+    } catch (err) { 
+      alert("Hiba történt a kép feldolgozása közben!"); 
+    } finally { 
+      setIsSaving(false); 
+    }
   };
 
   const activeRatio = (savedConfig?.ratio || ratio) as Ratio;
@@ -199,7 +184,7 @@ export default function EgyediVaszonkepPage() {
       <section className="mx-auto max-w-7xl px-6 py-10 md:py-14">
         <div className="grid gap-10 lg:grid-cols-[1.45fr_0.85fr]">
           
-          {/* BAL OLDAL: ELŐNÉZET */}
+          {/* 3D ÉS ELŐNÉZET */}
           <div className="space-y-5">
             <div className="overflow-hidden rounded-[40px] border border-[#d9d5cf] bg-white shadow-2xl relative min-h-[500px]">
               {is3DMode && savedConfig ? (
@@ -207,25 +192,24 @@ export default function EgyediVaszonkepPage() {
                   <ModelViewerTag
                     ref={modelViewerRef}
                     src={MODEL_URLS[activeRatio]}
-                    ar-modes="webxr scene-viewer"
+                    ar
+                    ar-modes="webxr scene-viewer quick-look"
+                    ar-placement="wall"
                     camera-controls
                     auto-rotate
-                    shadow-intensity="1.5"
-                    exposure="1.1"
+                    shadow-intensity="1"
                     style={{ width: "100%", height: "100%", backgroundColor: "#efebe6" }}
                   >
                     <button onClick={() => setIs3DMode(false)} className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm z-50">
                       Bezárás
                     </button>
                     
-                    {isMobile && (
-                      <button 
-                        onClick={handleARWithTexture}
-                        className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50 transition-transform active:scale-95"
-                      >
-                        ✨ Falra helyezés (AR)
-                      </button>
-                    )}
+                    <button 
+                      onClick={handleStartAR}
+                      className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50 transition-transform active:scale-95"
+                    >
+                      ✨ Falra helyezés (AR)
+                    </button>
                   </ModelViewerTag>
                 </div>
               ) : (
@@ -240,7 +224,7 @@ export default function EgyediVaszonkepPage() {
                         {savedConfig ? (
                           <img src={savedConfig.previewUrl} className="h-full w-full object-cover" />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-[#f2f0ed] text-[#c1bdb9] font-black uppercase text-[9px] tracking-widest italic text-center px-4 italic">A Te fotód helye</div>
+                          <div className="flex h-full w-full items-center justify-center bg-[#f2f0ed] text-[#c1bdb9] font-black uppercase text-[9px] tracking-widest italic text-center px-4">A Te fotód helye</div>
                         )}
                       </div>
                     </div>
@@ -257,7 +241,7 @@ export default function EgyediVaszonkepPage() {
             </div>
           </div>
 
-          {/* JOBB OLDAL: KONFIGURÁTOR */}
+          {/* KONFIGURÁTOR */}
           <div className="rounded-[35px] border border-[#d9d5cf] bg-white p-8 h-fit shadow-xl">
             <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-8 text-[#2a211d]">Egyedi Vászonkép</h1>
             <div className="space-y-10 text-black">
@@ -290,7 +274,7 @@ export default function EgyediVaszonkepPage() {
                 <p className="text-[10px] uppercase font-black text-gray-300 italic mb-1">Végösszeg</p>
                 <p className="text-3xl font-black italic tracking-tighter text-[#2a211d]">{formatPrice(savedConfig?.price || price)}</p>
               </div>
-              <button disabled={!savedConfig} onClick={() => { addItem({ id: uuidv4(), name: "Egyedi Vászonkép", size: savedConfig.size, price: savedConfig.price, image: savedConfig.previewUrl, quantity: 1, isCustom: true }); router.push('/kosar'); }} className="bg-[#d17d58] text-white px-10 py-5 rounded-[20px] font-black uppercase text-xs tracking-[0.15em] shadow-xl disabled:opacity-20 active:scale-95 transition-transform">Kosárba</button>
+              <button disabled={!savedConfig} onClick={() => { addItem({ id: uuidv4(), name: "Egyedi Vászonkép", size: savedConfig.size, price: savedConfig?.price || price, image: savedConfig.previewUrl, quantity: 1, isCustom: true }); router.push('/kosar'); }} className="bg-[#d17d58] text-white px-10 py-5 rounded-[20px] font-black uppercase text-xs tracking-[0.15em] shadow-xl disabled:opacity-20 active:scale-95 transition-transform">Kosárba</button>
             </div>
           </div>
         </div>

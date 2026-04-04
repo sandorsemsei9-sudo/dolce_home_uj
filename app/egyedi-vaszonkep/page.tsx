@@ -45,8 +45,7 @@ async function getCroppedImageDataUrl(imageSrc: string, pixelCrop: Area): Promis
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
   ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
-  // iPhone fix: 0.5-ös minőség, hogy a textúra ne legyen túl nehéz az AR-nek
-  return canvas.toDataURL("image/jpeg", 0.5);
+  return canvas.toDataURL("image/jpeg", 0.7); // 0.7 minőség az AR stabilitásért
 }
 
 export default function EgyediVaszonkepPage() {
@@ -78,34 +77,37 @@ export default function EgyediVaszonkepPage() {
     }
   }, []);
 
-  // --- AR TEXTÚRA INJEKTÁLÁS (Tangents & Alpha fix) ---
+  // --- DINAMIKUS TEXTÚRÁZÁS (MINDEN FIX BENNE) ---
   useEffect(() => {
     if (is3DMode && savedConfig?.previewUrl && modelViewerRef.current) {
       const mv = modelViewerRef.current;
       const applyTexture = async () => {
         try {
-          const texture = await mv.createTexture(savedConfig.previewUrl);
           if (!mv.model) return;
+          const texture = await mv.createTexture(savedConfig.previewUrl);
 
           mv.model.materials.forEach((mat: any) => {
             const name = mat.name.toLowerCase();
-            // Mindenre rátesszük a képet, ami nem a keret (Blender nevek alapján)
+            // Csak a vászonra tesszük rá (ami nem a keret)
             if (!name.includes('frame') && !name.includes('keret')) {
               if (mat.pbrMetallicRoughness) {
-                mat.pbrMetallicRoughness.setMetallicFactor(0);
-                mat.pbrMetallicRoughness.setRoughnessFactor(1);
+                // Android & iPhone textúra csere
                 if (mat.pbrMetallicRoughness.baseColorTexture) {
                   mat.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
                 }
+                mat.pbrMetallicRoughness.setMetallicFactor(0);
+                mat.pbrMetallicRoughness.setRoughnessFactor(1);
               }
-              // iPhone AR fix: ne legyen átlátszó a textúra
+              // iPhone AR Fix: Látszódjon akkor is, ha a modell "fordítva" van
+              mat.setDoubleSided(true);
               mat.setAlphaMode("OPAQUE");
             }
           });
         } catch (e) {
-          console.error("AR Textúra hiba:", e);
+          console.error("Hiba az AR textúrázásnál:", e);
         }
       };
+
       if (mv.loaded) applyTexture();
       else mv.addEventListener("load", applyTexture, { once: true });
     }
@@ -129,7 +131,7 @@ export default function EgyediVaszonkepPage() {
       setSavedConfig({ ratio, size, price, previewUrl: dataUrl });
       setIsCropModalOpen(false);
     } catch (err) {
-      alert("Hiba a mentés során!");
+      alert("Hiba történt!");
     } finally {
       setIsSaving(false);
     }
@@ -143,7 +145,7 @@ export default function EgyediVaszonkepPage() {
       <section className="mx-auto max-w-7xl px-6 py-10 md:py-14">
         <div className="grid gap-10 lg:grid-cols-[1.45fr_0.85fr]">
           
-          {/* ELŐNÉZET / 3D PANEL */}
+          {/* ELŐNÉZET / 3D */}
           <div className="space-y-5">
             <div className="overflow-hidden rounded-[40px] border border-[#d9d5cf] bg-white shadow-2xl relative min-h-[500px]">
               {is3DMode && savedConfig ? (
@@ -163,7 +165,7 @@ export default function EgyediVaszonkepPage() {
                     <button onClick={() => setIs3DMode(false)} className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest z-50">
                       Bezárás
                     </button>
-                    <button slot="ar-button" className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50">
+                    <button slot="ar-button" className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50 transition-transform active:scale-95 uppercase tracking-widest">
                       ✨ Falra helyezés (AR)
                     </button>
                   </ModelViewerTag>
@@ -180,14 +182,14 @@ export default function EgyediVaszonkepPage() {
                         {savedConfig ? (
                           <img src={savedConfig.previewUrl} className="h-full w-full object-cover" />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-[#f2f0ed] text-[#c1bdb9] font-black uppercase text-[9px] italic text-center px-4">A Te fotód helye</div>
+                          <div className="flex h-full w-full items-center justify-center bg-[#f2f0ed] text-[#c1bdb9] font-black uppercase text-[9px] italic text-center px-4 tracking-widest">A Te fotód helye</div>
                         )}
                       </div>
                     </div>
                   </div>
                   {savedConfig && (
                     <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-30">
-                       <button onClick={() => setIs3DMode(true)} className="bg-white text-black px-10 py-4 rounded-2xl font-bold text-xs shadow-2xl uppercase tracking-widest border border-gray-100">
+                       <button onClick={() => setIs3DMode(true)} className="bg-white text-black px-10 py-4 rounded-2xl font-black text-[10px] shadow-2xl uppercase tracking-[0.2em] border border-gray-100 transition-all hover:bg-black hover:text-white">
                          🔄 3D & AR MÓD
                        </button>
                     </div>
@@ -197,24 +199,26 @@ export default function EgyediVaszonkepPage() {
             </div>
           </div>
 
-          {/* KONFIGURÁTOR PANEL */}
+          {/* KONFIGURÁTOR */}
           <div className="rounded-[35px] border border-[#d9d5cf] bg-white p-8 h-fit shadow-xl text-black">
-            <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-8 text-[#2a211d]">Egyedi Vászonkép</h1>
+            <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-8 text-[#2a211d]">Egyedi Vászonkép</h1>
             
             <div className="space-y-10">
+              {/* Fotó feltöltés */}
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 italic">1. Fotó feltöltése</p>
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-200 rounded-[25px] bg-gray-50 cursor-pointer hover:bg-orange-50/50 transition-all">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#d17d58]">{fileName || "Kép kiválasztása"}</span>
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-200 rounded-[25px] bg-gray-50 cursor-pointer hover:bg-orange-50/50 transition-all group">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#d17d58] group-hover:scale-110 transition-transform">{fileName || "Kép kiválasztása"}</span>
                   <input type="file" accept="image/*" onChange={onFileChange} className="hidden" />
                 </label>
               </div>
 
+              {/* Arány választó */}
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 italic">2. Arány kiválasztása</p>
                 <div className="grid grid-cols-3 gap-3">
                   {(["square", "portrait", "landscape"] as const).map((r) => (
-                    <button key={r} onClick={() => setRatio(r)} className={`py-3 rounded-xl border-2 text-[10px] font-black uppercase tracking-tighter transition-all ${ratio === r ? "border-[#d17d58] bg-orange-50 text-[#d17d58]" : "border-gray-100 text-gray-400"}`}>
+                    <button key={r} onClick={() => setRatio(r)} className={`py-4 rounded-2xl border-2 text-[10px] font-black uppercase tracking-tighter transition-all ${ratio === r ? "border-[#d17d58] bg-orange-50 text-[#d17d58]" : "border-gray-100 text-gray-400 hover:border-gray-200"}`}>
                       {r === "square" ? "Négyzet" : r === "portrait" ? "Álló" : "Fekvő"}
                     </button>
                   ))}
@@ -222,10 +226,11 @@ export default function EgyediVaszonkepPage() {
               </div>
             </div>
             
+            {/* Ár és Kosár */}
             <div className="mt-12 pt-8 border-t border-dashed border-gray-200 flex justify-between items-center">
               <div>
                 <p className="text-[10px] uppercase font-black text-gray-300 italic mb-1">Végösszeg</p>
-                <p className="text-3xl font-black italic tracking-tighter text-[#2a211d]">{formatPrice(savedConfig?.price || price)}</p>
+                <p className="text-4xl font-black italic tracking-tighter text-[#2a211d]">{formatPrice(savedConfig?.price || price)}</p>
               </div>
               <button 
                 disabled={!savedConfig} 
@@ -233,7 +238,7 @@ export default function EgyediVaszonkepPage() {
                   addItem({ id: uuidv4(), name: "Egyedi Vászonkép", size: savedConfig.size, price: savedConfig.price, image: savedConfig.previewUrl, quantity: 1, isCustom: true }); 
                   router.push('/kosar'); 
                 }} 
-                className="bg-[#d17d58] text-white px-10 py-5 rounded-[20px] font-black uppercase text-xs shadow-xl disabled:opacity-20 transition-all active:scale-95"
+                className="bg-[#d17d58] text-white px-10 py-6 rounded-[22px] font-black uppercase text-xs shadow-xl disabled:opacity-20 transition-all active:scale-95 hover:bg-[#b56645]"
               >
                 Kosárba
               </button>

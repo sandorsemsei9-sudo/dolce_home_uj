@@ -8,7 +8,6 @@ import { v4 as uuidv4 } from "uuid";
 import { useCartStore } from "../store/useCartStore";
 import { useRouter } from "next/navigation";
 
-// --- KONFIGURÁCIÓ ---
 type Ratio = "square" | "portrait" | "landscape";
 
 const MODEL_URLS: Record<Ratio, string> = {
@@ -37,7 +36,6 @@ const sizes: Record<Ratio, string[]> = {
   landscape: ["40x30", "50x40", "60x40", "90x60", "100x80"],
 };
 
-// --- SEGÉDFÜGGVÉNYEK ---
 function calculatePrice(size: string) {
   if (size === "100x100" || size === "80x100") return 23490;
   if (size === "80x80" || size === "60x90" || size === "100x80") return 19990;
@@ -85,10 +83,14 @@ export default function EgyediVaszonkepPage() {
   const [is3DMode, setIs3DMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const price = useMemo(() => calculatePrice(size), [size]);
 
-  // --- FIX 1: Model-viewer betöltése (Mindig üres függőségi lista!) ---
+  useEffect(() => {
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  }, []);
+
   useEffect(() => {
     if (typeof window !== "undefined" && !customElements.get("model-viewer")) {
       const script = document.createElement("script");
@@ -98,7 +100,6 @@ export default function EgyediVaszonkepPage() {
     }
   }, []);
 
-  // --- FIX 2: Textúra injektálás (Külön Effect-ben, hogy ne zavarja az előzőt) ---
   useEffect(() => {
     if (is3DMode && savedConfig?.previewUrl && modelViewerRef.current) {
       const mv = modelViewerRef.current;
@@ -109,12 +110,12 @@ export default function EgyediVaszonkepPage() {
           if (material?.pbrMetallicRoughness?.baseColorTexture) {
             material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
           }
-        } catch (e) { console.error("Hiba a textúrázásnál:", e); }
+        } catch (e) { console.error(e); }
       };
       if (mv.loaded) apply();
       else mv.addEventListener("load", apply, { once: true });
     }
-  }, [is3DMode, savedConfig?.previewUrl]); // Itt fixen 2 elem van mindig
+  }, [is3DMode, savedConfig?.previewUrl]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -138,25 +139,29 @@ export default function EgyediVaszonkepPage() {
 
   const handleStartAR = async () => {
     const mv = modelViewerRef.current;
-    if (!mv || !savedConfig?.previewUrl) return;
+    if (!mv) return;
 
+    // Ha Android, a model-viewer alapból tudja kezelni
+    if (!/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      mv.activateAR();
+      return;
+    }
+
+    // iPhone esetén egyedi generálás
     try {
-      // Ez generálja le az ideiglenes fájlt a telefonon
       const usdzBlob = await mv.exportScene({ format: 'usdz' });
       const usdzUrl = URL.createObjectURL(usdzBlob);
-
       const anchor = document.createElement("a");
       anchor.setAttribute("rel", "ar");
-      anchor.setAttribute("href", usdzUrl);
+      anchor.href = usdzUrl;
       const img = document.createElement("img");
       anchor.appendChild(img);
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
-
       setTimeout(() => URL.revokeObjectURL(usdzUrl), 5000);
     } catch (err) {
-      alert("Az AR betöltése folyamatban... Próbáld újra 1 másodperc múlva!");
+      alert("Hiba az AR indításakor.");
     }
   };
 
@@ -174,7 +179,9 @@ export default function EgyediVaszonkepPage() {
                   <ModelViewerTag
                     ref={modelViewerRef}
                     src={MODEL_URLS[activeRatio]}
-                    ar-modes="webxr scene-viewer"
+                    ar
+                    ar-modes="quick-look webxr scene-viewer"
+                    ar-placement="wall"
                     camera-controls
                     auto-rotate
                     shadow-intensity="1.5"
@@ -184,12 +191,15 @@ export default function EgyediVaszonkepPage() {
                     <button onClick={() => setIs3DMode(false)} className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm z-50">
                       Bezárás
                     </button>
-                    <button 
-                      onClick={handleStartAR}
-                      className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50 transition-transform active:scale-95"
-                    >
-                      ✨ Falra helyezés (AR)
-                    </button>
+                    {/* GOMB CSAK MOBILON */}
+                    {isMobile && (
+                      <button 
+                        onClick={handleStartAR}
+                        className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50 transition-transform active:scale-95"
+                      >
+                        ✨ Falra helyezés (AR)
+                      </button>
+                    )}
                   </ModelViewerTag>
                 </div>
               ) : (
@@ -211,7 +221,7 @@ export default function EgyediVaszonkepPage() {
                   </div>
                   {savedConfig && (
                     <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-30">
-                       <button onClick={() => setIs3DMode(true)} className="bg-white text-black px-10 py-4 rounded-2xl font-bold text-xs shadow-2xl transition-all hover:scale-105 active:scale-95 whitespace-nowrap">
+                       <button onClick={() => setIs3DMode(true)} className="bg-white text-black px-10 py-4 rounded-2xl font-bold text-xs shadow-2xl transition-all hover:scale-105 active:scale-95 whitespace-nowrap uppercase tracking-widest">
                          🔄 3D & AR MÓD
                        </button>
                     </div>

@@ -85,9 +85,16 @@ export default function EgyediVaszonkepPage() {
   const [is3DMode, setIs3DMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const price = useMemo(() => calculatePrice(size), [size]);
 
+  // Mobil detektálás
+  useEffect(() => {
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  }, []);
+
+  // Model-viewer betöltése
   useEffect(() => {
     if (typeof window !== "undefined" && !customElements.get("model-viewer")) {
       const script = document.createElement("script");
@@ -97,7 +104,7 @@ export default function EgyediVaszonkepPage() {
     }
   }, []);
 
-  // Textúra injektálás (Böngészős 3D nézethez)
+  // Textúra injektálás a böngészős 3D nézethez
   useEffect(() => {
     if (is3DMode && savedConfig?.previewUrl && modelViewerRef.current) {
       const mv = modelViewerRef.current;
@@ -108,46 +115,59 @@ export default function EgyediVaszonkepPage() {
           if (material?.pbrMetallicRoughness?.baseColorTexture) {
             material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
           }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Textúrázási hiba:", e); }
       };
       if (mv.loaded) apply();
       else mv.addEventListener("load", apply, { once: true });
     }
   }, [is3DMode, savedConfig?.previewUrl]);
 
-  // --- IPHONE FIX: Dinamikus USDZ generálás a falra helyezéshez ---
+  // --- IPHONE AR INDÍTÁS (Dinamikus generálással) ---
   const handleARWithTexture = async () => {
     const mv = modelViewerRef.current;
     if (!mv || !savedConfig?.previewUrl) return;
 
     try {
-      // 1. Legeneráljuk az USDZ-t a már rátett textúrával
+      if (!mv.loaded) {
+        alert("A modell még töltődik, várj egy pillanatot!");
+        return;
+      }
+
+      // 1. Exportálás USDZ-be (a már felvitt képpel együtt)
       const usdzBlob = await mv.exportScene({ format: 'usdz' });
       
-      // 2. Kényszerítjük a MIME típust, hogy a Safari felismerje
-      const file = new File([usdzBlob], "vaszonkep.usdz", { type: "model/vnd.usdz+zip" });
-      const usdzUrl = URL.createObjectURL(file);
+      if (!usdzBlob || usdzBlob.size < 500) {
+        throw new Error("Sérült fájl.");
+      }
 
-      // 3. Létrehozunk egy rejtett linket rel="ar" attribútummal
+      // 2. Blob URL létrehozása
+      const usdzUrl = URL.createObjectURL(usdzBlob);
+
+      // 3. Rejtett AR link létrehozása
       const link = document.createElement("a");
       link.setAttribute("rel", "ar");
-      link.href = usdzUrl;
+      // Trükk: a kiterjesztés hozzáadása a hash-ben segít a Safarinak
+      link.href = usdzUrl + "#vaszonkep.usdz";
       
-      // Kiegészítő kép az Apple AR Quick Look-nak
       const img = document.createElement("img");
+      img.src = savedConfig.previewUrl;
+      img.width = 1; img.height = 1;
       link.appendChild(img);
       
       document.body.appendChild(link);
-      link.click();
       
-      // Takarítás
+      // 4. Kattintás kényszerítése rövid késleltetéssel
       setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(usdzUrl);
-      }, 2000);
+        link.click();
+        setTimeout(() => {
+          if (document.body.contains(link)) document.body.removeChild(link);
+          URL.revokeObjectURL(usdzUrl);
+        }, 5000);
+      }, 100);
+
     } catch (err) {
       console.error("AR Hiba:", err);
-      alert("Hiba történt az AR indításakor. Kérlek várj a modell betöltéséig!");
+      alert("Hiba történt az AR indításakor. Próbáld újra!");
     }
   };
 
@@ -178,6 +198,8 @@ export default function EgyediVaszonkepPage() {
       <Navbar />
       <section className="mx-auto max-w-7xl px-6 py-10 md:py-14">
         <div className="grid gap-10 lg:grid-cols-[1.45fr_0.85fr]">
+          
+          {/* BAL OLDAL: ELŐNÉZET */}
           <div className="space-y-5">
             <div className="overflow-hidden rounded-[40px] border border-[#d9d5cf] bg-white shadow-2xl relative min-h-[500px]">
               {is3DMode && savedConfig ? (
@@ -185,22 +207,25 @@ export default function EgyediVaszonkepPage() {
                   <ModelViewerTag
                     ref={modelViewerRef}
                     src={MODEL_URLS[activeRatio]}
-                    ar-modes="webxr scene-viewer" // Kikapcsoljuk a natív quick-look-ot, mert mi hívjuk meg
+                    ar-modes="webxr scene-viewer"
                     camera-controls
                     auto-rotate
+                    shadow-intensity="1.5"
+                    exposure="1.1"
                     style={{ width: "100%", height: "100%", backgroundColor: "#efebe6" }}
                   >
                     <button onClick={() => setIs3DMode(false)} className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm z-50">
                       Bezárás
                     </button>
                     
-                    {/* EGYEDI AR GOMB - Ez generálja le a fájlt */}
-                    <button 
-                      onClick={handleARWithTexture}
-                      className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50 transition-transform active:scale-95"
-                    >
-                      ✨ Falra helyezés (AR)
-                    </button>
+                    {isMobile && (
+                      <button 
+                        onClick={handleARWithTexture}
+                        className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50 transition-transform active:scale-95"
+                      >
+                        ✨ Falra helyezés (AR)
+                      </button>
+                    )}
                   </ModelViewerTag>
                 </div>
               ) : (
@@ -215,7 +240,7 @@ export default function EgyediVaszonkepPage() {
                         {savedConfig ? (
                           <img src={savedConfig.previewUrl} className="h-full w-full object-cover" />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-[#f2f0ed] text-[#c1bdb9] font-black uppercase text-[9px] tracking-widest italic text-center px-4">A Te fotód helye</div>
+                          <div className="flex h-full w-full items-center justify-center bg-[#f2f0ed] text-[#c1bdb9] font-black uppercase text-[9px] tracking-widest italic text-center px-4 italic">A Te fotód helye</div>
                         )}
                       </div>
                     </div>
@@ -232,7 +257,7 @@ export default function EgyediVaszonkepPage() {
             </div>
           </div>
 
-          {/* Konfigurátor rész változatlan stílussal */}
+          {/* JOBB OLDAL: KONFIGURÁTOR */}
           <div className="rounded-[35px] border border-[#d9d5cf] bg-white p-8 h-fit shadow-xl">
             <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-8 text-[#2a211d]">Egyedi Vászonkép</h1>
             <div className="space-y-10 text-black">
@@ -271,7 +296,7 @@ export default function EgyediVaszonkepPage() {
         </div>
       </section>
 
-      {/* Crop Modal változatlanul */}
+      {/* CROP MODAL */}
       {image && !savedConfig && isCropModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 backdrop-blur-md">
           <div className="w-full max-w-2xl bg-white rounded-[40px] overflow-hidden flex flex-col max-h-[90vh]">

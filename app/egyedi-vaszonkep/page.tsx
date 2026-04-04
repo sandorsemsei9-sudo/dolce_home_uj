@@ -8,18 +8,13 @@ import { v4 as uuidv4 } from "uuid";
 import { useCartStore } from "../store/useCartStore";
 import { useRouter } from "next/navigation";
 
+// --- KONFIGURÁCIÓ ---
 type Ratio = "square" | "portrait" | "landscape";
 
 const MODEL_URLS: Record<Ratio, string> = {
   square: "/models/square.glb",
   portrait: "/models/portrait.glb",
   landscape: "/models/landscape.glb",
-};
-
-const USDZ_URLS: Record<Ratio, string> = {
-  square: "/models/square.usdz",
-  portrait: "/models/portrait.usdz",
-  landscape: "/models/landscape.usdz",
 };
 
 const TEMPLATE_IMAGE = "/images/mockup.jpg"; 
@@ -42,6 +37,7 @@ const sizes: Record<Ratio, string[]> = {
   landscape: ["40x30", "50x40", "60x40", "90x60", "100x80"],
 };
 
+// --- SEGÉDFÜGGVÉNYEK ---
 function calculatePrice(size: string) {
   if (size === "100x100" || size === "80x100") return 23490;
   if (size === "80x80" || size === "60x90" || size === "100x80") return 19990;
@@ -89,13 +85,8 @@ export default function EgyediVaszonkepPage() {
   const [is3DMode, setIs3DMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
   const price = useMemo(() => calculatePrice(size), [size]);
-
-  useEffect(() => {
-    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
-  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !customElements.get("model-viewer")) {
@@ -106,7 +97,7 @@ export default function EgyediVaszonkepPage() {
     }
   }, []);
 
-  // Textúra injektálás
+  // Textúra injektálás (Böngészős 3D nézethez)
   useEffect(() => {
     if (is3DMode && savedConfig?.previewUrl && modelViewerRef.current) {
       const mv = modelViewerRef.current;
@@ -123,6 +114,42 @@ export default function EgyediVaszonkepPage() {
       else mv.addEventListener("load", apply, { once: true });
     }
   }, [is3DMode, savedConfig?.previewUrl]);
+
+  // --- IPHONE FIX: Dinamikus USDZ generálás a falra helyezéshez ---
+  const handleARWithTexture = async () => {
+    const mv = modelViewerRef.current;
+    if (!mv || !savedConfig?.previewUrl) return;
+
+    try {
+      // 1. Legeneráljuk az USDZ-t a már rátett textúrával
+      const usdzBlob = await mv.exportScene({ format: 'usdz' });
+      
+      // 2. Kényszerítjük a MIME típust, hogy a Safari felismerje
+      const file = new File([usdzBlob], "vaszonkep.usdz", { type: "model/vnd.usdz+zip" });
+      const usdzUrl = URL.createObjectURL(file);
+
+      // 3. Létrehozunk egy rejtett linket rel="ar" attribútummal
+      const link = document.createElement("a");
+      link.setAttribute("rel", "ar");
+      link.href = usdzUrl;
+      
+      // Kiegészítő kép az Apple AR Quick Look-nak
+      const img = document.createElement("img");
+      link.appendChild(img);
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      // Takarítás
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(usdzUrl);
+      }, 2000);
+    } catch (err) {
+      console.error("AR Hiba:", err);
+      alert("Hiba történt az AR indításakor. Kérlek várj a modell betöltéséig!");
+    }
+  };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -158,22 +185,20 @@ export default function EgyediVaszonkepPage() {
                   <ModelViewerTag
                     ref={modelViewerRef}
                     src={MODEL_URLS[activeRatio]}
-                    ios-src={USDZ_URLS[activeRatio]}
-                    ar
-                    ar-modes="quick-look webxr scene-viewer"
-                    ar-placement="wall"
+                    ar-modes="webxr scene-viewer" // Kikapcsoljuk a natív quick-look-ot, mert mi hívjuk meg
                     camera-controls
                     auto-rotate
-                    shadow-intensity="1.5"
-                    exposure="1.1"
                     style={{ width: "100%", height: "100%", backgroundColor: "#efebe6" }}
                   >
                     <button onClick={() => setIs3DMode(false)} className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm z-50">
                       Bezárás
                     </button>
                     
-                    {/* Ez a SLOT gomb az, amit a model-viewer natívan kezel */}
-                    <button slot="ar-button" className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50">
+                    {/* EGYEDI AR GOMB - Ez generálja le a fájlt */}
+                    <button 
+                      onClick={handleARWithTexture}
+                      className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50 transition-transform active:scale-95"
+                    >
                       ✨ Falra helyezés (AR)
                     </button>
                   </ModelViewerTag>
@@ -207,6 +232,7 @@ export default function EgyediVaszonkepPage() {
             </div>
           </div>
 
+          {/* Konfigurátor rész változatlan stílussal */}
           <div className="rounded-[35px] border border-[#d9d5cf] bg-white p-8 h-fit shadow-xl">
             <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-8 text-[#2a211d]">Egyedi Vászonkép</h1>
             <div className="space-y-10 text-black">
@@ -214,7 +240,7 @@ export default function EgyediVaszonkepPage() {
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 italic">1. Formátum</p>
                   <div className="grid grid-cols-3 gap-3">
                     {(Object.keys(ratios) as Ratio[]).map(r => (
-                      <button key={r} onClick={() => { setRatio(r); setSize(sizes[r][0]); setSavedConfig(null); }} className={`py-4 border-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${ratio === r ? 'border-[#2a211d] bg-[#2a211d] text-white' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>{ratioLabels[r]}</button>
+                      <button key={r} onClick={() => { setRatio(r); setSize(sizes[r][0]); setSavedConfig(null); }} className={`py-4 border-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${ratio === r ? 'border-[#2a211d] bg-[#2a211d] text-white shadow-lg' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>{ratioLabels[r]}</button>
                     ))}
                   </div>
                 </div>
@@ -245,6 +271,7 @@ export default function EgyediVaszonkepPage() {
         </div>
       </section>
 
+      {/* Crop Modal változatlanul */}
       {image && !savedConfig && isCropModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 backdrop-blur-md">
           <div className="w-full max-w-2xl bg-white rounded-[40px] overflow-hidden flex flex-col max-h-[90vh]">

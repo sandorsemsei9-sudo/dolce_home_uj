@@ -16,6 +16,12 @@ const MODEL_URLS: Record<Ratio, string> = {
   landscape: "/models/landscape.glb",
 };
 
+const USDZ_URLS: Record<Ratio, string> = {
+  square: "/models/square.usdz",
+  portrait: "/models/portrait.usdz",
+  landscape: "/models/landscape.usdz",
+};
+
 const TEMPLATE_IMAGE = "/images/mockup.jpg"; 
 
 const ratios: Record<Ratio, number> = {
@@ -100,6 +106,7 @@ export default function EgyediVaszonkepPage() {
     }
   }, []);
 
+  // Textúra injektálás
   useEffect(() => {
     if (is3DMode && savedConfig?.previewUrl && modelViewerRef.current) {
       const mv = modelViewerRef.current;
@@ -137,34 +144,6 @@ export default function EgyediVaszonkepPage() {
     } catch (err) { alert("Hiba!"); } finally { setIsSaving(false); }
   };
 
-  const handleStartAR = async () => {
-    const mv = modelViewerRef.current;
-    if (!mv) return;
-
-    // Ha Android, a model-viewer alapból tudja kezelni
-    if (!/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-      mv.activateAR();
-      return;
-    }
-
-    // iPhone esetén egyedi generálás
-    try {
-      const usdzBlob = await mv.exportScene({ format: 'usdz' });
-      const usdzUrl = URL.createObjectURL(usdzBlob);
-      const anchor = document.createElement("a");
-      anchor.setAttribute("rel", "ar");
-      anchor.href = usdzUrl;
-      const img = document.createElement("img");
-      anchor.appendChild(img);
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-      setTimeout(() => URL.revokeObjectURL(usdzUrl), 5000);
-    } catch (err) {
-      alert("Hiba az AR indításakor.");
-    }
-  };
-
   const activeRatio = (savedConfig?.ratio || ratio) as Ratio;
 
   return (
@@ -179,6 +158,7 @@ export default function EgyediVaszonkepPage() {
                   <ModelViewerTag
                     ref={modelViewerRef}
                     src={MODEL_URLS[activeRatio]}
+                    ios-src={USDZ_URLS[activeRatio]}
                     ar
                     ar-modes="quick-look webxr scene-viewer"
                     ar-placement="wall"
@@ -191,15 +171,11 @@ export default function EgyediVaszonkepPage() {
                     <button onClick={() => setIs3DMode(false)} className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm z-50">
                       Bezárás
                     </button>
-                    {/* GOMB CSAK MOBILON */}
-                    {isMobile && (
-                      <button 
-                        onClick={handleStartAR}
-                        className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50 transition-transform active:scale-95"
-                      >
-                        ✨ Falra helyezés (AR)
-                      </button>
-                    )}
+                    
+                    {/* Ez a SLOT gomb az, amit a model-viewer natívan kezel */}
+                    <button slot="ar-button" className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50">
+                      ✨ Falra helyezés (AR)
+                    </button>
                   </ModelViewerTag>
                 </div>
               ) : (
@@ -238,7 +214,7 @@ export default function EgyediVaszonkepPage() {
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 italic">1. Formátum</p>
                   <div className="grid grid-cols-3 gap-3">
                     {(Object.keys(ratios) as Ratio[]).map(r => (
-                      <button key={r} onClick={() => { setRatio(r); setSize(sizes[r][0]); setSavedConfig(null); }} className={`py-4 border-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${ratio === r ? 'border-[#2a211d] bg-[#2a211d] text-white shadow-lg' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>{ratioLabels[r]}</button>
+                      <button key={r} onClick={() => { setRatio(r); setSize(sizes[r][0]); setSavedConfig(null); }} className={`py-4 border-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${ratio === r ? 'border-[#2a211d] bg-[#2a211d] text-white' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>{ratioLabels[r]}</button>
                     ))}
                   </div>
                 </div>

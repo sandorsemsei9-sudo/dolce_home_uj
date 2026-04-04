@@ -16,6 +16,12 @@ const MODEL_URLS: Record<Ratio, string> = {
   landscape: "/models/landscape.glb",
 };
 
+const USDZ_URLS: Record<Ratio, string> = {
+  square: "/models/square.usdz",
+  portrait: "/models/portrait.usdz",
+  landscape: "/models/landscape.usdz",
+};
+
 const TEMPLATE_IMAGE = "/images/mockup.jpg"; 
 
 const ratios: Record<Ratio, number> = {
@@ -55,7 +61,7 @@ const createImage = (url: string): Promise<HTMLImageElement> =>
     image.src = url;
   });
 
-async function getCroppedImageBlob(imageSrc: string, pixelCrop: Area): Promise<string> {
+async function getCroppedImageDataUrl(imageSrc: string, pixelCrop: Area): Promise<string> {
   const image = await createImage(imageSrc);
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -63,9 +69,7 @@ async function getCroppedImageBlob(imageSrc: string, pixelCrop: Area): Promise<s
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
   ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => { if (blob) resolve(URL.createObjectURL(blob)); }, "image/jpeg", 0.92);
-  });
+  return canvas.toDataURL("image/jpeg", 0.9);
 }
 
 export default function EgyediVaszonkepPage() {
@@ -85,13 +89,8 @@ export default function EgyediVaszonkepPage() {
   const [is3DMode, setIs3DMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
   const price = useMemo(() => calculatePrice(size), [size]);
-
-  useEffect(() => {
-    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
-  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !customElements.get("model-viewer")) {
@@ -133,27 +132,10 @@ export default function EgyediVaszonkepPage() {
     if (!image || !croppedAreaPixels) return;
     setIsSaving(true);
     try {
-      const blobUrl = await getCroppedImageBlob(image, croppedAreaPixels);
-      setSavedConfig({ ratio, size, price, previewUrl: blobUrl });
+      const dataUrl = await getCroppedImageDataUrl(image, croppedAreaPixels);
+      setSavedConfig({ ratio, size, price, previewUrl: dataUrl });
       setIsCropModalOpen(false);
     } catch (err) { alert("Hiba!"); } finally { setIsSaving(false); }
-  };
-
-  const handleStartAR = () => {
-    if (!savedConfig?.previewUrl) return;
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS) {
-      const anchor = document.createElement("a");
-      anchor.setAttribute("rel", "ar");
-      anchor.setAttribute("href", savedConfig.previewUrl);
-      const img = document.createElement("img");
-      anchor.appendChild(img);
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-    } else {
-      setIs3DMode(true);
-    }
   };
 
   const activeRatio = (savedConfig?.ratio || ratio) as Ratio;
@@ -163,28 +145,32 @@ export default function EgyediVaszonkepPage() {
       <Navbar />
       <section className="mx-auto max-w-7xl px-6 py-10 md:py-14">
         <div className="grid gap-10 lg:grid-cols-[1.45fr_0.85fr]">
-          
           <div className="space-y-5">
             <div className="overflow-hidden rounded-[40px] border border-[#d9d5cf] bg-white shadow-2xl relative min-h-[500px]">
               {is3DMode && savedConfig ? (
                 <ModelViewerTag
                   ref={modelViewerRef}
                   src={MODEL_URLS[activeRatio]}
+                  ios-src={USDZ_URLS[activeRatio]}
+                  ar
+                  ar-modes="quick-look webxr scene-viewer"
+                  ar-placement="wall"
                   camera-controls
                   auto-rotate
-                  shadow-intensity="1.5"
-                  exposure="1.1"
                   style={{ width: "100%", height: "500px", backgroundColor: "#efebe6" }}
                 >
                   <button onClick={() => setIs3DMode(false)} className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm z-50">
                     Bezárás
                   </button>
+                  <button slot="ar-button" className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl z-50">
+                    ✨ Falra helyezés (AR)
+                  </button>
                 </ModelViewerTag>
               ) : (
                 <div className="relative aspect-[1.1/1] bg-[#efebe6]">
-                  <img src={TEMPLATE_IMAGE} alt="Wall mockup" className="h-full w-full object-cover" />
+                  <img src={TEMPLATE_IMAGE} alt="Mockup" className="h-full w-full object-cover" />
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8">
-                    <div className={`transition-all duration-700 ease-in-out ${
+                    <div className={`transition-all duration-700 ${
                       activeRatio === "square" ? "aspect-square w-[62%]" : 
                       activeRatio === "portrait" ? "aspect-[2/3] w-[42%]" : "aspect-[3/2] w-[72%]"
                     }`}>
@@ -200,13 +186,8 @@ export default function EgyediVaszonkepPage() {
                   {savedConfig && (
                     <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-3 z-30">
                        <button onClick={() => setIs3DMode(true)} className="bg-white text-black px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl transition-all hover:scale-105 active:scale-95">
-                         🔄 3D Nézet
+                         🔄 3D & AR Mód
                        </button>
-                       {isMobile && (
-                         <button onClick={handleStartAR} className="bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-xs shadow-2xl transition-all hover:scale-105 active:scale-95">
-                           ✨ Falra helyezés (AR)
-                         </button>
-                       )}
                     </div>
                   )}
                 </div>
@@ -221,7 +202,7 @@ export default function EgyediVaszonkepPage() {
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 italic">1. Formátum</p>
                   <div className="grid grid-cols-3 gap-3">
                     {(Object.keys(ratios) as Ratio[]).map(r => (
-                      <button key={r} onClick={() => { setRatio(r); setSize(sizes[r][0]); setSavedConfig(null); }} className={`py-4 border-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${ratio === r ? 'border-[#2a211d] bg-[#2a211d] text-white shadow-lg' : 'border-gray-100 bg-gray-50 text-gray-400 hover:border-gray-200'}`}>{ratioLabels[r]}</button>
+                      <button key={r} onClick={() => { setRatio(r); setSize(sizes[r][0]); setSavedConfig(null); }} className={`py-4 border-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${ratio === r ? 'border-[#2a211d] bg-[#2a211d] text-white' : 'border-gray-100 bg-gray-50 text-gray-400'}`}>{ratioLabels[r]}</button>
                     ))}
                   </div>
                 </div>
@@ -235,7 +216,7 @@ export default function EgyediVaszonkepPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 italic">3. Fotó feltöltése</p>
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-200 rounded-[25px] bg-gray-50 cursor-pointer hover:bg-orange-50/50 transition-all">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-200 rounded-[25px] bg-gray-50 cursor-pointer">
                     <span className="text-[10px] font-black uppercase tracking-widest text-[#d17d58]">{fileName || "Kép kiválasztása"}</span>
                     <input type="file" accept="image/*" onChange={onFileChange} className="hidden" />
                   </label>
@@ -246,16 +227,7 @@ export default function EgyediVaszonkepPage() {
                 <p className="text-[10px] uppercase font-black text-gray-300 italic mb-1">Végösszeg</p>
                 <p className="text-3xl font-black italic tracking-tighter text-[#2a211d]">{formatPrice(savedConfig?.price || price)}</p>
               </div>
-              <button 
-                disabled={!savedConfig} 
-                onClick={() => {
-                  addItem({ id: uuidv4(), name: "Egyedi Vászonkép", size: savedConfig.size, price: savedConfig.price, image: savedConfig.previewUrl, quantity: 1, isCustom: true });
-                  router.push('/kosar');
-                }} 
-                className="bg-[#d17d58] text-white px-10 py-5 rounded-[20px] font-black uppercase text-xs tracking-[0.15em] shadow-xl shadow-orange-200/50 transition-all hover:scale-105 active:scale-95 disabled:opacity-20"
-              >
-                Kosárba
-              </button>
+              <button disabled={!savedConfig} onClick={() => { addItem({ id: uuidv4(), name: "Egyedi Vászonkép", size: savedConfig.size, price: savedConfig.price, image: savedConfig.previewUrl, quantity: 1, isCustom: true }); router.push('/kosar'); }} className="bg-[#d17d58] text-white px-10 py-5 rounded-[20px] font-black uppercase text-xs tracking-[0.15em] shadow-xl disabled:opacity-20 transition-all active:scale-95">Kosárba</button>
             </div>
           </div>
         </div>
@@ -264,7 +236,7 @@ export default function EgyediVaszonkepPage() {
       {image && !savedConfig && isCropModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 backdrop-blur-md">
           <div className="w-full max-w-2xl bg-white rounded-[40px] overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b flex justify-between items-center bg-gray-50/50">
+            <div className="p-6 border-b flex justify-between items-center">
                <h3 className="font-black uppercase italic text-sm tracking-widest text-[#2a211d]">Kép szerkesztése</h3>
                <button onClick={() => setIsCropModalOpen(false)} className="text-gray-400 p-2 text-xl">✕</button>
             </div>
@@ -272,13 +244,8 @@ export default function EgyediVaszonkepPage() {
               <Cropper image={image} crop={crop} zoom={zoom} aspect={ratios[ratio]} onCropChange={setCrop} onCropComplete={(_, p) => setCroppedAreaPixels(p)} onZoomChange={setZoom} />
             </div>
             <div className="p-8 space-y-6 bg-white">
-              <div className="flex items-center gap-4">
-                <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Zoom</span>
-                <input type="range" min={1} max={3} step={0.1} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-2 bg-gray-100 rounded-lg appearance-none accent-[#d17d58]" />
-              </div>
-              <button onClick={handleSaveConfig} disabled={isSaving} className="w-full bg-[#2a211d] text-white py-5 rounded-[20px] font-black uppercase text-xs tracking-[0.2em] shadow-xl">
-                {isSaving ? "Mentés..." : "Kép rögzítése"}
-              </button>
+              <input type="range" min={1} max={3} step={0.1} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-2 bg-gray-100 rounded-lg appearance-none accent-[#d17d58]" />
+              <button onClick={handleSaveConfig} disabled={isSaving} className="w-full bg-[#2a211d] text-white py-5 rounded-[20px] font-black uppercase text-xs tracking-[0.2em] shadow-xl">Mentés</button>
             </div>
           </div>
         </div>

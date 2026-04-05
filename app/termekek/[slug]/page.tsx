@@ -1,5 +1,13 @@
 "use client";
 
+// Add this declaration at the top of your file
+/// <reference types="react" />
+declare namespace JSX {
+  interface IntrinsicElements {
+    'model-viewer': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+  }
+}
+
 import React, { useEffect, useState, use } from "react";
 import Image from "next/image";
 import dynamic from 'next/dynamic';
@@ -132,42 +140,41 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
       </div>
 
       {/* --- 3D MODAL (TELJES KÉPERNYŐS) --- */}
-{/* --- 3D MODAL --- */}
-{isModalOpen && (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-300">
-    {/* Áttetsző háttér kattintásra bezárással */}
-    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-    
-    <div className="relative w-full h-full md:h-[85vh] max-w-5xl bg-[#f8f8f6] md:rounded-[32px] overflow-hidden shadow-2xl flex flex-col">
-      
-      {/* FEJLÉC (Hogy ne olvadjon össze semmivel) */}
-      <div className="relative p-5 border-b border-gray-200 flex justify-between items-center bg-white z-[110]">
-        <div>
-          <h3 className="text-sm font-bold text-black">{product.name}</h3>
-          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter">3D Előnézet & AR</p>
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-300">
+          {/* Áttetsző háttér kattintásra bezárással */}
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+          
+          <div className="relative w-full h-full md:h-[85vh] max-w-5xl bg-[#f8f8f6] md:rounded-[32px] overflow-hidden shadow-2xl flex flex-col">
+            
+            {/* FEJLÉC (Hogy ne olvadjon össze semmivel) */}
+            <div className="relative p-5 border-b border-gray-200 flex justify-between items-center bg-white z-[110]">
+              <div>
+                <h3 className="text-sm font-bold text-black">{product.name}</h3>
+                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter">3D Előnézet & AR</p>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="bg-black text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md active:scale-90 transition-all font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* A 3D NÉZET TARTALMA */}
+            <div className="flex-1 w-full relative">
+              <CanvasViewer modelUrl={product.model_url || "/models/canvas-12glb.glb"} />
+            </div>
+
+            {/* ALSÓ SEGÍTSÉG (Csak mobilon fontos igazán) */}
+            <div className="bg-white p-4 border-t border-gray-100 md:hidden">
+              <p className="text-[9px] text-center font-bold text-gray-400 uppercase tracking-widest">
+                Forgatás egy ujjal • Mozgatás két ujjal
+              </p>
+            </div>
+          </div>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(false)}
-          className="bg-black text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md active:scale-90 transition-all font-bold"
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* A 3D NÉZET TARTALMA */}
-      <div className="flex-1 w-full relative">
-        <CanvasViewer modelUrl={product.model_url || "/models/canvas-12glb.glb"} />
-      </div>
-
-      {/* ALSÓ SEGÍTSÉG (Csak mobilon fontos igazán) */}
-      <div className="bg-white p-4 border-t border-gray-100 md:hidden">
-        <p className="text-[9px] text-center font-bold text-gray-400 uppercase tracking-widest">
-          Forgatás egy ujjal • Mozgatás két ujjal
-        </p>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
       <Footer />
     </main>

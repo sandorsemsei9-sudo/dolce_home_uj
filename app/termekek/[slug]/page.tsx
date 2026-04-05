@@ -163,7 +163,7 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
 
             {/* A 3D NÉZET TARTALMA */}
             <div className="flex-1 w-full relative">
-              <CanvasViewer modelUrl={product.model_url || "/models/canvas-12glb.glb"} />
+              <CanvasViewer modelUrl={product.model_url || "/models/canvas.glb"} />
             </div>
 
             {/* ALSÓ SEGÍTSÉG (Csak mobilon fontos igazán) */}

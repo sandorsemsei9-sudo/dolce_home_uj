@@ -112,21 +112,28 @@ export default function EgyediVaszonkepPage() {
     } catch (err) { console.error(err); } 
     finally { setIsSaving(false); }
   };
-
-  const handleAddToCart = () => {
-    if (!savedConfig) return;
-    addItem({
-      id: uuidv4(),
-      name: `Egyedi Vászonkép (${ratioLabels[savedConfig.ratio]})`,
-      size: savedConfig.size,
-      price: savedConfig.price,
-      image: savedConfig.previewUrl,
-      quantity: 1,
-      isCustom: true,
-      customData: { storagePath: savedConfig.storagePath }
-    });
-    router.push("/kosar");
-  };
+const handleAddToCart = () => {
+  if (!savedConfig) return;
+  addItem({
+    id: uuidv4(),
+    name: `Egyedi Vászonkép (${ratioLabels[savedConfig.ratio as Ratio]})`,
+    size: savedConfig.size,
+    price: savedConfig.price,
+    image: savedConfig.previewUrl,
+    quantity: 1,
+    isCustom: true,
+    customData: {
+      // Itt a trükk: a storagePath helyett a várt neveket használjuk
+      original_image_url: savedConfig.storagePath, 
+      ratio: savedConfig.ratio,
+      config: {
+        zoom: zoom,
+        crop: croppedAreaPixels || { x: 0, y: 0, width: 0, height: 0 }
+      }
+    }
+  });
+  router.push("/kosar");
+};
 
   const activeRatio = savedConfig?.ratio || ratio;
 

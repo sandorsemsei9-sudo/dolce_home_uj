@@ -11,7 +11,6 @@ import { useRouter } from "next/navigation";
 import Script from "next/script";
 import dynamic from 'next/dynamic';
 
-// A 3D komponens betöltése - a <any> kényszerítés megoldja a "No overload matches" hibát
 const CustomCanvasViewer = dynamic<any>(() => import("../components/3d/CumstomCanvasPoster"), { 
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-full italic text-gray-400">3D Modell betöltése...</div>
@@ -46,6 +45,7 @@ export default function EgyediVaszonkepPage() {
 
   const [mounted, setMounted] = useState(false);
   const [isARModalOpen, setIsARModalOpen] = useState(false);
+  const [isIOS, setIsIOS] = useState(false); // Új állapot az iOS detektáláshoz
   
   const [image, setImage] = useState<string | null>(null);
   const [fileName, setFileName] = useState("");
@@ -58,7 +58,13 @@ export default function EgyediVaszonkepPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { 
+    setMounted(true); 
+    // Egyszerű detektálás, hogy iPhone/iPad-en vagyunk-e
+    const checkIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    setIsIOS(checkIOS);
+  }, []);
 
   const price = useMemo(() => calculatePrice(size), [size]);
 
@@ -137,7 +143,7 @@ export default function EgyediVaszonkepPage() {
                 onClick={() => setIsARModalOpen(true)}
                 className="absolute top-6 right-6 z-20 bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl border border-[#d9d5cf] shadow-xl hover:scale-105 transition-all text-black font-black uppercase text-[10px]"
               >
-                📦 3D / AR Nézet
+                📦 {isIOS ? "3D Nézet" : "3D / AR Nézet"}
               </button>
             )}
             
@@ -160,6 +166,7 @@ export default function EgyediVaszonkepPage() {
             <h1 className="text-3xl font-black italic uppercase mb-8 tracking-tighter">Egyedi Vászonkép</h1>
             
             <div className="space-y-8">
+              {/* Formátum és Méret választók változatlanok maradnak... */}
               <div>
                 <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">1. Válasz formátumot</p>
                 <div className="grid grid-cols-3 gap-2">
@@ -196,11 +203,7 @@ export default function EgyediVaszonkepPage() {
 
             <div className="mt-12 pt-8 border-t border-dashed flex justify-between items-center">
               <p className="text-3xl font-black italic">{formatPrice(price)}</p>
-              <button 
-                onClick={handleAddToCart} 
-                disabled={!savedConfig} 
-                className="bg-[#e3936e] text-white px-8 py-4 rounded-2xl font-black uppercase text-xs shadow-xl disabled:opacity-20 transition-all"
-              >
+              <button onClick={handleAddToCart} disabled={!savedConfig} className="bg-[#e3936e] text-white px-8 py-4 rounded-2xl font-black uppercase text-xs shadow-xl disabled:opacity-20 transition-all">
                 Kosárba
               </button>
             </div>
@@ -214,34 +217,32 @@ export default function EgyediVaszonkepPage() {
           <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setIsARModalOpen(false)} />
           <div className="relative w-full h-full max-w-5xl bg-[#f8f8f6] md:rounded-[40px] overflow-hidden flex flex-col">
             <div className="p-5 border-b flex justify-between items-center bg-white z-10">
-               <h3 className="font-black uppercase italic text-sm text-black">3D Preview</h3>
+               <div>
+                 <h3 className="font-black uppercase italic text-sm text-black">3D Preview</h3>
+                 <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
+                   {isIOS ? "Interaktív Modell" : "3D & AR Előnézet"}
+                 </p>
+               </div>
                <button onClick={() => setIsARModalOpen(false)} className="bg-black text-white w-10 h-10 rounded-xl font-bold">✕</button>
             </div>
             <div className="flex-1 relative bg-[#efebe6]">
-<CustomCanvasViewer 
-  modelUrl={`/models/canvas-${activeRatio}.glb`}
-  iosModelUrl={`/models/canvas-${activeRatio}.usdz`} // Add hozzá ezt a sort!
-  textureUrl={savedConfig?.previewUrl}
-/>
+              {/* CSAK ANDROIDON ADJUK ÁT AZ USDZ-T, ÍGY IPHONE-ON CSAK A 3D FORGATÁS LESZ ELÉRHETŐ */}
+              <CustomCanvasViewer 
+                modelUrl={`/models/canvas-${activeRatio}.glb`}
+                iosModelUrl={isIOS ? "" : `/models/canvas-${activeRatio}.usdz`} 
+                textureUrl={savedConfig?.previewUrl}
+              />
             </div>
           </div>
         </div>
       )}
 
-      {/* CROPPER MODAL */}
+      {/* CROPPER MODAL változatlan... */}
       {isCropModalOpen && image && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 p-4">
           <div className="w-full max-w-2xl bg-white rounded-[40px] overflow-hidden">
             <div className="relative h-[400px] bg-black">
-              <Cropper 
-                image={image} 
-                crop={crop} 
-                zoom={zoom} 
-                aspect={ratios[ratio]} 
-                onCropChange={setCrop} 
-                onCropComplete={(_, p) => setCroppedAreaPixels(p)} 
-                onZoomChange={setZoom} 
-              />
+              <Cropper image={image} crop={crop} zoom={zoom} aspect={ratios[ratio]} onCropChange={setCrop} onCropComplete={(_, p) => setCroppedAreaPixels(p)} onZoomChange={setZoom} />
             </div>
             <div className="p-8">
               <button onClick={handleSaveConfig} disabled={isSaving} className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase text-xs">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import Cropper, { Area } from "react-easy-crop";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
@@ -8,6 +8,9 @@ import { createClient } from "@/lib/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import { useCartStore } from "../store/useCartStore";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
+
+
 
 // --- SEGÉDFÜGGVÉNYEK ---
 
@@ -20,8 +23,6 @@ const sanitizeFileName = (name: string) => {
 };
 
 type Ratio = "square" | "portrait" | "landscape";
-
-const TEMPLATE_IMAGE = "/images/mockup.jpg"; 
 
 const ratios: Record<Ratio, number> = {
   square: 1 / 1,
@@ -105,6 +106,8 @@ export default function EgyediVaszonkepPage() {
   const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
 
+  const modelRef = useRef<any>(null);
+  const [mounted, setMounted] = useState(false); // Hydration Error elleni védelem
   const [image, setImage] = useState<string | null>(null);
   const [rawFile, setRawFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState("");
@@ -121,6 +124,32 @@ export default function EgyediVaszonkepPage() {
 
   const price = useMemo(() => calculatePrice(size), [size]);
   const isLocked = !!savedConfig;
+
+  // Hydration fix: Csak kliens oldalon rendereljük a model-viewert
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // --- 3D TEXTÚRA FRISSÍTÉS ---
+  useEffect(() => {
+    const applyTexture = async () => {
+      if (mounted && savedConfig?.previewUrl && modelRef.current) {
+        const modelViewer = modelRef.current;
+        
+        // Megvárjuk, amíg a modell betöltődik
+        if (!modelViewer.model || !modelViewer.model.materials) return;
+
+        const material = modelViewer.model.materials[0]; 
+        const texture = await modelViewer.createTexture(savedConfig.previewUrl);
+        
+        // A '3dteszt' nevű anyagon belül a baseColorTexture-t frissítjük
+        if (material.pbrMetallicRoughness.baseColorTexture) {
+           material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
+        }
+      }
+    };
+    applyTexture();
+  }, [savedConfig?.previewUrl, ratio, mounted]);
 
   const onCropComplete = useCallback((_: Area, croppedPixels: Area) => {
     setCroppedAreaPixels(croppedPixels);
@@ -150,8 +179,6 @@ export default function EgyediVaszonkepPage() {
       setIsSaving(true);
       const uniqueId = uuidv4();
       const safeName = sanitizeFileName(rawFile.name);
-      
-      // Mappa struktúra dátummal a jobb rendszerezésért
       const datePath = new Date().toISOString().split('T')[0];
       const originalPath = `originals/${datePath}/${uniqueId}_${safeName}`;
       
@@ -180,24 +207,20 @@ export default function EgyediVaszonkepPage() {
     if (!savedConfig) return;
     try {
       setIsAddingToCart(true);
-      
-      // NEM írunk az adatbázisba, csak a kosárba tesszük az adatokat
       addItem({
-        id: uuidv4(), // Ideiglenes ID a kosárban
+        id: uuidv4(),
         name: "Egyedi Vászonkép",
         size: savedConfig.size,
         price: savedConfig.price,
         image: savedConfig.previewUrl,
         quantity: 1,
         isCustom: true,
-        // Eltároljuk a store-ban a későbbi mentéshez szükséges plusz adatokat:
         customData: {
             original_image_url: savedConfig.originalStoragePath,
             ratio: savedConfig.ratio,
             config: { zoom: savedConfig.zoom, crop: savedConfig.croppedAreaPixels }
         }
       });
-      
       router.push('/kosar');
     } catch (err: any) {
       setError("Hiba a kosárba tételkor!");
@@ -208,41 +231,48 @@ export default function EgyediVaszonkepPage() {
 
   return (
     <main className="min-h-screen bg-[#f7f7f5] text-[#1f1f1f]">
+      <Script 
+        type="module" 
+        src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"
+        strategy="afterInteractive"
+      />
+      
       <Navbar />
       <section className="mx-auto max-w-7xl px-6 py-10 md:py-14">
         <div className="grid gap-10 lg:grid-cols-[1.45fr_0.85fr]">
           
-          {/* 3D ELŐNÉZET MOCKUP */}
+          {/* 3D ELŐNÉZET */}
           <div className="space-y-5">
             <div className="overflow-hidden rounded-[40px] border border-[#d9d5cf] bg-white shadow-2xl shadow-black/5">
               <div className="relative aspect-[1.1/1] bg-[#efebe6]">
-                <img src={TEMPLATE_IMAGE} alt="Wall mockup" className="h-full w-full object-cover" />
-                
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8">
-                  <div className={`transition-all duration-700 ease-in-out ${
-                    activeRatio === "square" ? "aspect-square w-[62%]" : 
-                    activeRatio === "portrait" ? "aspect-[2/3] w-[42%]" : "aspect-[3/2] w-[72%]"
-                  }`}>
-                    
-                    <div className="relative h-full w-full group">
-                      <div className="h-full w-full overflow-hidden bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] transition-all">
-                        {savedConfig?.previewUrl ? (
-                          <img src={savedConfig.previewUrl} alt="Preview" className="h-full w-full object-cover pointer-events-auto" crossOrigin="anonymous" />
-                        ) : image ? (
-                          <img src={image} alt="Uploaded" className="h-full w-full object-cover opacity-50" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-[#f2f0ed] text-[#c1bdb9] font-black uppercase text-[10px] tracking-widest italic">A Te fotód helye</div>
-                        )}
-                      </div>
-
-                      <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute inset-0 border border-white/10" />
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/25 opacity-80" />
-                        <div className="absolute inset-0 bg-gradient-to-tl from-transparent via-transparent to-white/5 opacity-50" />
-                      </div>
-                    </div>
-
+                {mounted ? (
+                  <model-viewer
+                    ref={modelRef}
+                    src={`/models/canvas-${activeRatio}.glb`}
+                    ios-src={`/models/canvas-${activeRatio}.usdz`}
+                    alt="3D Vászonkép"
+                    auto-rotate
+                    camera-controls
+                    ar
+                    ar-modes="webxr scene-viewer quick-look"
+                    shadow-intensity="1"
+                    exposure="1"
+                    camera-orbit="0deg 90deg 105%"
+                    touch-action="pan-y"
+                    style={{ width: '100%', height: '100%', outline: 'none' }}
+                  >
+                    <button slot="ar-button" className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md border border-gray-200 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl transition-all hover:bg-white hover:scale-105">
+                      Megtekintés a szobámban (AR)
+                    </button>
+                  </model-viewer>
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 animate-pulse">3D Előnézet betöltése...</p>
                   </div>
+                )}
+
+                <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent opacity-30" />
                 </div>
               </div>
             </div>

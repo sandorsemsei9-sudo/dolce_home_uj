@@ -10,21 +10,12 @@ import { useCartStore } from "../store/useCartStore";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'model-viewer': any;
-    }
-  }
-}
-
 const TEMPLATE_IMAGE = "/images/mockup.jpg"; 
 type Ratio = "square" | "portrait" | "landscape";
 
 const ratios: Record<Ratio, number> = { square: 1/1, portrait: 2/3, landscape: 3/2 };
 const ratioLabels: Record<Ratio, string> = { square: "négyzet", portrait: "álló", landscape: "fekvő" };
 
-// MÉRETEK DEFINIÁLÁSA
 const sizes: Record<Ratio, string[]> = {
   square: ["20x20", "30x30", "40x40", "50x50", "60x60", "80x80", "100x100"],
   portrait: ["30x40", "40x50", "40x60", "60x90", "80x100"],
@@ -65,7 +56,7 @@ export default function EgyediVaszonkepPage() {
 
   const price = useMemo(() => calculatePrice(size), [size]);
 
-  // A JÓL MŰKÖDŐ TEXTÚRA LOGIKA
+  // --- 3D TEXTÚRA FRISSÍTÉS (Nálad működő logika) ---
   useEffect(() => {
     const applyTexture = async () => {
       if (savedConfig?.previewUrl && modelRef.current && isARModalOpen) {
@@ -80,8 +71,9 @@ export default function EgyediVaszonkepPage() {
             if (material.pbrMetallicRoughness.baseColorTexture) {
                 material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
                 material.pbrMetallicRoughness.setBaseColorFactor([1, 1, 1, 1]);
+                console.log("3D Siker!");
             }
-        } catch (err) { console.error(err); }
+        } catch (err) { console.error("3D Error:", err); }
       }
     };
     applyTexture();
@@ -100,7 +92,6 @@ export default function EgyediVaszonkepPage() {
     try {
       setIsSaving(true);
       const uniqueId = uuidv4();
-      // Kép vágása funkció (segédfüggvényt használsz korábbról)
       const canvas = document.createElement("canvas");
       const img = new Image();
       img.src = image;
@@ -147,11 +138,12 @@ export default function EgyediVaszonkepPage() {
       <section className="mx-auto max-w-7xl px-6 py-10">
         <div className="grid gap-10 lg:grid-cols-[1.45fr_0.85fr]">
           
-          {/* BAL OLDAL - MOCKUP */}
           <div className="relative aspect-[1.1/1] overflow-hidden rounded-[40px] border border-[#d9d5cf] bg-white shadow-2xl">
             <img src={TEMPLATE_IMAGE} alt="Mockup" className="h-full w-full object-cover" />
             {savedConfig && (
-              <button onClick={() => setIsARModalOpen(true)} className="absolute top-6 right-6 z-20 bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl border border-[#d9d5cf] shadow-xl font-black uppercase text-[10px]">📦 3D / AR Nézet</button>
+              <button onClick={() => setIsARModalOpen(true)} className="absolute top-6 right-6 z-20 bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl border border-[#d9d5cf] shadow-xl font-black uppercase text-[10px] hover:scale-105 transition-all">
+                📦 3D / AR Nézet
+              </button>
             )}
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8">
               <div className={`transition-all duration-700 ${activeRatio === "square" ? "aspect-square w-[62%]" : activeRatio === "portrait" ? "aspect-[2/3] w-[42%]" : "aspect-[3/2] w-[72%]"}`}>
@@ -162,12 +154,10 @@ export default function EgyediVaszonkepPage() {
             </div>
           </div>
 
-          {/* JOBB OLDAL - VEZÉRLÉS */}
           <div className="rounded-[35px] border border-[#d9d5cf] bg-white p-8 shadow-xl">
             <h1 className="text-3xl font-black italic uppercase mb-8 tracking-tighter">Egyedi Vászonkép</h1>
             
             <div className="space-y-8">
-              {/* 1. FORMÁTUM */}
               <div>
                 <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">1. Válasz formátumot</p>
                 <div className="grid grid-cols-3 gap-2">
@@ -177,7 +167,6 @@ export default function EgyediVaszonkepPage() {
                 </div>
               </div>
 
-              {/* 2. MÉRET */}
               <div>
                 <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">2. Válasz méretet (cm)</p>
                 <div className="flex flex-wrap gap-2">
@@ -187,7 +176,6 @@ export default function EgyediVaszonkepPage() {
                 </div>
               </div>
 
-              {/* 3. FELTÖLTÉS */}
               <div>
                 <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">3. Töltsd fel a fotód</p>
                 {!image ? (
@@ -205,7 +193,10 @@ export default function EgyediVaszonkepPage() {
             </div>
 
             <div className="mt-12 pt-8 border-t border-dashed flex justify-between items-center">
-              <p className="text-3xl font-black italic">{formatPrice(price)}</p>
+              <div>
+                <p className="text-[10px] font-black uppercase text-gray-300 mb-1">Ár</p>
+                <p className="text-3xl font-black italic">{formatPrice(price)}</p>
+              </div>
               <button onClick={handleAddToCart} disabled={!savedConfig} className="bg-[#e3936e] text-white px-8 py-4 rounded-2xl font-black uppercase text-xs shadow-xl disabled:opacity-20 hover:scale-105 active:scale-95 transition-all">Kosárba</button>
             </div>
           </div>
@@ -213,15 +204,16 @@ export default function EgyediVaszonkepPage() {
       </section>
 
       {/* 3D MODAL */}
-      {isARModalOpen && (
+      {isARModalOpen && mounted && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-10">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setIsARModalOpen(false)} />
           <div className="relative w-full h-full max-w-5xl bg-[#f8f8f6] md:rounded-[40px] overflow-hidden flex flex-col">
             <div className="p-5 border-b flex justify-between items-center bg-white z-10">
-               <h3 className="font-black uppercase italic text-sm">3D Előnézet és AR</h3>
+               <h3 className="font-black uppercase italic text-sm">3D Preview & AR</h3>
                <button onClick={() => setIsARModalOpen(false)} className="bg-black text-white w-10 h-10 rounded-xl font-bold">✕</button>
             </div>
             <div className="flex-1 relative bg-[#efebe6]">
+              {/* @ts-ignore */}
               <model-viewer
                 ref={modelRef}
                 src={`/models/canvas-${activeRatio}.glb`}
@@ -232,6 +224,7 @@ export default function EgyediVaszonkepPage() {
                 shadow-intensity="1" exposure="1"
                 style={{ width: '100%', height: '100%', outline: 'none' }}
               >
+                {/* @ts-ignore */}
                 <button slot="ar-button" className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white px-8 py-4 rounded-full font-black text-[10px] uppercase shadow-2xl border border-gray-100 text-black">
                   📱 Megtekintés a szobámban
                 </button>
@@ -246,15 +239,15 @@ export default function EgyediVaszonkepPage() {
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 p-4">
           <div className="w-full max-w-2xl bg-white rounded-[40px] overflow-hidden shadow-2xl">
             <div className="p-6 border-b flex justify-between items-center">
-               <h3 className="font-black uppercase italic text-sm">Kép vágása</h3>
+               <h3 className="font-black uppercase italic text-sm text-black">Kép vágása</h3>
                <button onClick={() => setIsCropModalOpen(false)} className="text-gray-300">✕</button>
             </div>
             <div className="relative h-[400px] bg-black">
               <Cropper image={image} crop={crop} zoom={zoom} aspect={ratios[ratio]} onCropChange={setCrop} onCropComplete={(_, p) => setCroppedAreaPixels(p)} onZoomChange={setZoom} />
             </div>
             <div className="p-8">
-              <button onClick={handleSaveConfig} disabled={isSaving} className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest">
-                {isSaving ? "Folyamatban..." : "Kép rögzítése"}
+              <button onClick={handleSaveConfig} disabled={isSaving} className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">
+                {isSaving ? "Mentés..." : "Kép rögzítése"}
               </button>
             </div>
           </div>

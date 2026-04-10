@@ -218,10 +218,11 @@ export default function EgyediVaszonkepPage() {
                <button onClick={() => setIsARModalOpen(false)} className="bg-black text-white w-10 h-10 rounded-xl font-bold">✕</button>
             </div>
             <div className="flex-1 relative bg-[#efebe6]">
-              <CustomCanvasViewer 
-                modelUrl={`/models/canvas-${activeRatio}.glb`}
-                textureUrl={savedConfig?.previewUrl}
-              />
+<CustomCanvasViewer 
+  modelUrl={`/models/canvas-${activeRatio}.glb`}
+  iosModelUrl={`/models/canvas-${activeRatio}.usdz`} // Add hozzá ezt a sort!
+  textureUrl={savedConfig?.previewUrl}
+/>
             </div>
           </div>
         </div>

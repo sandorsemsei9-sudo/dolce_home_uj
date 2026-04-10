@@ -3,18 +3,19 @@
 import { useEffect, useRef } from "react";
 
 interface Props {
-  modelUrl: string;
+  modelUrl: string;    // Ez a .glb
+  iosModelUrl: string; // EZ HIÁNYZOTT: Ez lesz a .usdz
   textureUrl?: string;
 }
 
-export default function CustomCanvasViewer({ modelUrl, textureUrl }: Props) {
+export default function CustomCanvasViewer({ modelUrl, iosModelUrl, textureUrl }: Props) {
   const modelRef = useRef<any>(null);
 
   useEffect(() => {
     const applyTexture = async () => {
+      // A textúra módosítás csak a böngészőben (GLB-n) fog látszódni!
       if (textureUrl && modelRef.current) {
         const mv = modelRef.current;
-        // Várunk, amíg a modell betölt
         if (!mv.model || !mv.model.materials) {
           setTimeout(applyTexture, 300);
           return;
@@ -40,8 +41,10 @@ export default function CustomCanvasViewer({ modelUrl, textureUrl }: Props) {
     <model-viewer
       ref={modelRef}
       src={modelUrl}
+      ios-src={iosModelUrl} // <--- EZ A KULCS AZ IPHONE-HOZ
       ar
-      ar-modes="webxr scene-viewer quick-look"
+      // A quick-look legyen az első, hogy az iPhone a saját natív AR nézőjét használja
+      ar-modes="quick-look webxr scene-viewer" 
       camera-controls
       auto-rotate
       shadow-intensity="1"

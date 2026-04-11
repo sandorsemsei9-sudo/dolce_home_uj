@@ -28,7 +28,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
   if (!products || products.length === 0) return null;
 
   return (
-    <section id="hero" className="relative overflow-hidden bg-[url('/hero-bg.png')] bg-cover bg-center">
+    <section id="hero" className="relative overflow-hidden bg-[url('/hero-bg.webp')] bg-cover bg-center">
       <style jsx>{`
         @keyframes fadeInSlide {
           from { opacity: 0; transform: translateY(20px); }

@@ -38,10 +38,19 @@ export default function AdminOrdersPage() {
 
   const formatPrice = (price: number) => new Intl.NumberFormat("hu-HU").format(price) + " Ft";
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('hu-HU', { 
+      year: 'numeric',
+      month: 'short', 
+      day: '2-digit', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
   return (
     <div className="p-4 md:p-10 bg-[#fbfbfb] min-h-screen text-[#1a1a1a]">
       
-      {/* FEJLÉC ÉS SZŰRŐK */}
       <div className="max-w-7xl mx-auto mb-6 md:mb-10">
         <div className="flex flex-col gap-6">
           <div>
@@ -51,7 +60,6 @@ export default function AdminOrdersPage() {
             </p>
           </div>
           
-          {/* GÖRGETHETŐ SZŰRŐK MOBILON */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
             {["all", "waiting_for_payment", "pending", "shipped", "delivered"].map((s) => (
               <button
@@ -76,7 +84,7 @@ export default function AdminOrdersPage() {
           <div className="p-20 text-center font-black uppercase text-[10px] tracking-widest animate-pulse text-gray-300">Szinkronizálás...</div>
         ) : (
           <>
-            {/* MOBIL NÉZET: KÁRTYÁK (Asztalin rejtve: hidden, Mobilon: block) */}
+            {/* MOBIL NÉZET */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
               {orders.map((order) => {
                 const status = statusMap[order.status] || statusMap.pending;
@@ -88,7 +96,7 @@ export default function AdminOrdersPage() {
                           #{String(order.id).slice(0, 8)}
                         </span>
                         <p className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-tight">
-                          {new Date(order.created_at).toLocaleString('hu-HU', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          {formatDate(order.created_at)}
                         </p>
                       </div>
                       <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${status.color}`}>
@@ -115,54 +123,93 @@ export default function AdminOrdersPage() {
               })}
             </div>
 
-            {/* ASZTALI NÉZET: TÁBLÁZAT (Mobilon rejtve: hidden, md-től: block) */}
-            <div className="hidden md:block bg-white border border-gray-100 rounded-[40px] shadow-xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-gray-50/50 border-b border-gray-50 text-[10px] uppercase tracking-[0.2em] text-gray-400 font-black">
-                      <th className="p-8">Rendelés</th>
-                      <th className="p-8">Ügyfél</th>
-                      <th className="p-8">Mód</th>
-                      <th className="p-8 text-center">Összeg</th>
-                      <th className="p-8 text-center">Státusz</th>
-                      <th className="p-8 text-right">Művelet</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {orders.map((order) => {
-                      const status = statusMap[order.status] || statusMap.pending;
-                      return (
-                        <tr key={order.id} className="hover:bg-[#fafafa]/50 transition-colors">
-                          <td className="p-8">
-                            <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded text-[10px]">#{String(order.id).slice(0, 8)}</span>
-                          </td>
-                          <td className="p-8">
-                            <p className="font-black uppercase tracking-tight text-gray-800">{order.customer_name}</p>
-                            <p className="text-[11px] text-gray-400">{order.customer_email}</p>
-                          </td>
-                          <td className="p-8">
-                             <span className="text-[10px] font-black text-gray-500 uppercase">{order.payment_method === 'card' ? '💳' : '🏦'} {order.payment_method}</span>
-                          </td>
-                          <td className="p-8 text-center font-black">{formatPrice(order.total_amount)}</td>
-                          <td className="p-8 text-center">
-                            <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase border ${status.color}`}>{status.label}</span>
-                          </td>
-                          <td className="p-8 text-right">
-                            <div className="flex justify-end gap-2">
-                              {order.status === "waiting_for_payment" && (
-                                <button onClick={() => markAsPaid(order.id)} className="bg-emerald-500 text-white h-10 px-4 rounded-full text-[10px] font-black uppercase">Fizetve</button>
-                              )}
-                              <Link href={`/admin/orders/${order.id}`} className="bg-white border border-gray-200 h-10 px-5 rounded-full text-[10px] font-black uppercase flex items-center hover:bg-black hover:text-white transition-all">Részletek</Link>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+{/* ASZTALI NÉZET: TÁBLÁZAT */}
+<div className="hidden md:block bg-white border border-gray-100 rounded-[30px] shadow-lg overflow-hidden">
+  <div className="overflow-x-auto">
+    <table className="w-full text-left border-collapse">
+      <thead>
+        <tr className="bg-gray-50/50 border-b border-gray-50 text-[9px] uppercase tracking-widest text-gray-400 font-black">
+          <th className="px-4 py-4">Rendelés</th>
+          <th className="px-4 py-4">Dátum</th>
+          <th className="px-4 py-4">Ügyfél</th>
+          <th className="px-4 py-4">Mód</th>
+          <th className="px-4 py-4 text-center">Összeg</th>
+          <th className="px-4 py-4 text-center">Státusz</th>
+          <th className="px-4 py-4 text-right">Művelet</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-50">
+        {orders.map((order) => {
+          const status = statusMap[order.status] || statusMap.pending;
+          return (
+            <tr key={order.id} className="hover:bg-[#fafafa] transition-colors">
+              {/* ID */}
+              <td className="px-4 py-4">
+                <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-[10px]">
+                  #{String(order.id).slice(0, 8)}
+                </span>
+              </td>
+              
+              {/* DÁTUM */}
+              <td className="px-4 py-4 whitespace-nowrap">
+                <p className="text-[10px] font-bold text-gray-500">
+                  {formatDate(order.created_at)}
+                </p>
+              </td>
+              
+              {/* ÜGYFÉL */}
+              <td className="px-4 py-4">
+                <p className="font-extrabold uppercase text-[12px] text-gray-900 leading-none">
+                  {order.customer_name}
+                </p>
+                <p className="text-[10px] text-gray-400 mt-1">{order.customer_email}</p>
+              </td>
+              
+              {/* MÓD */}
+              <td className="px-4 py-4">
+                <span className="text-[9px] font-black text-gray-400 uppercase whitespace-nowrap">
+                  {order.payment_method === 'card' ? '💳 CARD' : '🏦 BANK'}
+                </span>
+              </td>
+              
+              {/* ÖSSZEG */}
+              <td className="px-4 py-4 text-center font-black text-gray-900 text-sm whitespace-nowrap">
+                {formatPrice(order.total_amount)}
+              </td>
+              
+              {/* STÁTUSZ */}
+              <td className="px-4 py-4 text-center">
+                <span className={`inline-block px-3 py-1 rounded-lg text-[9px] font-black uppercase border whitespace-nowrap ${status.color}`}>
+                  {status.label}
+                </span>
+              </td>
+              
+              {/* MŰVELET - Itt a lényeg! */}
+              <td className="px-4 py-4 text-right">
+                <div className="flex justify-end items-center gap-2">
+                  {order.status === "waiting_for_payment" && (
+                    <button 
+                      onClick={() => markAsPaid(order.id)} 
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white h-8 px-3 rounded-lg text-[9px] font-black uppercase transition-all shadow-sm active:scale-95"
+                    >
+                      Fizetve
+                    </button>
+                  )}
+                  <Link 
+                    href={`/admin/orders/${order.id}`} 
+                    className="bg-black text-white h-8 px-4 rounded-lg text-[9px] font-black uppercase flex items-center hover:opacity-80 transition-all shadow-sm active:scale-95"
+                  >
+                    Részletek
+                  </Link>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+</div>
           </>
         )}
       </div>

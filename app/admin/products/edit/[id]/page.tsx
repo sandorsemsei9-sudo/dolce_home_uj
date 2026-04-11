@@ -14,7 +14,6 @@ export default function EditProductPage() {
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
 
-  // Állapot a termék adatokhoz
   const [product, setProduct] = useState({
     name: "",
     slug: "",
@@ -22,24 +21,22 @@ export default function EditProductPage() {
     description: "",
     cover_image: "",
     hover_image: "",
+    orientation: "portrait",
   });
 
   const [variants, setVariants] = useState<any[]>([]);
-
-  // Képfeltöltés állapotok
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingHover, setUploadingHover] = useState(false);
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
-      // 1. Kategóriák
       const { data: catData } = await supabase.from("categories").select("*");
       if (catData) setCategories(catData);
 
-      // 2. Termék adatok
       const { data: pData } = await supabase.from("products").select("*").eq("id", id).single();
       if (pData) {
+        // Frissítjük a teljes állapotot az adatbázisból jövő adatokkal
         setProduct({
           name: pData.name || "",
           slug: pData.slug || "",
@@ -47,10 +44,10 @@ export default function EditProductPage() {
           description: pData.description || "",
           cover_image: pData.cover_image || "",
           hover_image: pData.hover_image || "",
+          orientation: pData.orientation || "portrait",
         });
       }
 
-      // 3. Variánsok
       const { data: vData } = await supabase.from("product_variants").select("*").eq("product_id", id);
       if (vData) {
         setVariants(vData.map(v => ({
@@ -60,26 +57,25 @@ export default function EditProductPage() {
       }
       setLoading(false);
     }
-    loadData();
+    if (id) loadData();
   }, [id, supabase]);
 
-  // --- KÉPFELTÖLTÉS KEZELÉSE ---
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'hover', setUploadingFn: (b: boolean) => void) => {
     try {
       setUploadingFn(true);
       if (!e.target.files || e.target.files.length === 0) return;
       const file = e.target.files[0];
+      const fileName = `${Date.now()}-${type}-${file.name.replace(/\s+/g, '-').toLowerCase()}`;
       
-      const fileName = `${Date.now()}-${type}-${file.name}`;
       const { error: uploadError } = await supabase.storage.from("products").upload(fileName, file);
-
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from("products").getPublicUrl(fileName);
-
-      setProduct(prev => ({
-        ...prev,
-        [type === 'cover' ? 'cover_image' : 'hover_image']: data.publicUrl
+      
+      // Fontos: a prev állapotot használjuk, hogy ne vesszen el a többi adat
+      setProduct(prev => ({ 
+        ...prev, 
+        [type === 'cover' ? 'cover_image' : 'hover_image']: data.publicUrl 
       }));
 
     } catch (error: any) {
@@ -89,25 +85,10 @@ export default function EditProductPage() {
     }
   };
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const name = e.target.value;
-    const slug = name.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w ]+/g, "").replace(/\s+/g, "-");
-    setProduct({ ...product, name, slug });
-  };
-
-  const addVariant = () => setVariants([...variants, { size_name: "", price: "" }]);
-  const removeVariant = (index: number) => setVariants(variants.filter((_, i) => i !== index));
-  const updateVariant = (index: number, field: string, value: string) => {
-    const updated = [...variants];
-    updated[index] = { ...updated[index], [field]: value };
-    setVariants(updated);
-  };
-
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
-    // 1. Termék frissítése
     const { error: pError } = await supabase.from("products").update({
       name: product.name,
       slug: product.slug,
@@ -115,15 +96,15 @@ export default function EditProductPage() {
       description: product.description,
       cover_image: product.cover_image,
       hover_image: product.hover_image,
+      orientation: product.orientation,
     }).eq("id", id);
 
     if (pError) {
-      alert("Hiba a termék mentésekor: " + pError.message);
+      alert("Hiba: " + pError.message);
       setSaving(false);
       return;
     }
 
-    // 2. Variánsok szinkronizálása (Törlés és újra beszúrás)
     await supabase.from("product_variants").delete().eq("product_id", id);
     const variantsToInsert = variants
       .filter(v => v.size_name && v.price)
@@ -142,116 +123,118 @@ export default function EditProductPage() {
     router.refresh();
   };
 
-  if (loading) return <div className="p-20 text-center font-bold animate-pulse">Adatok betöltése...</div>;
+  if (loading) return <div className="p-20 text-center font-black uppercase text-gray-300 animate-pulse tracking-widest">Adatok betöltése...</div>;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8 bg-[#f7f7f5] min-h-screen text-[#1f1f1f]">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-black italic uppercase tracking-tighter">
-          Termék <span className="text-[#e3936e]">Szerkesztése</span>
-        </h1>
-        <button onClick={() => router.back()} className="text-sm font-bold text-gray-400 hover:text-black transition">
-          Mégse / Vissza
-        </button>
+    <div className="p-6 max-w-6xl mx-auto space-y-8 bg-[#f9f9f7] min-h-screen font-sans text-[#1a1a1a]">
+      <div className="flex justify-between items-center bg-white p-6 rounded-[25px] shadow-sm border border-gray-100">
+        <h1 className="text-3xl font-black italic uppercase tracking-tighter">Szerkesztés: <span className="text-blue-600">{product.name}</span></h1>
+        <button onClick={() => router.back()} className="bg-gray-100 text-gray-500 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black hover:text-white transition-all">Mégse</button>
       </div>
 
-      <form onSubmit={handleUpdate} className="bg-white p-8 rounded-[40px] border shadow-sm space-y-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <form onSubmit={handleUpdate} className="bg-white p-8 rounded-[40px] border shadow-xl space-y-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           
-          {/* BAL OSZLOP: ALAPADATOK */}
+          {/* KÉPEK - JAVÍTOTT MEGJELENÍTÉS */}
           <div className="space-y-6">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Alapadatok</h2>
-            
-            <div className="space-y-1">
-              <label className="text-xs font-bold ml-2">Termék neve</label>
-              <input 
-                required className="w-full p-4 border rounded-2xl outline-none focus:ring-2 ring-orange-100 font-semibold text-lg" 
-                value={product.name} onChange={handleNameChange} 
-              />
-              <div className="text-[10px] text-gray-400 px-2 italic">URL: /termekek/{product.slug}</div>
-            </div>
+            <h2 className="text-[10px] font-black uppercase text-blue-500 tracking-widest italic">Termék képei</h2>
+            <div className="space-y-4">
+              {[
+                { type: 'cover', label: 'Borítókép', url: product.cover_image },
+                { type: 'hover', label: 'Hover kép', url: product.hover_image }
+              ].map((img) => (
+                <div key={img.type} className="group relative border-2 border-dashed border-gray-100 rounded-[30px] p-2 text-center bg-gray-50 aspect-square flex items-center justify-center overflow-hidden">
+                  
+                  {img.url ? (
+                    <Image 
+                      key={img.url} // Kényszeríti az újratöltést ha változik
+                      src={img.url} 
+                      fill 
+                      className="object-cover rounded-[25px]" 
+                      alt={img.label}
+                      unoptimized // Segíthet, ha a Supabase URL-ekkel gond van
+                    />
+                  ) : (
+                    <div className="text-[10px] font-bold text-gray-300 uppercase">Nincs kép feltöltve</div>
+                  )}
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold ml-2">Kategória</label>
-              <select 
-                required className="w-full p-4 border rounded-2xl outline-none bg-gray-50 font-medium" 
-                value={product.category_id} onChange={(e) => setProduct({...product, category_id: e.target.value})}
-              >
-                <option value="">Válassz kategóriát...</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold ml-2">Leírás</label>
-              <textarea 
-                className="w-full p-4 border rounded-2xl h-32 outline-none resize-none font-medium" 
-                value={product.description} onChange={(e) => setProduct({...product, description: e.target.value})} 
-              />
-            </div>
-
-            {/* KÉPEK SZERKESZTÉSE */}
-            <div className="grid grid-cols-2 gap-4 pt-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-gray-400 text-center block">Borítókép</label>
-                <div className="relative aspect-square border-2 border-dashed rounded-3xl overflow-hidden group">
-                  <Image src={product.cover_image || "/placeholder.jpg"} fill className="object-cover" alt="" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center p-4">
-                    <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'cover', setUploadingCover)} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    <span className="text-white text-[10px] font-bold text-center leading-tight">Kattints a cseréhez</span>
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center rounded-[25px] backdrop-blur-sm">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleFileUpload(e, img.type as any, img.type === 'cover' ? setUploadingCover : setUploadingHover)} 
+                      className="absolute inset-0 opacity-0 cursor-pointer" 
+                    />
+                    <span className="text-white text-[10px] font-black uppercase tracking-widest">Kép cseréje</span>
                   </div>
-                </div>
-                {uploadingCover && <p className="text-[10px] text-center animate-pulse text-orange-600 font-bold">Töltés...</p>}
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-gray-400 text-center block">Hover kép</label>
-                <div className="relative aspect-square border-2 border-dashed rounded-3xl overflow-hidden group">
-                  <Image src={product.hover_image || "/placeholder.jpg"} fill className="object-cover" alt="" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center p-4">
-                    <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'hover', setUploadingHover)} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    <span className="text-white text-[10px] font-bold text-center leading-tight">Kattints a cseréhez</span>
-                  </div>
+                  {(img.type === 'cover' ? uploadingCover : uploadingHover) && (
+                    <div className="absolute inset-0 bg-white/90 flex items-center justify-center font-black text-[10px] animate-pulse rounded-[25px]">Feltöltés...</div>
+                  )}
                 </div>
-                {uploadingHover && <p className="text-[10px] text-center animate-pulse text-orange-600 font-bold">Töltés...</p>}
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* JOBB OSZLOP: VARIÁNSOK */}
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Méretek és Árak</h2>
-              <button type="button" onClick={addVariant} className="text-[10px] font-black uppercase text-orange-600 bg-orange-50 px-3 py-1.5 rounded-full hover:bg-orange-100 transition">+ Új méret</button>
+          {/* ADATOK (Név, Kategória, Tájolás) */}
+          <div className="space-y-5">
+            <h2 className="text-[10px] font-black uppercase text-blue-500 tracking-widest italic">Alapadatok</h2>
+            <div className="space-y-1">
+               <label className="text-[9px] font-bold text-gray-400 uppercase ml-2">Termék neve</label>
+               <input placeholder="Név" required className="w-full h-14 bg-gray-50 border-none rounded-2xl px-5 font-bold outline-none focus:ring-2 ring-blue-100" value={product.name} onChange={(e) => setProduct({...product, name: e.target.value})} />
             </div>
             
-            <div className="space-y-3 bg-gray-50/50 p-6 rounded-3xl border border-dashed">
-              {variants.map((v, index) => (
-                <div key={index} className="flex gap-2 items-center group">
-                  <input 
-                    placeholder="pl: 40x60 cm" className="flex-1 p-3 border rounded-xl text-sm font-bold outline-none focus:bg-white transition" 
-                    value={v.size_name} onChange={(e) => updateVariant(index, "size_name", e.target.value)} 
-                  />
-                  <input 
-                    type="number" placeholder="Ár" className="w-28 p-3 border rounded-xl text-sm font-black text-blue-600 outline-none focus:bg-white transition" 
-                    value={v.price} onChange={(e) => updateVariant(index, "price", e.target.value)} 
-                  />
-                  <button type="button" onClick={() => removeVariant(index)} className="text-gray-300 hover:text-red-500 p-2 transition">
-                    &times;
-                  </button>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-gray-400 uppercase ml-2">Kategória</label>
+                <select required className="w-full h-14 bg-gray-50 border-none rounded-2xl px-4 text-[11px] font-black uppercase outline-none" value={product.category_id} onChange={(e) => setProduct({...product, category_id: e.target.value})}>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-bold text-gray-400 uppercase ml-2">3D Tájolás</label>
+                <select required className="w-full h-14 bg-gray-100 border-none rounded-2xl px-4 text-[11px] font-black uppercase outline-none focus:ring-2 ring-emerald-100" value={product.orientation} onChange={(e) => setProduct({...product, orientation: e.target.value})}>
+                  <option value="portrait">📐 Álló</option>
+                  <option value="landscape">📏 Fekvő</option>
+                  <option value="square">🔲 Négyzet</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[9px] font-bold text-gray-400 uppercase ml-2">Leírás</label>
+              <textarea placeholder="Leírás..." className="w-full p-5 bg-gray-50 border-none rounded-2xl h-32 outline-none focus:ring-2 ring-blue-100 text-sm font-medium" value={product.description} onChange={(e) => setProduct({...product, description: e.target.value})} />
+            </div>
+          </div>
+
+          {/* VARIÁNSOK */}
+          <div className="space-y-5">
+            <div className="flex justify-between items-center">
+              <h2 className="text-[10px] font-black uppercase text-blue-500 tracking-widest italic">Méretek</h2>
+              <button type="button" onClick={() => setVariants([...variants, {size_name: "", price: ""}])} className="text-[10px] font-black uppercase bg-blue-50 text-blue-600 px-3 py-1 rounded-lg">+ Új sor</button>
+            </div>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+              {variants.map((v, i) => (
+                <div key={i} className="flex gap-2 items-center group animate-in zoom-in-95">
+                  <input placeholder="Méret" className="flex-1 h-12 bg-gray-50 rounded-xl px-4 text-xs font-bold border border-transparent focus:border-gray-200 outline-none" value={v.size_name} onChange={(e) => {
+                    const updated = [...variants];
+                    updated[i].size_name = e.target.value;
+                    setVariants(updated);
+                  }} />
+                  <input type="number" placeholder="Ár" className="w-24 h-12 bg-gray-50 rounded-xl px-4 text-xs font-bold border border-transparent focus:border-gray-200 outline-none" value={v.price} onChange={(e) => {
+                    const updated = [...variants];
+                    updated[i].price = e.target.value;
+                    setVariants(updated);
+                  }} />
+                  <button type="button" onClick={() => setVariants(variants.filter((_, idx) => idx !== i))} className="text-red-300 hover:text-red-500 transition-colors p-2 font-bold">&times;</button>
                 </div>
               ))}
-              {variants.length === 0 && <p className="text-center text-xs text-gray-400 italic py-4">Nincs megadva méret.</p>}
             </div>
           </div>
         </div>
 
-        <button 
-          type="submit" 
-          disabled={saving || uploadingCover || uploadingHover} 
-          className="w-full bg-black text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-orange-600 transition shadow-xl disabled:opacity-50 active:scale-95"
-        >
-          {saving ? "Mentés folyamatban..." : "Változtatások Mentése"}
+        <button type="submit" disabled={saving} className="w-full h-16 bg-black text-white rounded-[20px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all active:scale-95 disabled:opacity-50">
+          {saving ? "Mentés folyamatban..." : "Változtatások rögzítése"}
         </button>
       </form>
     </div>

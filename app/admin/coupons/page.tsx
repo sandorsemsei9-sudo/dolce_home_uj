@@ -8,13 +8,12 @@ export default function AdminCoupons() {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  // Új kupon állapota - hozzáadva az is_used: false
   const [newCoupon, setNewCoupon] = useState({
     code: "",
     discount_type: "percentage",
     discount_value: 0,
     min_order_amount: 0,
-    is_used: false, // <--- Alapértelmezett érték
+    is_used: false,
   });
 
   useEffect(() => {
@@ -30,6 +29,18 @@ export default function AdminCoupons() {
     if (data) setCoupons(data);
     setLoading(false);
   }
+
+  // Segédfüggvény a dátum szép megjelenítéséhez
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('hu-HU', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   async function handleAddCoupon(e: React.FormEvent) {
     e.preventDefault();
@@ -60,19 +71,19 @@ export default function AdminCoupons() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Kuponok kezelése</h1>
+        <h1 className="text-3xl font-bold text-gray-900 italic">Kupon <span className="text-orange-500">Kezelő</span></h1>
       </div>
 
       {/* ÚJ KUPON LÉTREHOZÁSA */}
       <div className="bg-white p-8 rounded-[24px] border border-gray-200 shadow-sm">
-        <h2 className="text-lg font-semibold mb-6">Új kupon hozzáadása</h2>
+        <h2 className="text-lg font-semibold mb-6 uppercase text-[11px] tracking-widest text-gray-400">Új kupon hozzáadása</h2>
         <form onSubmit={handleAddCoupon} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div>
             <label className="block text-xs font-bold uppercase text-gray-400 mb-2">Kuponkód</label>
             <input
               type="text"
               placeholder="pl. NYAR20"
-              className="w-full p-3 border rounded-xl outline-none focus:border-orange-400 text-black"
+              className="w-full p-3 border rounded-xl outline-none focus:border-orange-400 text-black font-bold"
               value={newCoupon.code}
               onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase() })}
               required
@@ -81,7 +92,7 @@ export default function AdminCoupons() {
           <div>
             <label className="block text-xs font-bold uppercase text-gray-400 mb-2">Típus</label>
             <select
-              className="w-full p-3 border rounded-xl outline-none text-black"
+              className="w-full p-3 border rounded-xl outline-none text-black font-medium"
               value={newCoupon.discount_type}
               onChange={(e) => setNewCoupon({ ...newCoupon, discount_type: e.target.value })}
             >
@@ -90,10 +101,10 @@ export default function AdminCoupons() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold uppercase text-gray-400 mb-2">Érték</label>
+            <label className="block text-xs font-bold uppercase text-gray-400 mb-2">Kedvezmény</label>
             <input
               type="number"
-              className="w-full p-3 border rounded-xl outline-none text-black"
+              className="w-full p-3 border rounded-xl outline-none text-black font-bold"
               value={newCoupon.discount_value}
               onChange={(e) => setNewCoupon({ ...newCoupon, discount_value: Number(e.target.value) })}
               required
@@ -101,7 +112,7 @@ export default function AdminCoupons() {
           </div>
           <button
             type="submit"
-            className="bg-black text-white p-3 rounded-xl font-bold hover:bg-gray-800 transition"
+            className="bg-black text-white p-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-orange-500 transition-all shadow-lg active:scale-95"
           >
             Létrehozás
           </button>
@@ -113,40 +124,43 @@ export default function AdminCoupons() {
         <table className="w-full text-left">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="p-4 text-xs font-bold uppercase text-gray-500">Kód</th>
-              <th className="p-4 text-xs font-bold uppercase text-gray-500">Kedvezmény</th>
-              <th className="p-4 text-xs font-bold uppercase text-gray-500">Állapot</th>
-              <th className="p-4 text-xs font-bold uppercase text-gray-500 text-right">Műveletek</th>
+              <th className="p-4 text-xs font-bold uppercase text-gray-400">Létrehozva</th>
+              <th className="p-4 text-xs font-bold uppercase text-gray-400">Kód</th>
+              <th className="p-4 text-xs font-bold uppercase text-gray-400">Kedvezmény</th>
+              <th className="p-4 text-xs font-bold uppercase text-gray-400">Állapot</th>
+              <th className="p-4 text-xs font-bold uppercase text-gray-400 text-right">Műveletek</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={4} className="p-10 text-center text-gray-400">Betöltés...</td></tr>
+              <tr><td colSpan={5} className="p-10 text-center text-gray-400 font-bold animate-pulse uppercase tracking-widest">Betöltés...</td></tr>
             ) : coupons.length === 0 ? (
-              <tr><td colSpan={4} className="p-10 text-center text-gray-400">Nincsenek aktív kuponok.</td></tr>
+              <tr><td colSpan={5} className="p-10 text-center text-gray-400 font-medium">Nincsenek aktív kuponok.</td></tr>
             ) : (
               coupons.map((coupon) => (
-                <tr key={coupon.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="p-4 font-mono font-bold text-orange-600">{coupon.code}</td>
-                  <td className="p-4">
+                <tr key={coupon.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
+                  <td className="p-4 text-[10px] font-medium text-gray-400 whitespace-nowrap">
+                    {formatDate(coupon.created_at)}
+                  </td>
+                  <td className="p-4 font-mono font-black text-orange-600">{coupon.code}</td>
+                  <td className="p-4 font-bold">
                     {coupon.discount_type === "percentage" 
                       ? `${coupon.discount_value}%` 
                       : `${coupon.discount_value.toLocaleString()} Ft`}
                   </td>
-                  {/* ÚJ OSZLOP: Felhasznált státusz */}
                   <td className="p-4">
                     {coupon.is_used ? (
-                      <span className="px-2 py-1 bg-red-100 text-red-600 text-[10px] font-bold rounded-full uppercase">Felhasználva</span>
+                      <span className="px-3 py-1 bg-red-50 text-red-500 text-[9px] font-black rounded-full uppercase border border-red-100">Felhasználva</span>
                     ) : (
-                      <span className="px-2 py-1 bg-green-100 text-green-600 text-[10px] font-bold rounded-full uppercase">Érvényes</span>
+                      <span className="px-3 py-1 bg-green-50 text-green-600 text-[9px] font-black rounded-full uppercase border border-green-100">Érvényes</span>
                     )}
                   </td>
                   <td className="p-4 text-right">
                     <button
                       onClick={() => deleteCoupon(coupon.id)}
-                      className="text-red-500 hover:text-red-700 text-sm font-bold"
+                      className="text-gray-300 hover:text-red-500 transition-colors"
                     >
-                      Törlés
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
                     </button>
                   </td>
                 </tr>

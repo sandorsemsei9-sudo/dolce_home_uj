@@ -2,144 +2,200 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import Image from "next/image";
 import Link from "next/link";
 
 export default function AdminProductsPage() {
   const supabase = createClient();
+
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCat, setSelectedCat] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const fetchData = async () => {
-    setLoading(true);
-    // Join: lekérjük a kategória NEVÉT is a products táblához
-    const { data: pData } = await supabase
-      .from("products")
-      .select("*, categories(name), product_variants(price)")
-      .order("id", { ascending: false });
-      
-    const { data: cData } = await supabase.from("categories").select("*");
-    
-    if (pData) setProducts(pData);
-    if (cData) setCategories(cData);
-    setLoading(false);
-  };
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    category_id: "",
+    cover_image: "",
+    hover_image: "",
+    orientation: "portrait"
+  });
+  const [variants, setVariants] = useState([{ size_name: "", price: "" }]);
 
   useEffect(() => {
-    fetchData();
+    async function loadData() {
+      const { data: cats } = await supabase.from("categories").select("*");
+      if (cats) setCategories(cats);
+      fetchProducts();
+    }
+    loadData();
   }, []);
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Biztosan törlöd ezt a terméket és az összes méretét?")) return;
+  async function fetchProducts() {
+    setLoading(true);
+    const { data } = await supabase.from("products")
+      .select("*, categories(name)")
+      .order("created_at", { ascending: false });
+    if (data) setProducts(data);
+    setLoading(false);
+  }
 
-    // Előbb a variánsokat töröljük (ha nincs Cascade Delete beállítva)
-    await supabase.from("product_variants").delete().eq("product_id", id);
-    // Utána a terméket
+  // --- TÖRLÉS FUNKCIÓ ---
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Biztosan törölni akarod a "${name}" terméket? Ez nem visszavonható!`)) return;
+
     const { error } = await supabase.from("products").delete().eq("id", id);
-
+    
     if (error) {
       alert("Hiba a törlés során: " + error.message);
     } else {
-      fetchData(); // Lista frissítése
+      // Frissítjük a listát helyben, hogy azonnal eltűnjön
+      setProducts(products.filter(p => p.id !== id));
     }
   };
 
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCat = selectedCat === "all" || p.category_id?.toString() === selectedCat;
-    return matchesSearch && matchesCat;
-  });
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'hover') => {
+    if (!e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    const fileName = `${Date.now()}-${type}-${file.name.replace(/\s+/g, '-')}`;
+    
+    const { error } = await supabase.storage.from("products").upload(fileName, file);
+    if (error) return alert("Feltöltési hiba");
+
+    const { data } = supabase.storage.from("products").getPublicUrl(fileName);
+    const field = type === 'cover' ? 'cover_image' : 'hover_image';
+    setNewProduct(prev => ({ ...prev, [field]: data.publicUrl }));
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    const slug = newProduct.name.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w ]+/g, "").replace(/\s+/g, "-");
+    
+    const { data: pData, error: pError } = await supabase.from("products").insert([{ ...newProduct, slug }]).select().single();
+
+    if (pData) {
+      const vToInsert = variants.filter(v => v.size_name).map(v => ({
+        product_id: pData.id,
+        size_name: v.size_name,
+        price: parseInt(v.price) || 0
+      }));
+      if (vToInsert.length > 0) await supabase.from("product_variants").insert(vToInsert);
+    }
+
+    setNewProduct({ name: "", category_id: "", cover_image: "", hover_image: "", orientation: "portrait" });
+    setVariants([{ size_name: "", price: "" }]);
+    setIsAdding(false);
+    setIsSaving(false);
+    fetchProducts();
+  };
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Termékek</h1>
-          <p className="text-gray-500">{products.length} termék az adatbázisban</p>
-        </div>
-        <Link 
-          href="/admin/products/new" 
-          className="bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-md"
+    <div className="p-4 max-w-[1600px] mx-auto font-sans text-gray-900 bg-[#fbfbfb] min-h-screen">
+      
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-xl font-black uppercase italic tracking-tighter">Termék <span className="text-blue-600">Admin</span></h1>
+        <button 
+          onClick={() => setIsAdding(!isAdding)}
+          className={`px-5 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all shadow-sm ${isAdding ? 'bg-red-500 text-white' : 'bg-black text-white'}`}
         >
-          + Új termék
-        </Link>
+          {isAdding ? "Bezárás" : "+ Új Termék"}
+        </button>
       </div>
 
-      {/* SZŰRŐK */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="flex-1 relative">
-          <input 
-            placeholder="Keresés név alapján..." 
-            value={searchTerm} 
-            onChange={e => setSearchTerm(e.target.value)} 
-            className="w-full border-none shadow-sm p-4 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-black"
-          />
-          <span className="absolute left-4 top-4 text-gray-400">🔍</span>
-        </div>
-        <select 
-          value={selectedCat} 
-          onChange={e => setSelectedCat(e.target.value)}
-          className="border-none shadow-sm p-4 rounded-2xl bg-white w-full md:w-64 outline-none focus:ring-2 focus:ring-black"
-        >
-          <option value="all">Minden kategória</option>
-          {categories.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
-      </div>
+      {isAdding && (
+        <form onSubmit={handleSave} className="mb-10 bg-white p-6 rounded-2xl border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] grid grid-cols-1 md:grid-cols-3 gap-8 animate-in slide-in-from-top-4 duration-200">
+          <div className="space-y-3">
+            <p className="text-[10px] font-black uppercase text-gray-400 italic">1. Alapadatok</p>
+            <input required placeholder="Név" className="w-full border-2 border-gray-100 p-3 rounded-xl text-sm font-bold outline-none focus:border-black" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+            <select required className="w-full border-2 border-gray-100 p-3 rounded-xl text-sm font-bold outline-none focus:border-black" value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})}>
+              <option value="">Kategória...</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <select className="w-full border-2 border-gray-100 p-3 rounded-xl text-sm font-bold outline-none focus:border-black bg-gray-50" value={newProduct.orientation} onChange={e => setNewProduct({...newProduct, orientation: e.target.value})}>
+              <option value="portrait">📐 Álló</option>
+              <option value="landscape">📏 Fekvő</option>
+              <option value="square">🔲 Négyzet</option>
+            </select>
+          </div>
 
-      {/* TERMÉK LISTA */}
-      <div className="grid gap-4">
-        {loading ? (
-          <p className="text-center py-10 text-gray-400">Betöltés...</p>
-        ) : filteredProducts.map(p => (
-          <div key={p.id} className="flex items-center gap-6 border border-transparent p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-all group">
-            {/* Kép */}
-            <div className="w-20 h-20 flex-shrink-0">
-              <img 
-                src={p.cover_image || "/placeholder.png"} 
-                className="w-full h-full object-cover rounded-xl border" 
-                alt={p.name}
-              />
+          <div className="space-y-3">
+            <p className="text-[10px] font-black uppercase text-gray-400 italic">2. Méretek</p>
+            <div className="space-y-2 max-h-[160px] overflow-y-auto pr-2">
+              {variants.map((v, i) => (
+                <div key={i} className="flex gap-2">
+                  <input placeholder="Méret" className="flex-1 border-2 border-gray-100 p-2 rounded-lg text-xs" value={v.size_name} onChange={e => {
+                    const val = [...variants]; val[i].size_name = e.target.value; setVariants(val);
+                  }} />
+                  <input type="number" placeholder="Ft" className="w-24 border-2 border-gray-100 p-2 rounded-lg text-xs font-bold" value={v.price} onChange={e => {
+                    const val = [...variants]; val[i].price = e.target.value; setVariants(val);
+                  }} />
+                </div>
+              ))}
             </div>
+            <button type="button" onClick={() => setVariants([...variants, {size_name: "", price: ""}])} className="text-[10px] font-black text-blue-600 uppercase">+ Sor hozzáadása</button>
+          </div>
 
-            {/* Szöveges adatok */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-1">
-                <h2 className="text-lg font-bold text-gray-900 truncate">{p.name}</h2>
-                <span className="bg-blue-50 text-blue-600 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase">
-                  {p.categories?.name || "Nincs kategória"}
-                </span>
+          <div className="space-y-4">
+             <p className="text-[10px] font-black uppercase text-gray-400 italic">3. Média</p>
+             <div className="grid grid-cols-2 gap-2">
+                <div className="relative aspect-square bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-100 transition-colors">
+                    {newProduct.cover_image ? <Image src={newProduct.cover_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-300">BORÍTÓ</span>}
+                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'cover')} />
+                </div>
+                <div className="relative aspect-square bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-100 transition-colors">
+                    {newProduct.hover_image ? <Image src={newProduct.hover_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-300">HOVER</span>}
+                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'hover')} />
+                </div>
+             </div>
+             <button disabled={isSaving} className="w-full bg-black text-white p-4 rounded-xl font-black uppercase text-[10px] hover:bg-blue-600 transition-colors shadow-md disabled:opacity-50">
+              {isSaving ? "Mentés..." : "Termék rögzítése"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* LISTA RÁCS */}
+      {loading ? (
+        <div className="text-center py-20 font-black text-gray-200 uppercase tracking-[0.5em] animate-pulse">Adatok betöltése...</div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+          {products.map((p) => (
+            <div key={p.id} className="bg-white border-2 border-gray-50 rounded-2xl p-2 hover:border-black transition-all group flex flex-col relative">
+              
+              <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-2 bg-gray-100">
+                <Image src={p.cover_image || "/placeholder.jpg"} fill className="object-cover transition-transform group-hover:scale-105 duration-500" alt="" />
+                
+                {/* Tájolás felirat */}
+                <div className="absolute top-1.5 left-1.5 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-[7px] font-black uppercase flex items-center gap-1 shadow-lg pointer-events-none">
+                  {p.orientation === 'portrait' && <span>📐 ÁLLÓ</span>}
+                  {p.orientation === 'landscape' && <span>📏 FEKVŐ</span>}
+                  {p.orientation === 'square' && <span>🔲 NÉGYZET</span>}
+                </div>
+
+                {/* TÖRLÉS GOMB (Piros X a kép tetején) */}
+                <button 
+                  onClick={() => handleDelete(p.id, p.name)}
+                  className="absolute top-1.5 right-1.5 w-6 h-6 bg-white/90 hover:bg-red-500 hover:text-white text-red-500 rounded-md flex items-center justify-center transition-all shadow-md z-10 opacity-0 group-hover:opacity-100"
+                  title="Termék törlése"
+                >
+                  <span className="text-xs font-bold">✕</span>
+                </button>
               </div>
-              <p className="text-gray-500 text-sm line-clamp-1">{p.description || "Nincs leírás."}</p>
-            </div>
 
-            {/* AKCIÓK (Szerkesztés és Törlés) */}
-            <div className="flex gap-3">
+              <h3 className="text-[9px] font-black uppercase truncate mb-2 px-1">{p.name}</h3>
+              
               <Link 
                 href={`/admin/products/edit/${p.id}`} 
-                className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 transition"
+                className="mt-auto block w-full py-2 bg-gray-50 text-[8px] font-black text-center uppercase rounded-md hover:bg-blue-600 hover:text-white transition-all tracking-wider"
               >
                 Szerkesztés
               </Link>
-              <button 
-                onClick={() => handleDelete(p.id)}
-                className="bg-red-50 text-red-600 px-4 py-2 rounded-lg font-semibold hover:bg-red-100 transition"
-              >
-                Törlés
-              </button>
             </div>
-          </div>
-        ))}
-
-        {!loading && filteredProducts.length === 0 && (
-          <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-100">
-            <p className="text-gray-400">Nincs a szűrésnek megfelelő termék.</p>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

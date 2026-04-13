@@ -191,7 +191,7 @@ export default function Footer() {
           <p>© {new Date().getFullYear()} Dolce Home. Minden jog fenntartva.</p>
           <div className="flex gap-8">
             <span className="flex gap-1 items-center">Magyar termék 🇭🇺</span>
-            <Link href="#" className="hover:text-[#2a211d]">Impresszum</Link>
+            <Link href="/impresszum" className="hover:text-[#2a211d]">Impresszum</Link>
           </div>
         </div>
       </div>

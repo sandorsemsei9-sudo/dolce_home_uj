@@ -31,12 +31,13 @@ export default function EditProductPage() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
+      // Kategóriák betöltése
       const { data: catData } = await supabase.from("categories").select("*");
       if (catData) setCategories(catData);
 
+      // Termék adatok betöltése
       const { data: pData } = await supabase.from("products").select("*").eq("id", id).single();
       if (pData) {
-        // Frissítjük a teljes állapotot az adatbázisból jövő adatokkal
         setProduct({
           name: pData.name || "",
           slug: pData.slug || "",
@@ -48,11 +49,12 @@ export default function EditProductPage() {
         });
       }
 
+      // Variánsok betöltése
       const { data: vData } = await supabase.from("product_variants").select("*").eq("product_id", id);
       if (vData) {
         setVariants(vData.map(v => ({
           size_name: v.size_name,
-          price: v.price
+          price: v.price.toString() // Stringként kezeljük az input miatt
         })));
       }
       setLoading(false);
@@ -72,7 +74,6 @@ export default function EditProductPage() {
 
       const { data } = supabase.storage.from("products").getPublicUrl(fileName);
       
-      // Fontos: a prev állapotot használjuk, hogy ne vesszen el a többi adat
       setProduct(prev => ({ 
         ...prev, 
         [type === 'cover' ? 'cover_image' : 'hover_image']: data.publicUrl 
@@ -89,10 +90,11 @@ export default function EditProductPage() {
     e.preventDefault();
     setSaving(true);
 
+    // 1. Termék frissítése (Javítva: category_id kényszerítése számmá)
     const { error: pError } = await supabase.from("products").update({
       name: product.name,
       slug: product.slug,
-      category_id: product.category_id,
+      category_id: parseInt(product.category_id.toString()), 
       description: product.description,
       cover_image: product.cover_image,
       hover_image: product.hover_image,
@@ -100,22 +102,28 @@ export default function EditProductPage() {
     }).eq("id", id);
 
     if (pError) {
-      alert("Hiba: " + pError.message);
+      alert("Hiba a terméknél: " + pError.message);
       setSaving(false);
       return;
     }
 
+    // 2. Variánsok frissítése (Törlés és Újra beszúrás)
     await supabase.from("product_variants").delete().eq("product_id", id);
+    
+    // JAVÍTÁS: Csak érvényes árakat engedünk át, és kényszerítjük az Integer típust
     const variantsToInsert = variants
-      .filter(v => v.size_name && v.price)
+      .filter(v => v.size_name.trim() !== "" && v.price !== "" && !isNaN(parseInt(v.price)))
       .map(v => ({
         product_id: id,
         size_name: v.size_name,
-        price: parseInt(v.price as string),
+        price: parseInt(v.price.toString()), 
       }));
 
     if (variantsToInsert.length > 0) {
-      await supabase.from("product_variants").insert(variantsToInsert);
+      const { error: vError } = await supabase.from("product_variants").insert(variantsToInsert);
+      if (vError) {
+        alert("Hiba a variánsoknál: " + vError.message);
+      }
     }
 
     setSaving(false);
@@ -135,7 +143,7 @@ export default function EditProductPage() {
       <form onSubmit={handleUpdate} className="bg-white p-8 rounded-[40px] border shadow-xl space-y-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           
-          {/* KÉPEK - JAVÍTOTT MEGJELENÍTÉS */}
+          {/* KÉPEK */}
           <div className="space-y-6">
             <h2 className="text-[10px] font-black uppercase text-blue-500 tracking-widest italic">Termék képei</h2>
             <div className="space-y-4">
@@ -147,12 +155,11 @@ export default function EditProductPage() {
                   
                   {img.url ? (
                     <Image 
-                      key={img.url} // Kényszeríti az újratöltést ha változik
                       src={img.url} 
                       fill 
                       className="object-cover rounded-[25px]" 
                       alt={img.label}
-                      unoptimized // Segíthet, ha a Supabase URL-ekkel gond van
+                      unoptimized 
                     />
                   ) : (
                     <div className="text-[10px] font-bold text-gray-300 uppercase">Nincs kép feltöltve</div>
@@ -176,7 +183,7 @@ export default function EditProductPage() {
             </div>
           </div>
 
-          {/* ADATOK (Név, Kategória, Tájolás) */}
+          {/* ADATOK */}
           <div className="space-y-5">
             <h2 className="text-[10px] font-black uppercase text-blue-500 tracking-widest italic">Alapadatok</h2>
             <div className="space-y-1">
@@ -188,6 +195,7 @@ export default function EditProductPage() {
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-gray-400 uppercase ml-2">Kategória</label>
                 <select required className="w-full h-14 bg-gray-50 border-none rounded-2xl px-4 text-[11px] font-black uppercase outline-none" value={product.category_id} onChange={(e) => setProduct({...product, category_id: e.target.value})}>
+                  <option value="">Válassz...</option>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
@@ -221,7 +229,7 @@ export default function EditProductPage() {
                     updated[i].size_name = e.target.value;
                     setVariants(updated);
                   }} />
-                  <input type="number" placeholder="Ár" className="w-24 h-12 bg-gray-50 rounded-xl px-4 text-xs font-bold border border-transparent focus:border-gray-200 outline-none" value={v.price} onChange={(e) => {
+                  <input type="text" placeholder="Ár" className="w-24 h-12 bg-gray-50 rounded-xl px-4 text-xs font-bold border border-transparent focus:border-gray-200 outline-none" value={v.price} onChange={(e) => {
                     const updated = [...variants];
                     updated[i].price = e.target.value;
                     setVariants(updated);

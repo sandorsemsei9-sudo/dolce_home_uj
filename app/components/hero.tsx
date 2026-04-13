@@ -28,7 +28,11 @@ export default function Hero({ products, formatPrice }: HeroProps) {
   if (!products || products.length === 0) return null;
 
   return (
-    <section id="hero" className="relative overflow-hidden bg-[url('/hero-bg.webp')] bg-cover bg-center">
+    <section 
+      id="hero" 
+      className="relative overflow-hidden bg-cover bg-center"
+      style={{ backgroundImage: "url('/hero-bg.webp')" }}
+    >
       <style jsx>{`
         @keyframes fadeInSlide {
           from { opacity: 0; transform: translateY(20px); }
@@ -49,6 +53,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
         .delay-3 { animation-delay: 0.6s; opacity: 0; }
       `}</style>
 
+      {/* Overlay a jobb olvashatóságért */}
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,243,239,0.98)_0%,rgba(248,243,239,0.96)_34%,rgba(248,243,239,0.86)_58%,rgba(248,243,239,0.74)_100%)]" />
 
       <div className="relative mx-auto flex flex-col md:grid max-w-7xl gap-10 px-6 py-8 md:grid-cols-[1.05fr_0.95fr] md:items-center md:py-16">
@@ -74,7 +79,6 @@ export default function Hero({ products, formatPrice }: HeroProps) {
           </p>
 
           <div className="animate-hero-text delay-3 mt-8 flex flex-wrap gap-4">
-            {/* Linkre cseréltük a gombot */}
             <Link 
               href="/egyedi-vaszonkep"
               className="rounded-2xl bg-gradient-to-r from-[#e3936e] to-[#d77d5d] px-7 py-3.5 text-base font-semibold text-white shadow-[0_12px_28px_rgba(215,125,93,0.30)] transition hover:-translate-y-0.5"
@@ -82,7 +86,6 @@ export default function Hero({ products, formatPrice }: HeroProps) {
               Feltöltöm a képem
             </Link>
 
-            {/* Itt is Linket használunk a korábbi 'a' helyett az egyöntetűségért */}
             <Link
               href="/termekek"
               className="rounded-2xl border border-[#dccfc5] bg-white/95 px-7 py-3.5 text-base font-semibold text-[#463732] shadow-sm transition hover:bg-[#fff4ed]"

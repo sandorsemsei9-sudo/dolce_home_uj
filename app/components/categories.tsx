@@ -13,7 +13,7 @@ type CategoryItem = {
 export default function Categories() {
   const items: CategoryItem[] = [
     {
-      title: "Absztrakt",
+      title: "Absztrakt & Modern",
       subtitle: "Modern, karakteres kompozíciók",
       image: "/absztrakt.png",
       href: "#",
@@ -72,7 +72,7 @@ export default function Categories() {
               <img
                 src={item.image}
                 alt={item.title}
-                className="absolute inset-0 h-full w-full object-cover transition duration-700 ease-out group-hover:scale-110"
+                className="absolute inset-0 h-full w-full object-contain transition duration-700 ease-out group-hover:scale-110"
               />
 
               {/* Finomabb, sötétebb gradiens a jobb olvashatóságért */}

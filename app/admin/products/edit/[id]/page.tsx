@@ -21,21 +21,21 @@ export default function EditProductPage() {
     description: "",
     cover_image: "",
     hover_image: "",
+    texture_image: "", // <--- ÚJ MEZŐ
     orientation: "portrait",
   });
 
   const [variants, setVariants] = useState<any[]>([]);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingHover, setUploadingHover] = useState(false);
+  const [uploadingTexture, setUploadingTexture] = useState(false); // <--- ÚJ FELTÖLTÉSI ÁLLAPOT
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
-      // Kategóriák betöltése
       const { data: catData } = await supabase.from("categories").select("*");
       if (catData) setCategories(catData);
 
-      // Termék adatok betöltése
       const { data: pData } = await supabase.from("products").select("*").eq("id", id).single();
       if (pData) {
         setProduct({
@@ -45,16 +45,16 @@ export default function EditProductPage() {
           description: pData.description || "",
           cover_image: pData.cover_image || "",
           hover_image: pData.hover_image || "",
+          texture_image: pData.texture_image || "", // <--- BETÖLTÉS
           orientation: pData.orientation || "portrait",
         });
       }
 
-      // Variánsok betöltése
       const { data: vData } = await supabase.from("product_variants").select("*").eq("product_id", id);
       if (vData) {
         setVariants(vData.map(v => ({
           size_name: v.size_name,
-          price: v.price.toString() // Stringként kezeljük az input miatt
+          price: v.price.toString()
         })));
       }
       setLoading(false);
@@ -62,7 +62,7 @@ export default function EditProductPage() {
     if (id) loadData();
   }, [id, supabase]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'hover', setUploadingFn: (b: boolean) => void) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'hover' | 'texture', setUploadingFn: (b: boolean) => void) => {
     try {
       setUploadingFn(true);
       if (!e.target.files || e.target.files.length === 0) return;
@@ -74,10 +74,8 @@ export default function EditProductPage() {
 
       const { data } = supabase.storage.from("products").getPublicUrl(fileName);
       
-      setProduct(prev => ({ 
-        ...prev, 
-        [type === 'cover' ? 'cover_image' : 'hover_image']: data.publicUrl 
-      }));
+      const field = type === 'cover' ? 'cover_image' : type === 'hover' ? 'hover_image' : 'texture_image';
+      setProduct(prev => ({ ...prev, [field]: data.publicUrl }));
 
     } catch (error: any) {
       alert("Hiba: " + error.message);
@@ -90,7 +88,6 @@ export default function EditProductPage() {
     e.preventDefault();
     setSaving(true);
 
-    // 1. Termék frissítése (Javítva: category_id kényszerítése számmá)
     const { error: pError } = await supabase.from("products").update({
       name: product.name,
       slug: product.slug,
@@ -98,6 +95,7 @@ export default function EditProductPage() {
       description: product.description,
       cover_image: product.cover_image,
       hover_image: product.hover_image,
+      texture_image: product.texture_image || product.cover_image, // <--- FRISSÍTÉS (Tartalék a borítóra)
       orientation: product.orientation,
     }).eq("id", id);
 
@@ -107,10 +105,8 @@ export default function EditProductPage() {
       return;
     }
 
-    // 2. Variánsok frissítése (Törlés és Újra beszúrás)
     await supabase.from("product_variants").delete().eq("product_id", id);
     
-    // JAVÍTÁS: Csak érvényes árakat engedünk át, és kényszerítjük az Integer típust
     const variantsToInsert = variants
       .filter(v => v.size_name.trim() !== "" && v.price !== "" && !isNaN(parseInt(v.price)))
       .map(v => ({
@@ -143,15 +139,16 @@ export default function EditProductPage() {
       <form onSubmit={handleUpdate} className="bg-white p-8 rounded-[40px] border shadow-xl space-y-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           
-          {/* KÉPEK */}
+          {/* MÉDIA SZEKCIÓ */}
           <div className="space-y-6">
-            <h2 className="text-[10px] font-black uppercase text-blue-500 tracking-widest italic">Termék képei</h2>
+            <h2 className="text-[10px] font-black uppercase text-blue-500 tracking-widest italic">Termék médiatár</h2>
             <div className="space-y-4">
               {[
-                { type: 'cover', label: 'Borítókép', url: product.cover_image },
-                { type: 'hover', label: 'Hover kép', url: product.hover_image }
+                { type: 'cover', label: 'Borító (Webshop)', url: product.cover_image, status: uploadingCover, setter: setUploadingCover },
+                { type: 'hover', label: 'Másodlagos kép', url: product.hover_image, status: uploadingHover, setter: setUploadingHover },
+                { type: 'texture', label: '3D Textúra (Alap)', url: product.texture_image, status: uploadingTexture, setter: setUploadingTexture }
               ].map((img) => (
-                <div key={img.type} className="group relative border-2 border-dashed border-gray-100 rounded-[30px] p-2 text-center bg-gray-50 aspect-square flex items-center justify-center overflow-hidden">
+                <div key={img.type} className={`group relative border-2 border-dashed rounded-[30px] p-2 text-center aspect-square flex items-center justify-center overflow-hidden transition-all ${img.type === 'texture' ? 'bg-blue-50/30 border-blue-100' : 'bg-gray-50 border-gray-100'}`}>
                   
                   {img.url ? (
                     <Image 
@@ -162,20 +159,20 @@ export default function EditProductPage() {
                       unoptimized 
                     />
                   ) : (
-                    <div className="text-[10px] font-bold text-gray-300 uppercase">Nincs kép feltöltve</div>
+                    <div className="text-[10px] font-bold text-gray-300 uppercase">{img.label} helye</div>
                   )}
 
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center rounded-[25px] backdrop-blur-sm">
                     <input 
                       type="file" 
                       accept="image/*" 
-                      onChange={(e) => handleFileUpload(e, img.type as any, img.type === 'cover' ? setUploadingCover : setUploadingHover)} 
+                      onChange={(e) => handleFileUpload(e, img.type as any, img.setter)} 
                       className="absolute inset-0 opacity-0 cursor-pointer" 
                     />
-                    <span className="text-white text-[10px] font-black uppercase tracking-widest">Kép cseréje</span>
+                    <span className="text-white text-[10px] font-black uppercase tracking-widest">{img.label} cseréje</span>
                   </div>
 
-                  {(img.type === 'cover' ? uploadingCover : uploadingHover) && (
+                  {img.status && (
                     <div className="absolute inset-0 bg-white/90 flex items-center justify-center font-black text-[10px] animate-pulse rounded-[25px]">Feltöltés...</div>
                   )}
                 </div>
@@ -184,7 +181,7 @@ export default function EditProductPage() {
           </div>
 
           {/* ADATOK */}
-          <div className="space-y-5">
+          <div className="space-y-5 text-left">
             <h2 className="text-[10px] font-black uppercase text-blue-500 tracking-widest italic">Alapadatok</h2>
             <div className="space-y-1">
                <label className="text-[9px] font-bold text-gray-400 uppercase ml-2">Termék neve</label>
@@ -217,8 +214,8 @@ export default function EditProductPage() {
 
           {/* VARIÁNSOK */}
           <div className="space-y-5">
-            <div className="flex justify-between items-center">
-              <h2 className="text-[10px] font-black uppercase text-blue-500 tracking-widest italic">Méretek</h2>
+            <div className="flex justify-between items-center text-left">
+              <h2 className="text-[10px] font-black uppercase text-blue-500 tracking-widest italic">Méretek & Árak</h2>
               <button type="button" onClick={() => setVariants([...variants, {size_name: "", price: ""}])} className="text-[10px] font-black uppercase bg-blue-50 text-blue-600 px-3 py-1 rounded-lg">+ Új sor</button>
             </div>
             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">

@@ -19,6 +19,7 @@ export default function AdminProductsPage() {
     category_id: "",
     cover_image: "",
     hover_image: "",
+    texture_image: "", // <--- ÚJ MEZŐ
     orientation: "portrait"
   });
   const [variants, setVariants] = useState([{ size_name: "", price: "" }]);
@@ -41,21 +42,14 @@ export default function AdminProductsPage() {
     setLoading(false);
   }
 
-  // --- TÖRLÉS FUNKCIÓ ---
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Biztosan törölni akarod a "${name}" terméket? Ez nem visszavonható!`)) return;
-
+    if (!confirm(`Biztosan törölni akarod a "${name}" terméket?`)) return;
     const { error } = await supabase.from("products").delete().eq("id", id);
-    
-    if (error) {
-      alert("Hiba a törlés során: " + error.message);
-    } else {
-      // Frissítjük a listát helyben, hogy azonnal eltűnjön
-      setProducts(products.filter(p => p.id !== id));
-    }
+    if (error) alert("Hiba: " + error.message);
+    else setProducts(products.filter(p => p.id !== id));
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'hover') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'hover' | 'texture') => {
     if (!e.target.files?.[0]) return;
     const file = e.target.files[0];
     const fileName = `${Date.now()}-${type}-${file.name.replace(/\s+/g, '-')}`;
@@ -64,16 +58,26 @@ export default function AdminProductsPage() {
     if (error) return alert("Feltöltési hiba");
 
     const { data } = supabase.storage.from("products").getPublicUrl(fileName);
-    const field = type === 'cover' ? 'cover_image' : 'hover_image';
+    
+    // Dinamikus kulcs hozzárendelés
+    const field = type === 'cover' ? 'cover_image' : type === 'hover' ? 'hover_image' : 'texture_image';
     setNewProduct(prev => ({ ...prev, [field]: data.publicUrl }));
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    
     const slug = newProduct.name.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w ]+/g, "").replace(/\s+/g, "-");
     
-    const { data: pData, error: pError } = await supabase.from("products").insert([{ ...newProduct, slug }]).select().single();
+    // Ha nincs külön 3D kép, mentsük el a cover_image-et alapértelmezettnek
+    const finalProduct = {
+      ...newProduct,
+      slug,
+      texture_image: newProduct.texture_image || newProduct.cover_image
+    };
+
+    const { data: pData, error: pError } = await supabase.from("products").insert([finalProduct]).select().single();
 
     if (pData) {
       const vToInsert = variants.filter(v => v.size_name).map(v => ({
@@ -84,7 +88,7 @@ export default function AdminProductsPage() {
       if (vToInsert.length > 0) await supabase.from("product_variants").insert(vToInsert);
     }
 
-    setNewProduct({ name: "", category_id: "", cover_image: "", hover_image: "", orientation: "portrait" });
+    setNewProduct({ name: "", category_id: "", cover_image: "", hover_image: "", texture_image: "", orientation: "portrait" });
     setVariants([{ size_name: "", price: "" }]);
     setIsAdding(false);
     setIsSaving(false);
@@ -138,15 +142,22 @@ export default function AdminProductsPage() {
           </div>
 
           <div className="space-y-4">
-             <p className="text-[10px] font-black uppercase text-gray-400 italic">3. Média</p>
-             <div className="grid grid-cols-2 gap-2">
+             <p className="text-[10px] font-black uppercase text-gray-400 italic">3. Média (Borító, Hover, 3D)</p>
+             <div className="grid grid-cols-3 gap-2">
+                {/* BORÍTÓ */}
                 <div className="relative aspect-square bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-100 transition-colors">
-                    {newProduct.cover_image ? <Image src={newProduct.cover_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-300">BORÍTÓ</span>}
+                    {newProduct.cover_image ? <Image src={newProduct.cover_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-400">FŐ KÉP</span>}
                     <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'cover')} />
                 </div>
+                {/* HOVER */}
                 <div className="relative aspect-square bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-100 transition-colors">
-                    {newProduct.hover_image ? <Image src={newProduct.hover_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-300">HOVER</span>}
+                    {newProduct.hover_image ? <Image src={newProduct.hover_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-400">HOVER</span>}
                     <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'hover')} />
+                </div>
+                {/* 3D TEXTURE */}
+                <div className="relative aspect-square bg-blue-50 rounded-xl border-2 border-dashed border-blue-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-blue-100 transition-colors">
+                    {newProduct.texture_image ? <Image src={newProduct.texture_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-blue-400 text-center px-1">3D ALAP KÉP</span>}
+                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'texture')} />
                 </div>
              </div>
              <button disabled={isSaving} className="w-full bg-black text-white p-4 rounded-xl font-black uppercase text-[10px] hover:bg-blue-600 transition-colors shadow-md disabled:opacity-50">
@@ -163,22 +174,25 @@ export default function AdminProductsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
           {products.map((p) => (
             <div key={p.id} className="bg-white border-2 border-gray-50 rounded-2xl p-2 hover:border-black transition-all group flex flex-col relative">
-              
               <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-2 bg-gray-100">
                 <Image src={p.cover_image || "/placeholder.jpg"} fill className="object-cover transition-transform group-hover:scale-105 duration-500" alt="" />
                 
-                {/* Tájolás felirat */}
-                <div className="absolute top-1.5 left-1.5 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-[7px] font-black uppercase flex items-center gap-1 shadow-lg pointer-events-none">
+                {/* 3D Indicator Badge */}
+                {p.texture_image && (
+                  <div className="absolute bottom-1.5 right-1.5 bg-blue-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-lg">
+                    3D
+                  </div>
+                )}
+
+                <div className="absolute top-1.5 left-1.5 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-[7px] font-black uppercase flex items-center gap-1">
                   {p.orientation === 'portrait' && <span>📐 ÁLLÓ</span>}
                   {p.orientation === 'landscape' && <span>📏 FEKVŐ</span>}
                   {p.orientation === 'square' && <span>🔲 NÉGYZET</span>}
                 </div>
 
-                {/* TÖRLÉS GOMB (Piros X a kép tetején) */}
                 <button 
                   onClick={() => handleDelete(p.id, p.name)}
-                  className="absolute top-1.5 right-1.5 w-6 h-6 bg-white/90 hover:bg-red-500 hover:text-white text-red-500 rounded-md flex items-center justify-center transition-all shadow-md z-10 opacity-0 group-hover:opacity-100"
-                  title="Termék törlése"
+                  className="absolute top-1.5 right-1.5 w-6 h-6 bg-white/90 hover:bg-red-500 hover:text-white text-red-500 rounded-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
                 >
                   <span className="text-xs font-bold">✕</span>
                 </button>
@@ -188,7 +202,7 @@ export default function AdminProductsPage() {
               
               <Link 
                 href={`/admin/products/edit/${p.id}`} 
-                className="mt-auto block w-full py-2 bg-gray-50 text-[8px] font-black text-center uppercase rounded-md hover:bg-blue-600 hover:text-white transition-all tracking-wider"
+                className="mt-auto block w-full py-2 bg-gray-50 text-[8px] font-black text-center uppercase rounded-md hover:bg-blue-600 hover:text-white transition-all"
               >
                 Szerkesztés
               </Link>

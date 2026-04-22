@@ -21,14 +21,14 @@ export default function EditProductPage() {
     description: "",
     cover_image: "",
     hover_image: "",
-    texture_image: "", // <--- ÚJ MEZŐ
+    texture_image: "",
     orientation: "portrait",
   });
 
   const [variants, setVariants] = useState<any[]>([]);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingHover, setUploadingHover] = useState(false);
-  const [uploadingTexture, setUploadingTexture] = useState(false); // <--- ÚJ FELTÖLTÉSI ÁLLAPOT
+  const [uploadingTexture, setUploadingTexture] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -45,7 +45,7 @@ export default function EditProductPage() {
           description: pData.description || "",
           cover_image: pData.cover_image || "",
           hover_image: pData.hover_image || "",
-          texture_image: pData.texture_image || "", // <--- BETÖLTÉS
+          texture_image: pData.texture_image || "",
           orientation: pData.orientation || "portrait",
         });
       }
@@ -95,7 +95,7 @@ export default function EditProductPage() {
       description: product.description,
       cover_image: product.cover_image,
       hover_image: product.hover_image,
-      texture_image: product.texture_image || product.cover_image, // <--- FRISSÍTÉS (Tartalék a borítóra)
+      texture_image: product.texture_image || product.cover_image,
       orientation: product.orientation,
     }).eq("id", id);
 
@@ -202,6 +202,7 @@ export default function EditProductPage() {
                   <option value="portrait">📐 Álló</option>
                   <option value="landscape">📏 Fekvő</option>
                   <option value="square">🔲 Négyzet</option>
+                  <option value="panorama">🎞️ Panoráma</option> {/* ÚJ OPCIÓ */}
                 </select>
               </div>
             </div>

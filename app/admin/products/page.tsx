@@ -19,7 +19,7 @@ export default function AdminProductsPage() {
     category_id: "",
     cover_image: "",
     hover_image: "",
-    texture_image: "", // <--- ÚJ MEZŐ
+    texture_image: "",
     orientation: "portrait"
   });
   const [variants, setVariants] = useState([{ size_name: "", price: "" }]);
@@ -59,7 +59,6 @@ export default function AdminProductsPage() {
 
     const { data } = supabase.storage.from("products").getPublicUrl(fileName);
     
-    // Dinamikus kulcs hozzárendelés
     const field = type === 'cover' ? 'cover_image' : type === 'hover' ? 'hover_image' : 'texture_image';
     setNewProduct(prev => ({ ...prev, [field]: data.publicUrl }));
   };
@@ -70,7 +69,6 @@ export default function AdminProductsPage() {
     
     const slug = newProduct.name.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w ]+/g, "").replace(/\s+/g, "-");
     
-    // Ha nincs külön 3D kép, mentsük el a cover_image-et alapértelmezettnek
     const finalProduct = {
       ...newProduct,
       slug,
@@ -121,6 +119,7 @@ export default function AdminProductsPage() {
               <option value="portrait">📐 Álló</option>
               <option value="landscape">📏 Fekvő</option>
               <option value="square">🔲 Négyzet</option>
+              <option value="panorama">🎞️ Panoráma</option>
             </select>
           </div>
 
@@ -144,17 +143,14 @@ export default function AdminProductsPage() {
           <div className="space-y-4">
              <p className="text-[10px] font-black uppercase text-gray-400 italic">3. Média (Borító, Hover, 3D)</p>
              <div className="grid grid-cols-3 gap-2">
-                {/* BORÍTÓ */}
                 <div className="relative aspect-square bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-100 transition-colors">
                     {newProduct.cover_image ? <Image src={newProduct.cover_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-400">FŐ KÉP</span>}
                     <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'cover')} />
                 </div>
-                {/* HOVER */}
                 <div className="relative aspect-square bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-100 transition-colors">
                     {newProduct.hover_image ? <Image src={newProduct.hover_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-400">HOVER</span>}
                     <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'hover')} />
                 </div>
-                {/* 3D TEXTURE */}
                 <div className="relative aspect-square bg-blue-50 rounded-xl border-2 border-dashed border-blue-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-blue-100 transition-colors">
                     {newProduct.texture_image ? <Image src={newProduct.texture_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-blue-400 text-center px-1">3D ALAP KÉP</span>}
                     <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'texture')} />
@@ -167,17 +163,16 @@ export default function AdminProductsPage() {
         </form>
       )}
 
-      {/* LISTA RÁCS */}
       {loading ? (
         <div className="text-center py-20 font-black text-gray-200 uppercase tracking-[0.5em] animate-pulse">Adatok betöltése...</div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
           {products.map((p) => (
             <div key={p.id} className="bg-white border-2 border-gray-50 rounded-2xl p-2 hover:border-black transition-all group flex flex-col relative">
-              <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-2 bg-gray-100">
+              {/* Dinamikus aspect ratio: panorámánál szélesebb keret a listában */}
+              <div className={`relative ${p.orientation === 'panorama' ? 'aspect-square sm:aspect-video' : 'aspect-[3/4]'} rounded-xl overflow-hidden mb-2 bg-gray-100`}>
                 <Image src={p.cover_image || "/placeholder.jpg"} fill className="object-cover transition-transform group-hover:scale-105 duration-500" alt="" />
                 
-                {/* 3D Indicator Badge */}
                 {p.texture_image && (
                   <div className="absolute bottom-1.5 right-1.5 bg-blue-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-lg">
                     3D
@@ -188,6 +183,7 @@ export default function AdminProductsPage() {
                   {p.orientation === 'portrait' && <span>📐 ÁLLÓ</span>}
                   {p.orientation === 'landscape' && <span>📏 FEKVŐ</span>}
                   {p.orientation === 'square' && <span>🔲 NÉGYZET</span>}
+                  {p.orientation === 'panorama' && <span>🎞️ PANORÁMA</span>}
                 </div>
 
                 <button 

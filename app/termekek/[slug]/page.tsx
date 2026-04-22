@@ -81,13 +81,14 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
   // --- DINAMIKUS MODELL VÁLASZTÁS ---
   const iosUsdzPath = `/models/${product.slug}.usdz`;
   
-  // Meghatározzuk a modellt a termék tájolása alapján
   const getModelPath = () => {
     switch (product.orientation) {
       case 'portrait':
         return "/models/canvas-portrait.glb";
       case 'square':
         return "/models/canvas-square.glb";
+      case 'panorama': // <--- Bekötve a panoráma modell
+        return "/models/canvas-panorama.glb";
       case 'landscape':
       default:
         return "/models/canvas-landscape.glb";
@@ -115,7 +116,6 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
                 <Image src={mainImage || "/placeholder.jpg"} alt={product.name} fill className="object-cover" priority sizes="(max-width: 768px) 100vw, 50vw" />
               </div>
             </div>
-            {/* Galéria thumb-ok */}
             <div className="flex justify-center gap-4">
               <button onClick={() => setMainImage(product.cover_image)} className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all ${mainImage === product.cover_image ? 'border-[#e3936e]' : 'border-transparent opacity-60'}`}>
                 <Image src={product.cover_image} fill className="object-cover" alt="F1" sizes="80px" />
@@ -172,8 +172,6 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
               <CanvasViewer 
                 modelUrl={masterGlbPath} 
                 iosModelUrl={isIOS ? iosUsdzPath : ""} 
-                // A textúrához most már a speciális 3D alapképet használjuk, 
-                // de ha az üres, akkor a biztonság kedvéért a cover_image-et
                 textureUrl={product.texture_image || product.cover_image}
               />
             </div>

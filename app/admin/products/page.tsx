@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,6 +13,10 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // --- LAPOZÁS ÁLLAPOTOK ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 18; // 3 sor x 6 oszlop = 18 db
 
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -42,11 +46,28 @@ export default function AdminProductsPage() {
     setLoading(false);
   }
 
+  // --- LAPOZÁSI LOGIKA ---
+  const totalPages = Math.ceil(products.length / itemsPerPage);
+  
+  const currentProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return products.slice(startIndex, startIndex + itemsPerPage);
+  }, [products, currentPage]);
+
+  const paginate = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Biztosan törölni akarod a "${name}" terméket?`)) return;
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) alert("Hiba: " + error.message);
-    else setProducts(products.filter(p => p.id !== id));
+    else {
+      setProducts(products.filter(p => p.id !== id));
+      // Ha az utolsó elemet töröltük az oldalon, ugorjunk vissza
+      if (currentProducts.length === 1 && currentPage > 1) setCurrentPage(currentPage - 1);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'hover' | 'texture') => {
@@ -90,6 +111,7 @@ export default function AdminProductsPage() {
     setVariants([{ size_name: "", price: "" }]);
     setIsAdding(false);
     setIsSaving(false);
+    setCurrentPage(1); // Új terméknél vissza az elejére
     fetchProducts();
   };
 
@@ -117,9 +139,9 @@ export default function AdminProductsPage() {
             </select>
             <select className="w-full border-2 border-gray-100 p-3 rounded-xl text-sm font-bold outline-none focus:border-black bg-gray-50" value={newProduct.orientation} onChange={e => setNewProduct({...newProduct, orientation: e.target.value})}>
               <option value="portrait">📐 Álló</option>
-              <option value="landscape">📏 Fekvő</option>
-              <option value="square">🔲 Négyzet</option>
-              <option value="panorama">🎞️ Panoráma</option>
+              <option value="landscape">📏 FEKVŐ</option>
+              <option value="square">🔲 NÉGYZET</option>
+              <option value="panorama">🎞️ PANORÁMA</option>
             </select>
           </div>
 
@@ -166,45 +188,88 @@ export default function AdminProductsPage() {
       {loading ? (
         <div className="text-center py-20 font-black text-gray-200 uppercase tracking-[0.5em] animate-pulse">Adatok betöltése...</div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-          {products.map((p) => (
-            <div key={p.id} className="bg-white border-2 border-gray-50 rounded-2xl p-2 hover:border-black transition-all group flex flex-col relative">
-              {/* Dinamikus aspect ratio: panorámánál szélesebb keret a listában */}
-              <div className={`relative ${p.orientation === 'panorama' ? 'aspect-square sm:aspect-video' : 'aspect-[3/4]'} rounded-xl overflow-hidden mb-2 bg-gray-100`}>
-                <Image src={p.cover_image || "/placeholder.jpg"} fill className="object-cover transition-transform group-hover:scale-105 duration-500" alt="" />
-                
-                {p.texture_image && (
-                  <div className="absolute bottom-1.5 right-1.5 bg-blue-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-lg">
-                    3D
-                  </div>
-                )}
+        <>
+          {/* GRID: Mobil 2, Tablet 3, Desktop 6 oszlop */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+            {currentProducts.map((p) => (
+              <div key={p.id} className="bg-white border-2 border-gray-50 rounded-2xl p-2 hover:border-black transition-all group flex flex-col relative">
+                <div className={`relative ${p.orientation === 'panorama' ? 'aspect-square sm:aspect-video' : 'aspect-[3/4]'} rounded-xl overflow-hidden mb-2 bg-gray-100`}>
+                  <Image src={p.cover_image || "/placeholder.jpg"} fill className="object-cover transition-transform group-hover:scale-105 duration-500" alt="" />
+                  
+                  {p.texture_image && (
+                    <div className="absolute bottom-1.5 right-1.5 bg-blue-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-lg">
+                      3D
+                    </div>
+                  )}
 
-                <div className="absolute top-1.5 left-1.5 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-[7px] font-black uppercase flex items-center gap-1">
-                  {p.orientation === 'portrait' && <span>📐 ÁLLÓ</span>}
-                  {p.orientation === 'landscape' && <span>📏 FEKVŐ</span>}
-                  {p.orientation === 'square' && <span>🔲 NÉGYZET</span>}
-                  {p.orientation === 'panorama' && <span>🎞️ PANORÁMA</span>}
+                  <div className="absolute top-1.5 left-1.5 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-[7px] font-black uppercase flex items-center gap-1">
+                    {p.orientation === 'portrait' && <span>📐 ÁLLÓ</span>}
+                    {p.orientation === 'landscape' && <span>📏 FEKVŐ</span>}
+                    {p.orientation === 'square' && <span>🔲 NÉGYZET</span>}
+                    {p.orientation === 'panorama' && <span>🎞️ PANORÁMA</span>}
+                  </div>
+
+                  <button 
+                    onClick={() => handleDelete(p.id, p.name)}
+                    className="absolute top-1.5 right-1.5 w-6 h-6 bg-white/90 hover:bg-red-500 hover:text-white text-red-500 rounded-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                  >
+                    <span className="text-xs font-bold">✕</span>
+                  </button>
                 </div>
 
-                <button 
-                  onClick={() => handleDelete(p.id, p.name)}
-                  className="absolute top-1.5 right-1.5 w-6 h-6 bg-white/90 hover:bg-red-500 hover:text-white text-red-500 rounded-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                <h3 className="text-[9px] font-black uppercase truncate mb-2 px-1">{p.name}</h3>
+                
+                <Link 
+                  href={`/admin/products/edit/${p.id}`} 
+                  className="mt-auto block w-full py-2 bg-gray-50 text-[8px] font-black text-center uppercase rounded-md hover:bg-blue-600 hover:text-white transition-all"
                 >
-                  <span className="text-xs font-bold">✕</span>
-                </button>
+                  Szerkesztés
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          {/* LAPOZÓ EGYSÉG */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-12 mb-8">
+              <button
+                onClick={() => paginate(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-gray-100 bg-white hover:border-black disabled:opacity-20 transition-all text-xs font-bold"
+              >
+                ←
+              </button>
+              
+              <div className="flex gap-1">
+                {[...Array(totalPages)].map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => paginate(i + 1)}
+                    className={`w-10 h-10 rounded-xl text-[10px] font-black transition-all border-2 ${
+                      currentPage === i + 1 
+                        ? "bg-black text-white border-black shadow-lg" 
+                        : "bg-white border-gray-100 text-gray-400 hover:border-black hover:text-black"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
               </div>
 
-              <h3 className="text-[9px] font-black uppercase truncate mb-2 px-1">{p.name}</h3>
-              
-              <Link 
-                href={`/admin/products/edit/${p.id}`} 
-                className="mt-auto block w-full py-2 bg-gray-50 text-[8px] font-black text-center uppercase rounded-md hover:bg-blue-600 hover:text-white transition-all"
+              <button
+                onClick={() => paginate(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-gray-100 bg-white hover:border-black disabled:opacity-20 transition-all text-xs font-bold"
               >
-                Szerkesztés
-              </Link>
+                →
+              </button>
             </div>
-          ))}
-        </div>
+          )}
+          
+          <div className="text-center text-[10px] font-black text-gray-300 uppercase tracking-widest italic pb-10">
+            Összesen {products.length} termék | Oldal: {currentPage} / {totalPages}
+          </div>
+        </>
       )}
     </div>
   );

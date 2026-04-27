@@ -78,20 +78,15 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
 
   if (loading || !product) return <div className="flex min-h-screen items-center justify-center bg-[#f7f7f5] italic">Betöltés...</div>;
 
-  // --- DINAMIKUS MODELL VÁLASZTÁS ---
   const iosUsdzPath = `/models/${product.slug}.usdz`;
   
   const getModelPath = () => {
     switch (product.orientation) {
-      case 'portrait':
-        return "/models/canvas-portrait.glb";
-      case 'square':
-        return "/models/canvas-square.glb";
-      case 'panorama': // <--- Bekötve a panoráma modell
-        return "/models/canvas-panorama.glb";
+      case 'portrait': return "/models/canvas-portrait.glb";
+      case 'square': return "/models/canvas-square.glb";
+      case 'panorama': return "/models/canvas-panorama.glb";
       case 'landscape':
-      default:
-        return "/models/canvas-landscape.glb";
+      default: return "/models/canvas-landscape.glb";
     }
   };
 
@@ -102,6 +97,7 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
       <Navbar />
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="lg:flex lg:items-start lg:gap-12">
+          
           {/* BAL OLDAL - KÉPEK */}
           <div className="lg:w-1/2 space-y-6">
             <div className="relative aspect-square w-full overflow-hidden rounded-[40px] bg-white shadow-sm border border-[#d9d5cf] flex items-center justify-center p-4">
@@ -132,16 +128,54 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
           <div className="mt-8 lg:mt-0 lg:w-1/2 max-w-md mx-auto lg:mx-0">
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#9a8f84]">{product.categories?.name}</p>
             <h1 className="mt-2 text-3xl font-semibold text-[#1f1f1f] tracking-tight">{product.name}</h1>
+            
             <div className="mt-6 border-b border-[#d9d5cf] pb-6">
               <span className="text-3xl font-bold">{formatPrice(selectedVariant?.price)}</span>
             </div>
+
+            {/* BIZALMI MEZŐK (USP) */}
+            <div className="mt-6 grid grid-cols-2 gap-4 py-4 border-b border-[#d9d5cf]">
+              <div className="flex items-center gap-3">
+                <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white rounded-full border border-gray-100 shadow-sm text-xs">🚀</span>
+                <div>
+                  <p className="text-[10px] font-bold uppercase leading-none">Gyors szállítás</p>
+                  <p className="text-[10px] text-gray-400 mt-1">2-4 munkanap</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white rounded-full border border-gray-100 shadow-sm text-xs">💎</span>
+                <div>
+                  <p className="text-[10px] font-bold uppercase leading-none">Prémium minőség</p>
+                  <p className="text-[10px] text-gray-400 mt-1">Vászon & Fakeret</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white rounded-full border border-gray-100 shadow-sm text-xs">🛡️</span>
+                <div>
+                  <p className="text-[10px] font-bold uppercase leading-none">Garancia</p>
+                  <p className="text-[10px] text-gray-400 mt-1">100% elégedettség</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white rounded-full border border-gray-100 shadow-sm text-xs">🇭🇺</span>
+                <div>
+                  <p className="text-[10px] font-bold uppercase leading-none">Hazai termék</p>
+                  <p className="text-[10px] text-gray-400 mt-1">Saját gyártás</p>
+                </div>
+              </div>
+            </div>
             
+            {/* VARIÁNSOK / MÉRETEK */}
             {variants.length > 0 && (
               <div className="mt-8">
-                <p className="text-[10px] font-black uppercase mb-3 text-[#9a8f84]">Méretek</p>
+                <p className="text-[10px] font-black uppercase mb-3 text-[#9a8f84]">Választható méret</p>
                 <div className="grid grid-cols-2 gap-2">
                   {variants.map((v) => (
-                    <button key={v.id} onClick={() => setSelectedVariant(v)} className={`p-3 text-xs font-bold rounded-xl border-2 transition-all ${selectedVariant?.id === v.id ? 'border-black bg-white shadow-md text-black' : 'border-gray-100 text-gray-400'}`}>
+                    <button 
+                      key={v.id} 
+                      onClick={() => setSelectedVariant(v)} 
+                      className={`p-3 text-xs font-bold rounded-xl border-2 transition-all ${selectedVariant?.id === v.id ? 'border-black bg-white shadow-md text-black' : 'border-gray-100 text-gray-400 hover:border-gray-200'}`}
+                    >
                       {v.size_name}
                     </button>
                   ))}
@@ -149,9 +183,42 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
               </div>
             )}
 
-            <button onClick={handleAddToCart} className="mt-8 w-full rounded-2xl py-4 text-sm font-bold text-white shadow-lg bg-[#e3936e] active:scale-95 transition-all">
+            <button onClick={handleAddToCart} className="mt-8 w-full rounded-2xl py-4 text-sm font-bold text-white shadow-lg bg-[#e3936e] active:scale-95 transition-all hover:bg-[#d17d5a]">
               {isAdded ? "✓ KOSÁRBAN" : "KOSÁRBA TESZEM"}
             </button>
+
+            {/* TERMÉK LEÍRÁS ÉS SPECIFIKÁCIÓ */}
+            <div className="mt-12 space-y-8">
+              <div>
+                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#1f1f1f] mb-4 border-l-2 border-[#e3936e] pl-3">A termékről</h3>
+                <p className="text-[14px] leading-relaxed text-gray-600">
+                  {product.description || `Dobja fel otthona hangulatát ezzel a prémium minőségű ${product.name}-el. Minden darabunkat nagy odafigyeléssel, vakráma technológiával készítjük, hogy az alkotás térben is kiemelkedjen a fal síkjából.`}
+                </p>
+              </div>
+
+              <div className="bg-white/50 rounded-2xl p-5 border border-[#d9d5cf]">
+                <h4 className="text-[10px] font-black uppercase tracking-widest mb-4 text-gray-400">Technikai adatok</h4>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3 text-[13px] text-gray-700">
+                    <span className="text-[#e3936e] mt-1 text-[10px]">●</span>
+                    <span>360g/m² súlyú, művészi texturált vászon alapanyag</span>
+                  </li>
+                  <li className="flex items-start gap-3 text-[13px] text-gray-700">
+                    <span className="text-[#e3936e] mt-1 text-[10px]">●</span>
+                    <span>2 cm vastag, szárított fenyőfa vakráma keret</span>
+                  </li>
+                  <li className="flex items-start gap-3 text-[13px] text-gray-700">
+                    <span className="text-[#e3936e] mt-1 text-[10px]">●</span>
+                    <span>Környezetbarát, UV-álló pigment alapú nyomtatás,fakulásmentes színek</span>
+                  </li>
+<li className="flex items-start gap-3 text-[13px] text-gray-700">
+  <span className="text-[#e3936e] mt-1 text-[10px]">●</span>
+<span>Modern nyomtatási technológiával készül</span>
+</li>
+                </ul>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
 import { createClient } from "@/lib/supabase/client";
@@ -11,8 +12,11 @@ function formatPrice(price: number) {
   return new Intl.NumberFormat("hu-HU").format(price) + " Ft";
 }
 
-export default function TermekekPage() {
+function TermekekContent() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   
   const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [dbCategories, setDbCategories] = useState<string[]>(["Összes"]);
@@ -24,8 +28,8 @@ export default function TermekekPage() {
   const [sortBy, setSortBy] = useState("default");
   const [maxPrice, setMaxPrice] = useState(150000); 
 
-  // --- LAPOZÁS ÁLLAPOT ---
-  const [currentPage, setCurrentPage] = useState(1);
+  // --- LAPOZÁS ÁLLAPOT AZ URL-BŐL ---
+  const currentPage = Number(searchParams.get("page")) || 1;
   const itemsPerPage = 12;
 
   useEffect(() => {
@@ -39,7 +43,8 @@ export default function TermekekPage() {
             categories(name),
             product_variants(*)
           `)
-          .eq('is_active', true);
+          .eq('is_active', true)
+          .order('created_at', { ascending: false }); // ELSŐ: Legújabbak elől
         
         if (pData) {
           const processed = pData.map(p => {
@@ -64,7 +69,6 @@ export default function TermekekPage() {
     fetchData();
   }, [supabase]);
 
-  // Szűrt lista alapból
   const filteredProducts = useMemo(() => {
     let filtered = [...dbProducts];
     if (selectedCategory !== "Összes") {
@@ -79,11 +83,9 @@ export default function TermekekPage() {
     else if (sortBy === "price-desc") filtered.sort((a, b) => b.display_price - a.display_price);
     else if (sortBy === "name-asc") filtered.sort((a, b) => a.name.localeCompare(b.name, "hu"));
 
-    // Ha változik a szűrés, ugorjunk az első oldalra
     return filtered;
   }, [dbProducts, selectedCategory, search, sortBy, maxPrice]);
 
-  // --- LAPOZOTT LISTA KISZÁMÍTÁSA ---
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
@@ -91,11 +93,23 @@ export default function TermekekPage() {
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
-  // Segédfüggvény a kategória/szűrés váltáshoz
+  // --- JAVÍTOTT LAPOZÓ FUNKCIÓ (URL FRISSÍTÉSSEL) ---
+  const handlePageChange = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", page.toString());
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    
+    // Finom görgetés a szűrőkhöz
+    const filterSection = document.getElementById('product-grid-start');
+    if (filterSection) {
+      filterSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const handleFilterChange = (type: string, value: any) => {
-    setCurrentPage(1); // Resetelünk az 1. oldalra
     if (type === "category") setSelectedCategory(value);
     if (type === "sort") setSortBy(value);
+    handlePageChange(1); // Szűrésnél vissza az elejére
   };
 
   return (
@@ -109,6 +123,8 @@ export default function TermekekPage() {
           <h1 className="text-4xl font-bold tracking-tight text-[#2a211d] md:text-6xl italic leading-tight">Összes termék</h1>
         </div>
       </section>
+
+      <div id="product-grid-start" /> {/* Horgony a görgetéshez */}
 
       <section className="sticky top-[64px] z-30 border-y border-[#efebe6] bg-white/80 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-6 py-4">
@@ -164,7 +180,6 @@ export default function TermekekPage() {
                           fill
                           sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
                           className="object-contain"
-                          priority={false} // Csak az éppen láthatóak töltődjenek
                         />
                       </div>
                       <div className="absolute inset-0 h-full w-full opacity-0 transition-all duration-700 ease-in-out scale-105 group-hover:scale-100 group-hover:opacity-100">
@@ -194,11 +209,10 @@ export default function TermekekPage() {
               ))}
             </div>
 
-            {/* --- LAPOZÓ GOMBOK --- */}
             {totalPages > 1 && (
               <div className="mt-20 flex items-center justify-center gap-2">
                 <button
-                  onClick={() => {setCurrentPage(p => Math.max(1, p - 1)); window.scrollTo(0, 400);}}
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                   className="p-3 rounded-full border border-[#efebe6] disabled:opacity-30 hover:bg-[#f8f3ef] transition-colors"
                 >
@@ -210,7 +224,7 @@ export default function TermekekPage() {
                 {[...Array(totalPages)].map((_, i) => (
                   <button
                     key={i}
-                    onClick={() => {setCurrentPage(i + 1); window.scrollTo(0, 400);}}
+                    onClick={() => handlePageChange(i + 1)}
                     className={`h-10 w-10 rounded-full text-sm font-bold transition-all ${
                       currentPage === i + 1 ? "bg-[#2a211d] text-white" : "hover:bg-[#f8f3ef]"
                     }`}
@@ -220,7 +234,7 @@ export default function TermekekPage() {
                 ))}
 
                 <button
-                  onClick={() => {setCurrentPage(p => Math.min(totalPages, p + 1)); window.scrollTo(0, 400);}}
+                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                   className="p-3 rounded-full border border-[#efebe6] disabled:opacity-30 hover:bg-[#f8f3ef] transition-colors"
                 >
@@ -235,5 +249,14 @@ export default function TermekekPage() {
       </section>
       <Footer />
     </main>
+  );
+}
+
+// A Next.js App Routerben kötelező a Suspense, ha useSearchParams-t használsz
+export default function TermekekPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Betöltés...</div>}>
+      <TermekekContent />
+    </Suspense>
   );
 }

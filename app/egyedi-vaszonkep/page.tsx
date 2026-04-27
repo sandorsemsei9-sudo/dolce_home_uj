@@ -17,22 +17,32 @@ const CustomCanvasViewer = dynamic<any>(() => import("../components/3d/CumstomCa
 });
 
 const TEMPLATE_IMAGE = "/images/mockup.jpg"; 
-type Ratio = "square" | "portrait" | "landscape";
+type Ratio = "square" | "portrait" | "landscape" | "panorama"; // Itt is panoramal a név a fájl miatt
 
-const ratios: Record<Ratio, number> = { square: 1/1, portrait: 2/3, landscape: 3/2 };
-const ratioLabels: Record<Ratio, string> = { square: "négyzet", portrait: "álló", landscape: "fekvő" };
+const ratios: Record<Ratio, number> = { 
+  square: 1/1, 
+  portrait: 2/3, 
+  landscape: 3/2, 
+  panorama: 3/1 
+};
+
+const ratioLabels: Record<Ratio, string> = { 
+  square: "négyzet", 
+  portrait: "álló", 
+  landscape: "fekvő", 
+  panorama: "panoráma" 
+};
 
 const sizes: Record<Ratio, string[]> = {
   square: ["20x20", "30x30", "40x40", "50x50", "60x60", "80x80", "100x100"],
   portrait: ["30x40", "40x50", "40x60", "60x90", "80x100"],
   landscape: ["40x30", "50x40", "60x40", "90x60", "100x80"],
+  panorama: ["60x20", "90x30", "120x40", "150x50"],
 };
 
 function calculatePrice(size: string) {
-  if (size === "100x100" || size === "80x100") return 23490;
-  if (size === "80x80" || size === "60x90" || size === "100x80") return 19990;
-  if (size === "60x60" || size === "50x50" || size === "40x60") return 15990;
-  if (size === "40x40" || size === "40x50" || size === "60x40") return 13990;
+  if (size === "100x100" || size === "80x100" || size === "150x50") return 23490;
+  if (size === "80x80" || size === "60x90" || size === "100x80" || size === "120x40") return 19990;
   return 11990;
 }
 
@@ -71,6 +81,7 @@ export default function EgyediVaszonkepPage() {
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (image) URL.revokeObjectURL(image);
     setOriginalFile(file);
     setImage(URL.createObjectURL(file));
     setFileName(file.name);
@@ -83,8 +94,6 @@ export default function EgyediVaszonkepPage() {
       setIsSaving(true);
       const uniqueId = uuidv4();
       const today = new Date().toISOString().split('T')[0];
-      
-      // Fájlnév tisztítása az "Invalid key" hiba elkerülése érdekében
       const fileExtension = originalFile.name.split('.').pop();
       const safeOriginalName = `${uniqueId}-original.${fileExtension}`;
       
@@ -100,30 +109,22 @@ export default function EgyediVaszonkepPage() {
       
       const blob = await new Promise<Blob>(r => canvas.toBlob(b => r(b!), "image/jpeg", 0.95));
       
-      // 1. PREVIEW mentése
       const previewPath = `${today}/previews/${uniqueId}.jpg`;
-      const { error: previewError } = await supabase.storage.from("custom-canvas").upload(previewPath, blob);
-      if (previewError) throw previewError;
+      await supabase.storage.from("custom-canvas").upload(previewPath, blob);
       
-      // 2. ORIGINAL mentése (tisztított névvel az originals mappába)
       const originalPath = `${today}/originals/${safeOriginalName}`;
-      const { error: originalError } = await supabase.storage.from("custom-canvas").upload(originalPath, originalFile);
-      if (originalError) throw originalError;
+      await supabase.storage.from("custom-canvas").upload(originalPath, originalFile);
 
       const { data: { publicUrl } } = supabase.storage.from("custom-canvas").getPublicUrl(previewPath);
 
       setSavedConfig({ 
-        ratio, 
-        size, 
-        price, 
+        ratio, size, price, 
         previewUrl: publicUrl, 
-        storagePath: previewPath, 
         originalPath: originalPath 
       });
       setIsCropModalOpen(false);
     } catch (err) { 
-      console.error("Feltöltési hiba:", err); 
-      alert("Hiba történt a kép mentésekor. Kérlek próbáld meg ékezetek nélküli fájlnévvel!");
+      alert("Hiba történt a mentéskor.");
     } finally { 
       setIsSaving(false); 
     }
@@ -160,18 +161,15 @@ export default function EgyediVaszonkepPage() {
       <Script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js" strategy="afterInteractive" />
       <Navbar />
       
-      <section className="mx-auto max-w-7xl px-6 py-10">
+      <section className="mx-auto max-w-7xl px-4 md:px-6 py-10">
         <div className="flex flex-col lg:grid lg:grid-cols-[1.45fr_0.85fr] gap-10">
           
-          {/* MOCKUP SECTION */}
+          {/* MOCKUP */}
           <div className="order-2 lg:order-1 relative aspect-[1.1/1] overflow-hidden rounded-[40px] border border-[#d9d5cf] bg-white shadow-2xl">
             <img src={TEMPLATE_IMAGE} alt="Mockup" className="h-full w-full object-cover" />
             
             {savedConfig && (
-              <button 
-                onClick={() => setIsARModalOpen(true)}
-                className="absolute top-6 right-6 z-20 bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl border border-[#d9d5cf] shadow-xl hover:scale-105 transition-all text-black font-black uppercase text-[10px]"
-              >
+              <button onClick={() => setIsARModalOpen(true)} className="absolute top-6 right-6 z-20 bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl border border-[#d9d5cf] shadow-xl text-black font-black uppercase text-[10px]">
                 📦 {isIOS ? "3D Nézet" : "3D / AR Nézet"}
               </button>
             )}
@@ -179,44 +177,34 @@ export default function EgyediVaszonkepPage() {
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8">
               <div className={`transition-all duration-700 ${
                 activeRatio === "square" ? "aspect-square w-[62%]" : 
-                activeRatio === "portrait" ? "aspect-[2/3] w-[42%]" : "aspect-[3/2] w-[72%]"
+                activeRatio === "portrait" ? "aspect-[2/3] w-[42%]" : 
+                activeRatio === "landscape" ? "aspect-[3/2] w-[72%]" : "aspect-[3/1] w-[80%]"
               }`}>
-                {/* Visual: Nincs fehér keret, csak mélység és textúra */}
-                <div className="relative h-full w-full bg-white shadow-[0_35px_80px_rgba(0,0,0,0.45)] overflow-hidden flex items-center justify-center">
-                  {savedConfig?.previewUrl ? (
-                    <>
-                      <img src={savedConfig.previewUrl} alt="Preview" className="h-full w-full object-cover relative z-10" />
-                      <div className="absolute inset-0 z-20 opacity-[0.12] mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/canvas-orange.png')]"></div>
-                      <div className="absolute inset-0 z-30 shadow-[inset_0_0_30px_rgba(0,0,0,0.25)]"></div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <span className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-300">Ide kerül a képed</span>
-                    </div>
+                <div className="relative h-full w-full bg-white shadow-[0_35px_80px_rgba(0,0,0,0.45)] overflow-hidden">
+                  {savedConfig?.previewUrl && (
+                    <img src={savedConfig.previewUrl} alt="Preview" className="h-full w-full object-cover relative z-10" />
                   )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* CONTROLS SECTION */}
-          <div className="order-1 lg:order-2 rounded-[35px] border border-[#d9d5cf] bg-white p-8 shadow-xl">
-            <h1 className="text-3xl font-black italic uppercase mb-8 tracking-tighter">Egyedi Vászonkép</h1>
+          {/* VEZÉRLŐK */}
+          <div className="order-1 lg:order-2 rounded-[35px] border border-[#d9d5cf] bg-white p-6 md:p-8 shadow-xl">
+            <h1 className="text-3xl font-black italic uppercase mb-8">Egyedi Vászonkép</h1>
             
-            <div className="space-y-8">
-              {/* Formátum választó - Zárolva ha van kép */}
+            <div className="space-y-6">
               <div className={savedConfig ? "opacity-40 pointer-events-none" : ""}>
-                <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">1. Válasz formátumot</p>
-                <div className="grid grid-cols-3 gap-2">
+                <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">1. Formátum</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {(Object.keys(ratios) as Ratio[]).map(r => (
                     <button key={r} onClick={() => { setRatio(r); setSize(sizes[r][0]); }} className={`py-3 border-2 rounded-xl text-[10px] font-black uppercase transition-all ${ratio === r ? 'border-black bg-black text-white' : 'border-gray-100 text-gray-400'}`}>{ratioLabels[r]}</button>
                   ))}
                 </div>
               </div>
 
-              {/* Méret választó - Zárolva ha van kép */}
               <div className={savedConfig ? "opacity-40 pointer-events-none" : ""}>
-                <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">2. Válasz méretet (cm)</p>
+                <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">2. Méret (cm)</p>
                 <div className="flex flex-wrap gap-2">
                   {sizes[ratio].map(s => (
                     <button key={s} onClick={() => setSize(s)} className={`px-4 py-2 border-2 rounded-lg text-xs font-black transition-all ${size === s ? 'border-black bg-black text-white' : 'border-gray-100 text-gray-500'}`}>{s}</button>
@@ -225,16 +213,16 @@ export default function EgyediVaszonkepPage() {
               </div>
 
               <div>
-                <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">3. Töltsd fel a fotód</p>
+                <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">3. Fotó feltöltése</p>
                 {!image ? (
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-200 rounded-[25px] cursor-pointer hover:bg-orange-50 transition-all">
-                    <span className="text-[10px] font-black uppercase text-orange-600">Fénykép kiválasztása</span>
+                    <span className="text-[10px] font-black uppercase text-orange-600">Kép kiválasztása</span>
                     <input type="file" accept="image/*" onChange={onFileChange} className="hidden" />
                   </label>
                 ) : (
-                  <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                  <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border">
                     <span className="text-[10px] font-bold uppercase truncate max-w-[150px]">{fileName}</span>
-                    <button onClick={() => {setImage(null); setSavedConfig(null); setOriginalFile(null); setCroppedAreaPixels(null);}} className="text-red-500 text-[10px] font-black">Törlés</button>
+                    <button onClick={() => {setImage(null); setSavedConfig(null);}} className="text-red-500 text-[10px] font-black">Törlés</button>
                   </div>
                 )}
               </div>
@@ -250,18 +238,13 @@ export default function EgyediVaszonkepPage() {
         </div>
       </section>
 
-      {/* AR MODAL */}
+      {/* AR MODAL - Itt használjuk a panoramal.glb fájlt */}
       {isARModalOpen && mounted && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setIsARModalOpen(false)} />
           <div className="relative w-full h-full max-w-5xl bg-[#f8f8f6] md:rounded-[40px] overflow-hidden flex flex-col">
             <div className="p-5 border-b flex justify-between items-center bg-white z-10">
-                <div>
-                  <h3 className="font-black uppercase italic text-sm text-black">3D Preview</h3>
-                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
-                    {isIOS ? "Interaktív Modell" : "3D & AR Előnézet"}
-                  </p>
-                </div>
+                <h3 className="font-black uppercase italic text-sm text-black">3D Preview</h3>
                 <button onClick={() => setIsARModalOpen(false)} className="bg-black text-white w-10 h-10 rounded-xl font-bold">✕</button>
             </div>
             <div className="flex-1 relative bg-[#efebe6]">
@@ -275,11 +258,11 @@ export default function EgyediVaszonkepPage() {
         </div>
       )}
 
-      {/* CROPPER MODAL */}
+      {/* CROPPER MODAL - JAVÍTVA LÁTHATÓSÁGRA */}
       {isCropModalOpen && image && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 p-4">
-          <div className="w-full max-w-2xl bg-white rounded-[40px] overflow-hidden">
-            <div className="relative h-[400px] bg-black">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 md:p-4">
+          <div className="w-full h-full md:h-auto md:max-w-2xl bg-white md:rounded-[40px] overflow-hidden flex flex-col">
+            <div className="relative flex-1 min-h-[400px] bg-black">
               <Cropper 
                 image={image} 
                 crop={crop} 
@@ -288,9 +271,12 @@ export default function EgyediVaszonkepPage() {
                 onCropChange={setCrop} 
                 onCropComplete={(_, p) => setCroppedAreaPixels(p)} 
                 onZoomChange={setZoom} 
+                style={{
+                  containerStyle: { width: '100%', height: '100%', position: 'absolute' }
+                }}
               />
             </div>
-            <div className="p-8">
+            <div className="p-8 bg-white">
               <button onClick={handleSaveConfig} disabled={isSaving} className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase text-xs">
                 {isSaving ? "Feldolgozás..." : "Kép rögzítése"}
               </button>

@@ -152,6 +152,6 @@ export default function Hero({ products, formatPrice }: HeroProps) {
           </div>
         </div>
       </div>
-    </section>
+    </section> 
   );
 }

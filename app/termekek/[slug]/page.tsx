@@ -86,7 +86,7 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
       case 'square': return "/models/canvas-square.glb";
       case 'panorama': return "/models/canvas-panorama.glb";
       case 'landscape':
-      default: return "/models/canvas-landscape.glb";
+      default: return "/models/canvas-landscape-2.glb";
     }
   };
 

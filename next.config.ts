@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    // Ez kapcsolja ki globálisan a Vercel képoptimalizálást (és a limit fogyasztását)
+    unoptimized: true, 
+    
     remotePatterns: [
       {
         protocol: 'https',

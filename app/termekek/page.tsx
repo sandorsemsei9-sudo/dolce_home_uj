@@ -17,18 +17,16 @@ function TermekekContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  
+
   const [dbProducts, setDbProducts] = useState<any[]>([]);
-  const [dbCategories, setDbCategories] = useState<string[]>(["Összes"]);
+  const [dbCategories, setDbCategories] = useState<string[]>((["Összes"]));
   const [loading, setLoading] = useState(true);
 
-  // Szűrési állapotok
   const [selectedCategory, setSelectedCategory] = useState("Összes");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("default");
-  const [maxPrice, setMaxPrice] = useState(150000); 
+  const [maxPrice, setMaxPrice] = useState(150000);
 
-  // --- LAPOZÁS ÁLLAPOT AZ URL-BŐL ---
   const currentPage = Number(searchParams.get("page")) || 1;
   const itemsPerPage = 12;
 
@@ -43,73 +41,102 @@ function TermekekContent() {
             categories(name),
             product_variants(*)
           `)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false }); // ELSŐ: Legújabbak elől
-        
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
+
         if (pData) {
-          const processed = pData.map(p => {
+          const processed = pData.map((p) => {
             const variantPrices = p.product_variants?.map((v: any) => v.price) || [];
             const variantSizes = p.product_variants?.map((v: any) => v.size_name) || [];
+
             return {
               ...p,
               display_price: variantPrices.length > 0 ? Math.min(...variantPrices) : 0,
               display_sizes: variantSizes,
-              display_category: p.categories?.name || "Vászonkép"
+              display_category: p.categories?.name || "Vászonkép",
             };
           });
+
           setDbProducts(processed);
         }
 
         const { data: cData } = await supabase.from("categories").select("name");
-        if (cData) setDbCategories(["Összes", ...cData.map(c => c.name)]);
+
+        if (cData) {
+          setDbCategories(["Összes", ...cData.map((c) => c.name)]);
+        }
       } finally {
         setLoading(false);
       }
     }
+
     fetchData();
   }, [supabase]);
 
   const filteredProducts = useMemo(() => {
     let filtered = [...dbProducts];
-    if (selectedCategory !== "Összes") {
-      filtered = filtered.filter(p => p.display_category === selectedCategory);
-    }
-    if (search.trim()) {
-      filtered = filtered.filter(p => p.name?.toLowerCase().includes(search.toLowerCase()));
-    }
-    filtered = filtered.filter(p => p.display_price <= maxPrice);
 
-    if (sortBy === "price-asc") filtered.sort((a, b) => a.display_price - b.display_price);
-    else if (sortBy === "price-desc") filtered.sort((a, b) => b.display_price - a.display_price);
-    else if (sortBy === "name-asc") filtered.sort((a, b) => a.name.localeCompare(b.name, "hu"));
+    if (selectedCategory !== "Összes") {
+      filtered = filtered.filter((p) => p.display_category === selectedCategory);
+    }
+
+    if (search.trim()) {
+      filtered = filtered.filter((p) =>
+        p.name?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    filtered = filtered.filter((p) => p.display_price <= maxPrice);
+
+    if (sortBy === "price-asc") {
+      filtered.sort((a, b) => a.display_price - b.display_price);
+    } else if (sortBy === "price-desc") {
+      filtered.sort((a, b) => b.display_price - a.display_price);
+    } else if (sortBy === "name-asc") {
+      filtered.sort((a, b) => a.name.localeCompare(b.name, "hu"));
+    }
 
     return filtered;
   }, [dbProducts, selectedCategory, search, sortBy, maxPrice]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
+
   const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
+    const safePage = Math.min(currentPage, totalPages);
+    const startIndex = (safePage - 1) * itemsPerPage;
+
     return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredProducts, currentPage]);
+  }, [filteredProducts, currentPage, totalPages]);
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  // 🔥 SZŰRÉS → PAGE = 1
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", "1");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [selectedCategory, search, sortBy, maxPrice]);
 
-  // --- JAVÍTOTT LAPOZÓ FUNKCIÓ (URL FRISSÍTÉSSEL) ---
+  // 🔥 HA PAGE TÚL NAGY → VISSZA
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", "1");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [currentPage, totalPages]);
+
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", page.toString());
+
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    
-    // Finom görgetés a szűrőkhöz
-    const filterSection = document.getElementById('product-grid-start');
-    if (filterSection) {
-      filterSection.scrollIntoView({ behavior: 'smooth' });
-    }
+
+    const el = document.getElementById("product-grid-start");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleFilterChange = (type: string, value: any) => {
     if (type === "category") setSelectedCategory(value);
     if (type === "sort") setSortBy(value);
-    handlePageChange(1); // Szűrésnél vissza az elejére
   };
 
   return (
@@ -119,23 +146,30 @@ function TermekekContent() {
       <section className="relative pt-16 pb-12 md:pt-24 md:pb-20 overflow-hidden">
         <div className="absolute inset-0 bg-[#f8f3ef]/40 pointer-events-none" />
         <div className="relative mx-auto max-w-7xl px-6">
-          <p className="mb-4 text-[11px] font-black uppercase tracking-[0.3em] text-[#d17d58]">Válogatás</p>
-          <h1 className="text-4xl font-bold tracking-tight text-[#2a211d] md:text-6xl italic leading-tight">Összes termék</h1>
+          <p className="mb-4 text-[11px] font-black uppercase tracking-[0.3em] text-[#d17d58]">
+            Válogatás
+          </p>
+          <h1 className="text-4xl font-bold tracking-tight text-[#2a211d] md:text-6xl italic leading-tight">
+            Összes termék
+          </h1>
         </div>
       </section>
 
-      <div id="product-grid-start" /> {/* Horgony a görgetéshez */}
+      <div id="product-grid-start" />
 
       <section className="sticky top-[64px] z-30 border-y border-[#efebe6] bg-white/80 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
-              {dbCategories.map(cat => (
+              {dbCategories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => handleFilterChange("category", cat)}
-                  className={`whitespace-nowrap rounded-full px-5 py-2 text-xs font-bold uppercase tracking-wider transition-all
-                    ${selectedCategory === cat ? 'bg-[#2a211d] text-white' : 'bg-[#f8f3ef] text-[#7a665c] hover:bg-[#efebe6]'}`}
+                  className={`whitespace-nowrap rounded-full px-5 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+                    selectedCategory === cat
+                      ? "bg-[#2a211d] text-white"
+                      : "bg-[#f8f3ef] text-[#7a665c] hover:bg-[#efebe6]"
+                  }`}
                 >
                   {cat}
                 </button>
@@ -143,19 +177,20 @@ function TermekekContent() {
             </div>
 
             <div className="flex items-center gap-4">
-               <select 
+              <select
                 value={sortBy}
                 onChange={(e) => handleFilterChange("sort", e.target.value)}
                 className="bg-transparent text-sm font-bold text-[#2a211d] outline-none cursor-pointer"
-               >
-                 <option value="default">Rendezés</option>
-                 <option value="price-asc">Ár: növekvő</option>
-                 <option value="price-desc">Ár: csökkenő</option>
-                 <option value="name-asc">Név: A-Z</option>
-               </select>
-               <span className="text-xs font-bold text-[#d17d58] uppercase tracking-widest border-l border-[#efebe6] pl-4">
-                 {filteredProducts.length} termék
-               </span>
+              >
+                <option value="default">Rendezés</option>
+                <option value="price-asc">Ár: növekvő</option>
+                <option value="price-desc">Ár: csökkenő</option>
+                <option value="name-asc">Név: A-Z</option>
+              </select>
+
+              <span className="text-xs font-bold text-[#d17d58] uppercase tracking-widest border-l border-[#efebe6] pl-4">
+                {filteredProducts.length} termék
+              </span>
             </div>
           </div>
         </div>
@@ -178,30 +213,26 @@ function TermekekContent() {
                           src={product.cover_image || "/placeholder.jpg"}
                           alt={product.name}
                           fill
-                          sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
                           className="object-contain"
                         />
                       </div>
                       <div className="absolute inset-0 h-full w-full opacity-0 transition-all duration-700 ease-in-out scale-105 group-hover:scale-100 group-hover:opacity-100">
                         <Image
                           src={product.hover_image || "/images/mockup.jpg"}
-                          alt={`${product.name} mockup`}
+                          alt=""
                           fill
-                          sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
                           className="object-cover"
                         />
                       </div>
                     </div>
+
                     <div className="px-2">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#d17d58]">{product.display_category}</p>
-                      <h3 className="mt-2 text-xl font-bold text-[#2a211d] group-hover:text-[#d17d58]">{product.name}</h3>
-                      <div className="mt-4 flex items-baseline justify-between pt-4 border-t border-[#efebe6]/60">
-                        <span className="text-xl font-black text-[#2a211d]">{formatPrice(product.display_price)}</span>
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f8f3ef] text-[#2a211d] group-hover:bg-[#d17d58] group-hover:text-white">
-                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                             <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                           </svg>
-                        </div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#d17d58]">
+                        {product.display_category}
+                      </p>
+                      <h3 className="mt-2 text-xl font-bold">{product.name}</h3>
+                      <div className="mt-4 flex justify-between pt-4 border-t border-[#efebe6]/60">
+                        <span>{formatPrice(product.display_price)}</span>
                       </div>
                     </div>
                   </Link>
@@ -210,49 +241,29 @@ function TermekekContent() {
             </div>
 
             {totalPages > 1 && (
-              <div className="mt-20 flex items-center justify-center gap-2">
-                <button
-                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="p-3 rounded-full border border-[#efebe6] disabled:opacity-30 hover:bg-[#f8f3ef] transition-colors"
-                >
-                  <svg className="h-5 w-5 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </button>
-                
+              <div className="mt-20 flex justify-center gap-2">
                 {[...Array(totalPages)].map((_, i) => (
                   <button
                     key={i}
                     onClick={() => handlePageChange(i + 1)}
-                    className={`h-10 w-10 rounded-full text-sm font-bold transition-all ${
-                      currentPage === i + 1 ? "bg-[#2a211d] text-white" : "hover:bg-[#f8f3ef]"
+                    className={`h-10 w-10 rounded-full ${
+                      currentPage === i + 1 ? "bg-black text-white" : ""
                     }`}
                   >
                     {i + 1}
                   </button>
                 ))}
-
-                <button
-                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                  className="p-3 rounded-full border border-[#efebe6] disabled:opacity-30 hover:bg-[#f8f3ef] transition-colors"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </button>
               </div>
             )}
           </>
         )}
       </section>
+
       <Footer />
     </main>
   );
 }
 
-// A Next.js App Routerben kötelező a Suspense, ha useSearchParams-t használsz
 export default function TermekekPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Betöltés...</div>}>

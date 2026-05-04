@@ -14,9 +14,21 @@ export default function AdminProductsPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- LAPOZÁS ÁLLAPOTOK ---
+  // --- ÚJ ÁLLAPOTOK A KÉPKEZELÉSHEZ ---
+  const [tempFiles, setTempFiles] = useState<{
+    cover: File | null;
+    hover: File | null;
+    texture: File | null;
+  }>({ cover: null, hover: null, texture: null });
+
+  const [previews, setPreviews] = useState({
+    cover: "",
+    hover: "",
+    texture: ""
+  });
+
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 18; // 3 sor x 6 oszlop = 18 db
+  const itemsPerPage = 18;
 
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -48,7 +60,6 @@ export default function AdminProductsPage() {
 
   // --- LAPOZÁSI LOGIKA ---
   const totalPages = Math.ceil(products.length / itemsPerPage);
-  
   const currentProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return products.slice(startIndex, startIndex + itemsPerPage);
@@ -59,60 +70,119 @@ export default function AdminProductsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Biztosan törölni akarod a "${name}" terméket?`)) return;
+  // --- FÁJL KIVÁLASZTÁSA (Csak kliens oldali előnézet) ---
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'hover' | 'texture') => {
+    if (!e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    
+    // Előnézet generálása a böngészőben
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviews(prev => ({ ...prev, [type]: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+
+    // Eltároljuk a fájlt a végső mentésig
+    setTempFiles(prev => ({ ...prev, [type]: file }));
+  };
+
+  // --- TÖRLÉS (Storage-al együtt) ---
+  const handleDelete = async (id: string, name: string, slug: string) => {
+    if (!confirm(`Biztosan törölni akarod a "${name}" terméket és az összes hozzá tartozó képet?`)) return;
+    
+    // 1. Adatbázis törlés
     const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) alert("Hiba: " + error.message);
-    else {
+    
+    if (error) {
+        alert("Hiba: " + error.message);
+    } else {
+      // 2. Storage mappa ürítése (ha van slug)
+      if (slug) {
+        const { data: files } = await supabase.storage.from("products").list(slug);
+        if (files && files.length > 0) {
+          const filesToRemove = files.map(f => `${slug}/${f.name}`);
+          await supabase.storage.from("products").remove(filesToRemove);
+        }
+      }
+      
       setProducts(products.filter(p => p.id !== id));
-      // Ha az utolsó elemet töröltük az oldalon, ugorjunk vissza
       if (currentProducts.length === 1 && currentPage > 1) setCurrentPage(currentPage - 1);
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'hover' | 'texture') => {
-    if (!e.target.files?.[0]) return;
-    const file = e.target.files[0];
-    const fileName = `${Date.now()}-${type}-${file.name.replace(/\s+/g, '-')}`;
-    
-    const { error } = await supabase.storage.from("products").upload(fileName, file);
-    if (error) return alert("Feltöltési hiba");
-
-    const { data } = supabase.storage.from("products").getPublicUrl(fileName);
-    
-    const field = type === 'cover' ? 'cover_image' : type === 'hover' ? 'hover_image' : 'texture_image';
-    setNewProduct(prev => ({ ...prev, [field]: data.publicUrl }));
-  };
-
+  // --- VÉGLEGES MENTÉS ÉS FELTÖLTÉS ---
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!tempFiles.cover && !newProduct.cover_image) return alert("A fő kép kötelező!");
+    
     setIsSaving(true);
     
+    // Slug generálása a mappanévhez
     const slug = newProduct.name.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w ]+/g, "").replace(/\s+/g, "-");
     
-    const finalProduct = {
-      ...newProduct,
-      slug,
-      texture_image: newProduct.texture_image || newProduct.cover_image
-    };
+    try {
+      let finalImages = { 
+        cover: newProduct.cover_image, 
+        hover: newProduct.hover_image, 
+        texture: newProduct.texture_image 
+      };
 
-    const { data: pData, error: pError } = await supabase.from("products").insert([finalProduct]).select().single();
+      // Képek feltöltése ciklussal
+      for (const type of ['cover', 'hover', 'texture'] as const) {
+        const file = tempFiles[type];
+        if (file) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${type}-${Date.now()}.${fileExt}`; // Időbélyeg a cache elkerülésére
+          const filePath = `${slug}/${fileName}`; 
 
-    if (pData) {
-      const vToInsert = variants.filter(v => v.size_name).map(v => ({
-        product_id: pData.id,
-        size_name: v.size_name,
-        price: parseInt(v.price) || 0
-      }));
-      if (vToInsert.length > 0) await supabase.from("product_variants").insert(vToInsert);
+          const { error: uploadError } = await supabase.storage
+            .from("products")
+            .upload(filePath, file, { upsert: true });
+
+          if (uploadError) throw uploadError;
+
+          const { data: urlData } = supabase.storage.from("products").getPublicUrl(filePath);
+          finalImages[type] = urlData.publicUrl;
+        }
+      }
+
+      const finalProduct = {
+        ...newProduct,
+        slug,
+        cover_image: finalImages.cover,
+        hover_image: finalImages.hover,
+        texture_image: finalImages.texture || finalImages.cover
+      };
+
+      // Mentés az adatbázisba
+      const { data: pData, error: pError } = await supabase.from("products").insert([finalProduct]).select().single();
+
+      if (pError) throw pError;
+
+      // Variánsok mentése
+      if (pData) {
+        const vToInsert = variants.filter(v => v.size_name).map(v => ({
+          product_id: pData.id,
+          size_name: v.size_name,
+          price: parseInt(v.price) || 0
+        }));
+        if (vToInsert.length > 0) await supabase.from("product_variants").insert(vToInsert);
+      }
+
+      // Állapotok visszaállítása
+      setNewProduct({ name: "", category_id: "", cover_image: "", hover_image: "", texture_image: "", orientation: "portrait" });
+      setTempFiles({ cover: null, hover: null, texture: null });
+      setPreviews({ cover: "", hover: "", texture: "" });
+      setVariants([{ size_name: "", price: "" }]);
+      setIsAdding(false);
+      fetchProducts();
+      alert("Termék sikeresen létrehozva!");
+
+    } catch (error: any) {
+      alert("Hiba történt a mentés során: " + error.message);
+    } finally {
+      setIsSaving(false);
     }
-
-    setNewProduct({ name: "", category_id: "", cover_image: "", hover_image: "", texture_image: "", orientation: "portrait" });
-    setVariants([{ size_name: "", price: "" }]);
-    setIsAdding(false);
-    setIsSaving(false);
-    setCurrentPage(1); // Új terméknél vissza az elejére
-    fetchProducts();
   };
 
   return (
@@ -163,23 +233,23 @@ export default function AdminProductsPage() {
           </div>
 
           <div className="space-y-4">
-             <p className="text-[10px] font-black uppercase text-gray-400 italic">3. Média (Borító, Hover, 3D)</p>
+             <p className="text-[10px] font-black uppercase text-gray-400 italic">3. Média (Mappa alapú)</p>
              <div className="grid grid-cols-3 gap-2">
                 <div className="relative aspect-square bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-100 transition-colors">
-                    {newProduct.cover_image ? <Image src={newProduct.cover_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-400">FŐ KÉP</span>}
-                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'cover')} />
+                    {previews.cover ? <Image src={previews.cover} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-400 text-center px-1">FŐ KÉP</span>}
+                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileSelect(e, 'cover')} />
                 </div>
                 <div className="relative aspect-square bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-100 transition-colors">
-                    {newProduct.hover_image ? <Image src={newProduct.hover_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-400">HOVER</span>}
-                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'hover')} />
+                    {previews.hover ? <Image src={previews.hover} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-400 text-center px-1">HOVER</span>}
+                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileSelect(e, 'hover')} />
                 </div>
                 <div className="relative aspect-square bg-blue-50 rounded-xl border-2 border-dashed border-blue-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-blue-100 transition-colors">
-                    {newProduct.texture_image ? <Image src={newProduct.texture_image} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-blue-400 text-center px-1">3D ALAP KÉP</span>}
-                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileUpload(e, 'texture')} />
+                    {previews.texture ? <Image src={previews.texture} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-blue-400 text-center px-1">3D KÉP</span>}
+                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileSelect(e, 'texture')} />
                 </div>
              </div>
              <button disabled={isSaving} className="w-full bg-black text-white p-4 rounded-xl font-black uppercase text-[10px] hover:bg-blue-600 transition-colors shadow-md disabled:opacity-50">
-              {isSaving ? "Mentés..." : "Termék rögzítése"}
+              {isSaving ? "Feltöltés folyamatban..." : "Termék rögzítése"}
             </button>
           </div>
         </form>
@@ -189,19 +259,12 @@ export default function AdminProductsPage() {
         <div className="text-center py-20 font-black text-gray-200 uppercase tracking-[0.5em] animate-pulse">Adatok betöltése...</div>
       ) : (
         <>
-          {/* GRID: Mobil 2, Tablet 3, Desktop 6 oszlop */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
             {currentProducts.map((p) => (
               <div key={p.id} className="bg-white border-2 border-gray-50 rounded-2xl p-2 hover:border-black transition-all group flex flex-col relative">
                 <div className={`relative ${p.orientation === 'panorama' ? 'aspect-square sm:aspect-video' : 'aspect-[3/4]'} rounded-xl overflow-hidden mb-2 bg-gray-100`}>
                   <Image src={p.cover_image || "/placeholder.jpg"} fill className="object-cover transition-transform group-hover:scale-105 duration-500" alt="" />
                   
-                  {p.texture_image && (
-                    <div className="absolute bottom-1.5 right-1.5 bg-blue-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow-lg">
-                      3D
-                    </div>
-                  )}
-
                   <div className="absolute top-1.5 left-1.5 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-[7px] font-black uppercase flex items-center gap-1">
                     {p.orientation === 'portrait' && <span>📐 ÁLLÓ</span>}
                     {p.orientation === 'landscape' && <span>📏 FEKVŐ</span>}
@@ -210,7 +273,7 @@ export default function AdminProductsPage() {
                   </div>
 
                   <button 
-                    onClick={() => handleDelete(p.id, p.name)}
+                    onClick={() => handleDelete(p.id, p.name, p.slug)}
                     className="absolute top-1.5 right-1.5 w-6 h-6 bg-white/90 hover:bg-red-500 hover:text-white text-red-500 rounded-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
                   >
                     <span className="text-xs font-bold">✕</span>
@@ -229,7 +292,7 @@ export default function AdminProductsPage() {
             ))}
           </div>
 
-          {/* LAPOZÓ EGYSÉG */}
+          {/* LAPOZÓ */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-12 mb-8">
               <button
@@ -239,7 +302,6 @@ export default function AdminProductsPage() {
               >
                 ←
               </button>
-              
               <div className="flex gap-1">
                 {[...Array(totalPages)].map((_, i) => (
                   <button
@@ -255,7 +317,6 @@ export default function AdminProductsPage() {
                   </button>
                 ))}
               </div>
-
               <button
                 onClick={() => paginate(currentPage + 1)}
                 disabled={currentPage === totalPages}
@@ -265,10 +326,6 @@ export default function AdminProductsPage() {
               </button>
             </div>
           )}
-          
-          <div className="text-center text-[10px] font-black text-gray-300 uppercase tracking-widest italic pb-10">
-            Összesen {products.length} termék | Oldal: {currentPage} / {totalPages}
-          </div>
         </>
       )}
     </div>

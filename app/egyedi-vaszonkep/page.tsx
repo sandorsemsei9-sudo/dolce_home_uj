@@ -34,16 +34,38 @@ const ratioLabels: Record<Ratio, string> = {
 };
 
 const sizes: Record<Ratio, string[]> = {
-  square: ["20x20", "30x30", "40x40", "50x50", "60x60", "80x80", "100x100"],
-  portrait: ["30x40", "40x50", "40x60", "60x90", "80x100"],
-  landscape: ["40x30", "50x40", "60x40", "90x60", "100x80"],
-  panorama: ["60x20", "90x30", "120x40", "150x50"],
+  square: ["30x30", "40x40", "50x50"],
+  portrait: ["30x40", "40x60","50x80"],
+  landscape: ["50x30", "70x40", "90x50"],
+  panorama: ["90x30", "120x40", "150x50"],
 };
 
-function calculatePrice(size: string) {
-  if (size === "100x100" || size === "80x100" || size === "150x50") return 23490;
-  if (size === "80x80" || size === "60x90" || size === "100x80" || size === "120x40") return 19990;
-  return 11990;
+function calculatePrice(size: string): number {
+  const prices: { [key: string]: number } = {
+    // Álló / Fekvő formátumok
+    "30x40": 7190,
+    "40x60": 9590,
+    "50x80": 11990,
+    
+    // Panoráma formátumok (I. csoport)
+    "90x30": 14490,
+    "120x40": 20490,
+    "150x50": 24990,
+    
+    // Négyzetes formátumok
+    "30x30": 5990,
+    "40x40": 7890,
+    "50x50": 9590,
+    
+    // FEKVŐ formátumok (II. csoport)
+    "50x30": 9480,
+    "70x40": 13890,
+    "90x50": 17890
+  };
+
+  // Ha megtalálja a méretet, visszaadja az árat, 
+  // különben egy alapértelmezett értéket (pl. az eredeti 11990-et)
+  return prices[size] || 11990;
 }
 
 function formatPrice(price: number) { return new Intl.NumberFormat("hu-HU").format(price) + " Ft"; }

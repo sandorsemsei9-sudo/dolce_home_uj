@@ -7,7 +7,7 @@ type CategoryItem = {
   subtitle: string;
   image: string;
   href: string;
-  large?: boolean;
+  gridClass: string; // Itt határozzuk meg az egyedi méretet
 };
 
 export default function Categories() {
@@ -15,41 +15,38 @@ export default function Categories() {
     {
       title: "Absztrakt & Modern",
       subtitle: "Modern, karakteres kompozíciók",
-      image: "/absztrakt.png",
-      href: "#",
+      image: "/images/lo.webp",
+      href: "/termekek",
+      gridClass: "md:col-span-4 h-[350px]", // Hosszabb elem
     },
     {
       title: "Természet & Tájképek",
       subtitle: "Lágy, elegáns hangulatú képek",
-      image: "/termeszet.png",
-      href: "#",
+      image: "/images/falu.webp",
+      href: "/termekek",
+      gridClass: "md:col-span-2 h-[350px]", // Rövidebb elem
     },
     {
       title: "Városi & Építészeti",
       subtitle: "Letisztult formák, finom részletek",
-      image: "/varosi.png",
-      href: "#",
-    },
-    {
-      title: "Válassz egyedi képet!",
-      subtitle: "Kiemelt vászonképek kedvezőbb áron",
-      image: "/egyedi-kategoria.png",
-      href: "#",
-      large: true,
+      image: "/images/parizs.webp",
+      href: "/termekek",
+      gridClass: "md:col-span-3 h-[350px]", // Közepes elem
     },
     {
       title: "Gyerekszoba",
-      subtitle: "Saját fotóból készült személyes dekor",
-      image: "/gyerekszoba.png",
-      href: "#",
+      subtitle: "Vidám, mesés dekorációk",
+      image: "/images/halacskak.webp",
+      href: "/termekek",
+      gridClass: "md:col-span-3 h-[350px]", // Közepes elem
     },
   ];
 
   return (
     <section className="relative bg-[#fdfbf9] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6">
-        {/* Header rész finomítása */}
-        <div className="mb-10 md:mb-12">
+        {/* Header */}
+        <div className="mb-12">
           <span className="text-[11px] font-black uppercase tracking-[0.3em] text-[#d17d58] opacity-80">
             Kategóriák
           </span>
@@ -58,33 +55,31 @@ export default function Categories() {
           </h2>
         </div>
 
-        {/* Grid rendszer */}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-6">
+        {/* Dinamikus Grid rendszer */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-6">
           {items.map((item, index) => (
             <a
               key={index}
               href={item.href}
-              className={`group relative flex flex-col overflow-hidden rounded-[32px] transition-all duration-500 ease-in-out hover:shadow-2xl hover:shadow-[#d17d58]/10 ${
-                item.large ? "md:col-span-4 h-[320px]" : "md:col-span-2 h-[320px]"
-              }`}
+              className={`group relative flex flex-col overflow-hidden rounded-[40px] bg-[#2a211d] transition-all duration-500 ease-in-out hover:shadow-2xl ${item.gridClass}`}
             >
               {/* Kép réteg */}
               <img
                 src={item.image}
                 alt={item.title}
-                className="absolute inset-0 h-full w-full object-contain transition duration-700 ease-out group-hover:scale-110"
+                className="absolute inset-0 h-full w-full object-cover opacity-95 brightness-[0.8] saturate-[0.8] transition duration-700 ease-out group-hover:scale-110 group-hover:opacity-100 group-hover:brightness-100 group-hover:saturate-100"
               />
 
-              {/* Finomabb, sötétebb gradiens a jobb olvashatóságért */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 transition-opacity group-hover:opacity-90" />
+              {/* Overlay gradiens */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 transition-opacity duration-500 group-hover:opacity-50" />
 
-              {/* Tartalom réteg */}
-              <div className="relative mt-auto p-8 transition-transform duration-500 group-hover:-translate-y-2">
-                <div className="max-w-xs">
-                  <h3 className="text-2xl font-bold text-white tracking-tight md:text-2xl">
+              {/* Tartalom */}
+              <div className="relative mt-auto p-10 z-10 transition-transform duration-500 group-hover:-translate-y-2">
+                <div className="max-w-md">
+                  <h3 className="text-2xl font-bold text-white tracking-tight md:text-3xl drop-shadow-lg">
                     {item.title}
                   </h3>
-                  <p className="mt-2 text-sm font-medium leading-relaxed text-white/70 transition-colors group-hover:text-white/90">
+                  <p className="mt-2 text-sm font-medium leading-relaxed text-white/90 drop-shadow-md">
                     {item.subtitle}
                   </p>
                 </div>
@@ -101,9 +96,6 @@ export default function Categories() {
                   </svg>
                 </div>
               </div>
-
-              {/* Extra finom fehér keret hoverkor */}
-              <div className="absolute inset-0 rounded-[32px] border-2 border-white/0 transition-colors duration-500 group-hover:border-white/10" />
             </a>
           ))}
         </div>

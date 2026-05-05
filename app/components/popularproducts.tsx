@@ -111,7 +111,7 @@ export default function PopularProducts({
                     {/* Mockup kép hoverre - SIZES HOZZÁADVA */}
                     <div className="absolute inset-0 h-full w-full opacity-0 transition-all duration-700 ease-in-out scale-105 group-hover:opacity-100 group-hover:scale-100">
                       <Image
-                        src={product.mockupImage || "/images/mockup.jpg"}
+                        src={product.mockupImage || "/images/mockup.webp"}
                         alt={`${product.name} mockup`}
                         fill
                         sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"

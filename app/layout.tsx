@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: {
     default: "Vászonképek és Egyedi Faldekorációk | Dolce Home",
-    template: "%s | Dolce Home", // Így ha a Kapcsolat oldalon vagy, a cím "Kapcsolat | Dolce Home" lesz
+    template: "%s | Dolce Home",
   },
   description: "Varázsold otthonod emlékeid színhelyévé! Egyedi vászonkép készítés saját fotóból, prémium minőségben és gyors szállítással a Dolce Home-tól.",
   keywords: [
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Dolce Home" }],
   creator: "Dolce Home",
-  metadataBase: new URL("https://dolce-home.hu"), // Cseréld le a saját domainre, ha meglesz
+  metadataBase: new URL("https://dolce-home.hu"),
   openGraph: {
     title: "Dolce Home | Egyedi Vászonképek",
     description: "Készíttess prémium vászonképet saját fotóidból! Gyors gyártás, országos szállítás.",
@@ -42,7 +42,21 @@ export default function RootLayout({
   return (
     <html lang="hu">
       <head>
-        {/* Ide jöhet majd a Google Analytics kód, ha szükséged lesz rá */}
+        {/* Adatbázis kapcsolat felgyorsítása */}
+        <link rel="preconnect" href="https://gbaduiirlnkaycrcdbpd.supabase.co" />
+        <link rel="dns-prefetch" href="https://gbaduiirlnkaycrcdbpd.supabase.co" />
+        
+        {/* 
+            A Főoldali Hero kép előtöltése. 
+            FONTOS: A href-nél pontosan azt az utat add meg, ahol a WebP képed van!
+            Ez segít eltüntetni az 5.8 mp-es piros LCP értéket.
+        */}
+        <link 
+          rel="preload" 
+          as="image" 
+          href="/hero-image.webp" 
+          type="image/webp"
+        />
       </head>
       <body className="antialiased">
         {children}

@@ -34,6 +34,9 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
 
+  // 3D gomb interakció állapota
+  const [rotation, setRotation] = useState({ x: 0, y: 0 });
+
   useEffect(() => {
     const checkIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -60,6 +63,16 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
     }
     getFullProductData();
   }, [slug, supabase]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = e.currentTarget;
+    const box = card.getBoundingClientRect();
+    const x = e.clientX - box.left;
+    const y = e.clientY - box.top;
+    const centerX = box.width / 2;
+    const centerY = box.height / 2;
+    setRotation({ x: (y - centerY) / 6, y: (centerX - x) / 6 });
+  };
 
   const handleAddToCart = () => {
     if (!product || !selectedVariant) return;
@@ -95,19 +108,59 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
   return (
     <main className="min-h-screen bg-[#f7f7f5] text-[#1f1f1f]">
       <Navbar />
+
+      <style jsx global>{`
+        .glass-btn-3d {
+          background: rgba(255, 255, 255, 0.4);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.6);
+          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 80px;
+          height: 80px;
+          border-radius: 24px;
+          transition: all 0.3s ease;
+          cursor: pointer;
+        }
+        .glass-btn-3d:hover {
+          background: rgba(255, 255, 255, 0.55);
+        }
+      `}</style>
+
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="lg:flex lg:items-start lg:gap-12">
           
           {/* BAL OLDAL - KÉPEK */}
           <div className="lg:w-1/2 space-y-6">
             <div className="relative aspect-square w-full overflow-hidden rounded-[40px] bg-white shadow-sm border border-[#d9d5cf] flex items-center justify-center p-4">
-              <button 
-                onClick={() => setIsModalOpen(true)}
-                className="absolute top-6 right-6 z-20 flex items-center gap-2 bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl border border-[#d9d5cf] shadow-sm hover:scale-105 transition-all"
-              >
-                <span className="text-xl">📦</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-black">3D / AR Nézet</span>
-              </button>
+              
+              {/* INTERAKTÍV 3D GOMB */}
+              <div className="absolute top-6 right-6 z-20" style={{ perspective: '1000px' }}>
+                <div
+                  onClick={() => setIsModalOpen(true)}
+                  onMouseMove={handleMouseMove}
+                  onMouseLeave={() => setRotation({ x: 0, y: 0 })}
+                  className="glass-btn-3d"
+                  style={{
+                    transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
+                    transformStyle: 'preserve-3d',
+                  }}
+                >
+                  <div style={{ transform: 'translateZ(20px)' }}>
+                    <svg width="55" height="55" viewBox="0 0 100 100" fill="none">
+                      <path d="M25 35 C 35 20, 65 20, 75 35" stroke="#2a211d" strokeWidth="6" strokeLinecap="round" />
+                      <path d="M75 35 L 75 22 M 75 35 L 62 35" stroke="#2a211d" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M75 65 C 65 80, 35 80, 25 65" stroke="#2a211d" strokeWidth="6" strokeLinecap="round" />
+                      <path d="M25 65 L 25 78 M 25 65 L 38 65" stroke="#2a211d" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+                      <text x="50" y="58" fontFamily="Arial" fontSize="24" fontWeight="900" fill="#2a211d" textAnchor="middle">3D</text>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
               <div className="relative w-full h-full">
                 <Image src={mainImage || "/placeholder.jpg"} alt={product.name} fill className="object-cover" priority sizes="(max-width: 768px) 100vw, 50vw" />
               </div>
@@ -133,7 +186,7 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
               <span className="text-3xl font-bold">{formatPrice(selectedVariant?.price)}</span>
             </div>
 
-            {/* BIZALMI MEZŐK (USP) */}
+            {/* USP MEZŐK */}
             <div className="mt-6 grid grid-cols-2 gap-4 py-4 border-b border-[#d9d5cf]">
               <div className="flex items-center gap-3">
                 <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white rounded-full border border-gray-100 shadow-sm text-xs">🚀</span>
@@ -165,7 +218,7 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
               </div>
             </div>
             
-            {/* VARIÁNSOK / MÉRETEK */}
+            {/* VARIÁNSOK */}
             {variants.length > 0 && (
               <div className="mt-8">
                 <p className="text-[10px] font-black uppercase mb-3 text-[#9a8f84]">Választható méret</p>
@@ -187,12 +240,12 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
               {isAdded ? "✓ KOSÁRBAN" : "KOSÁRBA TESZEM"}
             </button>
 
-            {/* TERMÉK LEÍRÁS ÉS SPECIFIKÁCIÓ */}
+            {/* LEÍRÁS ÉS SPECIFIKÁCIÓ */}
             <div className="mt-12 space-y-8">
               <div>
                 <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#1f1f1f] mb-4 border-l-2 border-[#e3936e] pl-3">A termékről</h3>
                 <p className="text-[14px] leading-relaxed text-gray-600">
-                  {product.description || `Dobja fel otthona hangulatát ezzel a prémium minőségű ${product.name}-el. Minden darabunkat nagy odafigyeléssel, vakráma technológiával készítjük, hogy az alkotás térben is kiemelkedjen a fal síkjából.`}
+                  {product.description || `Dobja fel otthona hangulatát ezzel a prémium minőségű ${product.name}-el. Minden darabunkat nagy odafigyeléssel, vakráma technológiával készítjük.`}
                 </p>
               </div>
 
@@ -209,12 +262,8 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
                   </li>
                   <li className="flex items-start gap-3 text-[13px] text-gray-700">
                     <span className="text-[#e3936e] mt-1 text-[10px]">●</span>
-                    <span>Környezetbarát, UV-álló pigment alapú nyomtatás,fakulásmentes színek</span>
+                    <span>UV-álló pigment alapú nyomtatás, fakulásmentes színek</span>
                   </li>
-<li className="flex items-start gap-3 text-[13px] text-gray-700">
-  <span className="text-[#e3936e] mt-1 text-[10px]">●</span>
-<span>Modern nyomtatási technológiával készül</span>
-</li>
                 </ul>
               </div>
             </div>

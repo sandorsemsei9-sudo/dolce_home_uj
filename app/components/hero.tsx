@@ -3,7 +3,7 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay, EffectFade } from "swiper/modules";
 import Link from "next/link";
-import Image from "next/image";
+import Image from "next/image"; // Next.js képoptimalizáló
 
 // Swiper stílusok
 import "swiper/css";
@@ -31,9 +31,9 @@ export default function Hero({ products, formatPrice }: HeroProps) {
   return (
     <section 
       id="hero" 
-      className="relative overflow-hidden bg-[#f8f3ef]"
+      className="relative overflow-hidden bg-[#f8f3ef]" // Fix háttérszín a villódzás ellen
     >
-      {/* Optimalizált háttérkép - Megoldja az LCP hibát */}
+      {/* Optimalizált háttérkép */}
       <div className="absolute inset-0 z-0">
         <Image 
           src="/hero-bg.webp" 
@@ -41,8 +41,6 @@ export default function Hero({ products, formatPrice }: HeroProps) {
           fill 
           className="object-cover opacity-60"
           priority 
-          fetchPriority="high"
-          loading="eager"
         />
       </div>
 
@@ -51,6 +49,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        /* Finom lebegő animáció a termékképnek */
         @keyframes floatingImage {
           0%, 100% { transform: translateY(0) scale(1); }
           50% { transform: translateY(-10px) scale(1.01); }
@@ -66,6 +65,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
         .delay-3 { animation-delay: 0.6s; opacity: 0; }
       `}</style>
 
+      {/* Finomabb átmenetes overlay */}
       <div className="absolute inset-0 z-10 bg-gradient-to-r from-[#f8f3ef]/95 via-[#f8f3ef]/80 to-transparent" />
 
       <div className="relative z-20 mx-auto flex flex-col md:grid max-w-7xl gap-10 px-6 py-8 md:grid-cols-[1.05fr_0.95fr] md:items-center md:py-16">
@@ -106,6 +106,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
         <div className="relative w-full overflow-visible">
           <div className="mx-auto max-w-[620px]">
             <div className="relative">
+              {/* Navigációs gombok - kicsit finomítva */}
               <button className="hero-prev absolute -left-4 top-1/2 z-30 h-10 w-10 -translate-y-1/2 rounded-full bg-white/90 shadow-md flex items-center justify-center text-xl transition hover:bg-white">‹</button>
               <button className="hero-next absolute -right-4 top-1/2 z-30 h-10 w-10 -translate-y-1/2 rounded-full bg-white/90 shadow-md flex items-center justify-center text-xl transition hover:bg-white">›</button>
 
@@ -126,15 +127,14 @@ export default function Hero({ products, formatPrice }: HeroProps) {
                         <div className="absolute left-6 top-6 z-20 rounded-full bg-[#df7f58] px-3 py-1 text-[11px] font-bold uppercase text-white shadow-md">Akció</div>
                         <div className="absolute bottom-6 right-6 z-20 rounded-xl bg-white/95 px-4 py-2 text-sm font-bold text-[#2a211d] shadow-lg backdrop-blur">{formatPrice(product.price)} Ft-tól</div>
                         
+                        {/* ANIMÁLT KÉP TÁROLÓ */}
                         <div className="animate-floating-img relative w-full h-[320px] md:h-[420px]">
                           <Image 
                             src={product.image} 
                             alt={product.name}
                             fill
                             className="object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.15)] transition-transform duration-700 group-hover:scale-105"
-                            priority={index === 0}
-                            fetchPriority={index === 0 ? "high" : "low"}
-                            loading={index === 0 ? "eager" : "lazy"}
+                            priority={index === 0} // Az első kép azonnal töltsön be!
                             sizes="(max-width: 768px) 100vw, 600px"
                           />
                         </div>

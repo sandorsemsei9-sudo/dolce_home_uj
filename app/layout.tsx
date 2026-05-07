@@ -1,7 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-// SEO Metaadatok definiálása
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: {
     default: "Vászonképek és Egyedi Faldekorációk | Dolce Home",
@@ -42,23 +47,18 @@ export default function RootLayout({
   return (
     <html lang="hu">
       <head>
-        {/* Adatbázis kapcsolat felgyorsítása */}
-        <link rel="preconnect" href="https://gbaduiirlnkaycrcdbpd.supabase.co" />
-        <link rel="dns-prefetch" href="https://gbaduiirlnkaycrcdbpd.supabase.co" />
-        
-        {/* 
-            A Főoldali Hero kép előtöltése. 
-            FONTOS: A href-nél pontosan azt az utat add meg, ahol a WebP képed van!
-            Ez segít eltüntetni az 5.8 mp-es piros LCP értéket.
+        {/* LCP Optimalizálás: A háttérkép előtöltése. 
+            Fontos, hogy a href pontosan egyezzen a Hero-ban használt elérési úttal!
         */}
         <link 
           rel="preload" 
           as="image" 
-          href="/hero-image.webp" 
+          href="/hero-bg.webp" 
           type="image/webp"
+          fetchPriority="high"
         />
       </head>
-      <body className="antialiased">
+      <body className="antialiased font-sans">
         {children}
       </body>
     </html>

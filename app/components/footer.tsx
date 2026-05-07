@@ -139,10 +139,10 @@ export default function Footer() {
               Prémium faldekorációk és egyedi vászonképek, amelyek életet és stílust visznek az otthonodba.
             </p>
             <div className="flex gap-4">
-              <Link href="#" className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#efebe6] text-[#5e4d45] transition-all hover:border-[#d17d58] hover:text-[#d17d58]">
+              <Link href="https://www.facebook.com/profile.php?id=61578828933307" className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#efebe6] text-[#5e4d45] transition-all hover:border-[#d17d58] hover:text-[#d17d58]">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 10-11.5 9.9v-7H7v-3h3.5V9.5c0-3.4 2-5.3 5-5.3 1.4 0 2.8.2 2.8.2v3h-1.6c-1.6 0-2.1 1-2.1 2v2.4H18l-.6 3h-2.8v7A10 10 0 0022 12z" /></svg>
               </Link>
-              <Link href="#" className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#efebe6] text-[#5e4d45] transition-all hover:border-[#d17d58] hover:text-[#d17d58]">
+              <Link href="https://www.instagram.com/dolce.home.hungary/" className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#efebe6] text-[#5e4d45] transition-all hover:border-[#d17d58] hover:text-[#d17d58]">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.5A5.5 5.5 0 1017.5 13 5.5 5.5 0 0012 7.5zm0 2A3.5 3.5 0 1115.5 13 3.5 3.5 0 0112 9.5zM18 6.5a1 1 0 110 2 1 1 0 010-2z" /></svg>
               </Link>
             </div>
@@ -173,14 +173,17 @@ export default function Footer() {
           <div className="flex flex-col gap-4">
             <p className="text-xs font-black uppercase tracking-widest text-[#d17d58]">Kapcsolat</p>
             <div className="flex flex-col gap-3 text-sm font-medium">
-              <a href="mailto:info@dolcehome.hu" className="flex items-center gap-2 text-[#5e4d45] transition hover:text-[#d17d58]">
-                <span>✉</span> info@dolcehome.hu
+              <a href="mailto:info@dolce-home.hu" className="flex items-center gap-2 text-[#5e4d45] transition hover:text-[#d17d58]">
+                <span>✉</span> info@dolce-home.hu
               </a>
-              <a href="tel:+3612345678" className="flex items-center gap-2 text-[#5e4d45] transition hover:text-[#d17d58]">
-                <span>📞</span> +36 1 234 5678
+              <a href="tel:+36702465783" className="flex items-center gap-2 text-[#5e4d45] transition hover:text-[#d17d58]">
+                <span>📞</span> +36 70 246 5783
+              </a>
+              <a href="tel:+36705310124" className="flex items-center gap-2 text-[#5e4d45] transition hover:text-[#d17d58]">
+                <span>📞</span> +36 70 531 0124
               </a>
               <p className="mt-2 flex items-start gap-2 text-[#7a746d]">
-                <span className="mt-0.5 text-xs">📍</span> Budapest, Magyarország
+                <span className="mt-0.5 text-xs">📍</span> Győr Rét Utca 22. Magyarország
               </p>
             </div>
           </div>

@@ -1,11 +1,14 @@
 "use client";
 
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 
-
+// Swiper alapstílusok
+import "swiper/css";
+import "swiper/css/navigation";
 
 type Product = {
   id: number;
@@ -35,9 +38,19 @@ export default function PopularProducts({
 
   return (
     <section className="relative bg-[#fdfbf9] py-24 overflow-hidden">
+      <style jsx global>{`
+        .glass-3d-badge {
+          background: rgba(255, 255, 255, 0.4);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.6);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+      `}</style>
+
       <div className="relative mx-auto max-w-7xl px-6">
         
-        {/* HEADER - Balra zárt, elegáns dőlt betűvel */}
+        {/* HEADER */}
         <div className="mb-14 flex items-end justify-between gap-6">
           <div>
             <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-[#d17d58]">
@@ -59,7 +72,7 @@ export default function PopularProducts({
 
         <div className="relative group/swiper">
           
-          {/* NAVIGÁCIÓ - Letisztultabb körök */}
+          {/* NAVIGÁCIÓ */}
           {showNavigation && (
             <>
               <button className="popular-prev absolute -left-4 top-[35%] z-30 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#efebe6] bg-white text-[#2a211d] shadow-sm transition-all hover:bg-[#2a211d] hover:text-white lg:flex xl:-left-12">
@@ -92,35 +105,55 @@ export default function PopularProducts({
               <SwiperSlide key={product.id}>
                 <article className="group flex flex-col">
                   
-                  {/* KÉP KONTÉNER - Extra kerekített sarok és mockup hover */}
-                  <Link href={`/termekek/${product.slug}`} className="relative mb-6 block aspect-[4/5] overflow-hidden rounded-[48px] border border-[#efebe6] bg-white transition-all duration-500 hover:shadow-[0_20px_50px_rgba(42,33,29,0.06)]">
-              
-
-                    {/* Alap kép - SIZES HOZZÁADVA */}
-                    <div className="relative h-full w-full p-10 transition-all duration-700 ease-in-out group-hover:scale-110 group-hover:opacity-0 group-hover:blur-md">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
-                        className="object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.1)]"
-                        priority={product.id <= 4} // Az első pár képet előre töltjük a gyorsaságért
-                      />
+                  {/* KÉP KONTÉNER */}
+                  <div className="relative mb-6 block aspect-[4/5] overflow-hidden rounded-[48px] border border-[#efebe6] bg-white transition-all duration-500 hover:shadow-[0_20px_50px_rgba(42,33,29,0.06)]">
+                    
+                    {/* STATIKUS 3D IKON (Animáció nélkül) */}
+                    <div className="absolute left-7 top-7 z-20 flex flex-col items-center gap-2 pointer-events-none">
+                      <div className="glass-3d-badge relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-500 group-hover:scale-110">
+                        {/* NYILAK - Statikus */}
+                        <svg className="absolute inset-0 h-full w-full opacity-60" viewBox="0 0 100 100">
+                          <path 
+                            d="M25 35 C 35 20, 65 20, 75 35 M 75 35 L 75 22 M 75 35 L 62 35" 
+                            stroke="#2a211d" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" 
+                          />
+                          <path 
+                            d="M75 65 C 65 80, 35 80, 25 65 M 25 65 L 25 78 M 25 65 L 38 65" 
+                            stroke="#2a211d" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" 
+                          />
+                        </svg>
+                        <span className="text-sm font-black tracking-tighter text-[#2a211d]">3D</span>
+                      </div>
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#2a211d] opacity-0 transition-opacity duration-300 group-hover:opacity-40">
+                        Interaktív
+                      </span>
                     </div>
 
-                    {/* Mockup kép hoverre - SIZES HOZZÁADVA */}
-                    <div className="absolute inset-0 h-full w-full opacity-0 transition-all duration-700 ease-in-out scale-105 group-hover:opacity-100 group-hover:scale-100">
-                      <Image
-                        src={product.mockupImage || "/images/mockup.webp"}
-                        alt={`${product.name} mockup`}
-                        fill
-                        sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
-                        className="object-cover"
-                      />
-                    </div>
-                  </Link>
+                    <Link href={`/termekek/${product.slug}`} className="block h-full w-full">
+                      <div className="relative h-full w-full p-10 transition-all duration-700 ease-in-out group-hover:scale-110 group-hover:opacity-0 group-hover:blur-md">
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
+                          className="object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.1)]"
+                          priority={product.id <= 4}
+                        />
+                      </div>
 
-                  {/* TERMÉK INFÓ - Szellős elrendezés */}
+                      <div className="absolute inset-0 h-full w-full opacity-0 transition-all duration-700 ease-in-out scale-105 group-hover:opacity-100 group-hover:scale-100">
+                        <Image
+                          src={product.mockupImage || "/images/mockup.webp"}
+                          alt={`${product.name} mockup`}
+                          fill
+                          sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
+                          className="object-cover"
+                        />
+                      </div>
+                    </Link>
+                  </div>
+
+                  {/* ADATOK */}
                   <div className="px-4">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-[#d17d58]">
                       {product.category}
@@ -128,27 +161,20 @@ export default function PopularProducts({
                     <h3 className="mt-2 text-xl font-bold text-[#2a211d]">
                       {product.name}
                     </h3>
-                    <p className="mt-1 text-xs font-medium text-[#8a7f76]">
-                      40×60 • 60×120 cm
-                    </p>
-
-                    {/* ÁR ÉS NYÍL */}
                     <div className="mt-6 flex items-center justify-between border-t border-[#efebe6] pt-6">
                       <p className="text-xl font-black text-[#2a211d]">
                         {formatPrice(product.price)} Ft -tól
                       </p>
-                      
                       <Link 
                         href={`/termekek/${product.slug}`}
-                        className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8f3ef] text-[#2a211d] transition-all duration-300 hover:bg-[#d17d58] hover:text-white"
+                        className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f8f3ef] text-[#2a211d] transition-all hover:bg-[#d17d58] hover:text-white"
                       >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
                       </Link>
                     </div>
                   </div>
-
                 </article>
               </SwiperSlide>
             ))}

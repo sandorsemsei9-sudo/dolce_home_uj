@@ -22,7 +22,6 @@ function TermekekContent() {
   const [dbCategories, setDbCategories] = useState<string[]>(["Összes"]);
   const [loading, setLoading] = useState(true);
 
-  // Állapotok kiolvasása URL-ből (visszalépés-barát megoldás)
   const currentPage = Number(searchParams.get("page")) || 1;
   const selectedCategory = searchParams.get("category") || "Összes";
   const sortBy = searchParams.get("sort") || "default";
@@ -70,7 +69,6 @@ function TermekekContent() {
     fetchData();
   }, [supabase]);
 
-  // Szűrés és rendezés
   const filteredProducts = useMemo(() => {
     let filtered = [...dbProducts];
 
@@ -97,7 +95,6 @@ function TermekekContent() {
     return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredProducts, currentPage, totalPages]);
 
-  // URL frissítő függvény - EZ JAVÍTJA A GÖRGETÉST
   const updateParams = (newParams: Record<string, string | number>, shouldScrollToGrid: boolean = false) => {
     const params = new URLSearchParams(searchParams.toString());
     
@@ -109,10 +106,8 @@ function TermekekContent() {
       params.set("page", "1");
     }
 
-    // A scroll: false meggátolja, hogy a Next.js rángassa az ablakot
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
 
-    // Csak ha lapozunk, akkor vigye a szemeket a grid elejére
     if (shouldScrollToGrid) {
       const el = document.getElementById("product-grid-start");
       if (el) {
@@ -123,9 +118,25 @@ function TermekekContent() {
 
   return (
     <main className="min-h-screen bg-[#fdfbf9] text-[#2a211d]">
+      <style jsx global>{`
+        .glass-3d-badge {
+          background: rgba(255, 255, 255, 0.4);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.6);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
+      
       <Navbar />
 
-      {/* ELEGÁNS HEADER - Eredeti stílus */}
       <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
         <div className="absolute inset-0 bg-[#f8f3ef]/30 pointer-events-none" />
         <div className="relative mx-auto max-w-7xl px-6">
@@ -138,10 +149,8 @@ function TermekekContent() {
         </div>
       </section>
 
-      {/* HORGONY A GÖRGETÉSHEZ */}
       <div id="product-grid-start" className="scroll-mt-32" />
 
-      {/* STICKY SZŰRŐK - Eredeti stílus */}
       <section className="sticky top-[64px] z-30 border-y border-[#efebe6] bg-[#fdfbf9]/80 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -184,7 +193,6 @@ function TermekekContent() {
         </div>
       </section>
 
-      {/* TERMÉK GRID - Eredeti komplex kártya design */}
       <section className="mx-auto max-w-7xl px-6 py-16 md:py-24">
         {loading ? (
           <div className="flex h-64 items-center justify-center">
@@ -194,12 +202,32 @@ function TermekekContent() {
           <>
             <div className="grid gap-x-8 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {paginatedProducts.map((product) => (
-                <article key={product.id} className="group flex flex-col">
-                  {/* KÉP KONTÉNER - rounded-[48px] + hover effektek */}
+                <article key={product.id} className="group flex flex-col relative">
+                  
                   <Link 
                     href={`/termekek/${product.slug}`} 
                     className="relative mb-8 block aspect-[4/5] overflow-hidden rounded-[48px] border border-[#efebe6] bg-white transition-all duration-500 hover:shadow-[0_30px_60px_rgba(42,33,29,0.08)]"
                   >
+                    {/* STATIKUS 3D IKON (A megadott 300 soros kód lényege) */}
+                    <div className="absolute left-7 top-7 z-20 flex flex-col items-center gap-2 pointer-events-none">
+                      <div className="glass-3d-badge relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-500 group-hover:scale-110">
+                        <svg className="absolute inset-0 h-full w-full opacity-60" viewBox="0 0 100 100">
+                          <path 
+                            d="M25 35 C 35 20, 65 20, 75 35 M 75 35 L 75 22 M 75 35 L 62 35" 
+                            stroke="#2a211d" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" 
+                          />
+                          <path 
+                            d="M75 65 C 65 80, 35 80, 25 65 M 25 65 L 25 78 M 25 65 L 38 65" 
+                            stroke="#2a211d" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" 
+                          />
+                        </svg>
+                        <span className="text-sm font-black tracking-tighter text-[#2a211d]">3D</span>
+                      </div>
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#2a211d] opacity-0 transition-opacity duration-300 group-hover:opacity-40">
+                        Interaktív
+                      </span>
+                    </div>
+
                     {/* Alap kép */}
                     <div className="relative h-full w-full p-8 transition-all duration-700 ease-in-out group-hover:scale-110 group-hover:opacity-0 group-hover:blur-md">
                       <Image
@@ -223,7 +251,6 @@ function TermekekContent() {
                     </div>
                   </Link>
 
-                  {/* TERMÉK ADATOK */}
                   <div className="px-2 flex-grow">
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d17d58]">
                       {product.display_category}
@@ -256,7 +283,6 @@ function TermekekContent() {
               ))}
             </div>
 
-            {/* MODERNEBB LAPOZÓ - Eredeti design */}
             {totalPages > 1 && (
               <div className="mt-24 flex justify-center items-center gap-3">
                 {[...Array(totalPages)].map((_, i) => (

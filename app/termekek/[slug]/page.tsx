@@ -34,7 +34,6 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
 
-  // 3D gomb interakció állapota
   const [rotation, setRotation] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -111,34 +110,35 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
 
       <style jsx global>{`
         .glass-btn-3d {
-          background: rgba(255, 255, 255, 0.4);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
+          background: rgba(255, 255, 255, 0.45);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
           border: 1px solid rgba(255, 255, 255, 0.6);
           box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 80px;
-          height: 80px;
-          border-radius: 24px;
+          width: 75px;
+          height: 75px;
+          border-radius: 22px;
           transition: all 0.3s ease;
           cursor: pointer;
         }
         .glass-btn-3d:hover {
           background: rgba(255, 255, 255, 0.55);
+          transform: scale(1.05) !important;
         }
       `}</style>
 
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="lg:flex lg:items-start lg:gap-12">
           
-          {/* BAL OLDAL - KÉPEK */}
-          <div className="lg:w-1/2 space-y-6">
-            <div className="relative aspect-square w-full overflow-hidden rounded-[40px] bg-white shadow-sm border border-[#d9d5cf] flex items-center justify-center p-4">
+          {/* BAL OLDAL - KÉPEK ÉS FIGYELMEZTETÉS */}
+          <div className="lg:w-1/2 flex flex-col gap-5">
+            <div className="relative aspect-square w-full overflow-hidden rounded-[40px] bg-white shadow-sm border border-[#d9d5cf] flex items-center justify-center p-4 group">
               
-              {/* INTERAKTÍV 3D GOMB */}
-              <div className="absolute top-6 right-6 z-20" style={{ perspective: '1000px' }}>
+              {/* INTERAKTÍV 3D GOMB + SEGÉDSZÖVEG */}
+              <div className="absolute top-6 right-6 z-20 flex flex-col items-end gap-3" style={{ perspective: '1000px' }}>
                 <div
                   onClick={() => setIsModalOpen(true)}
                   onMouseMove={handleMouseMove}
@@ -150,7 +150,7 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
                   }}
                 >
                   <div style={{ transform: 'translateZ(20px)' }}>
-                    <svg width="55" height="55" viewBox="0 0 100 100" fill="none">
+                    <svg width="50" height="50" viewBox="0 0 100 100" fill="none">
                       <path d="M25 35 C 35 20, 65 20, 75 35" stroke="#2a211d" strokeWidth="6" strokeLinecap="round" />
                       <path d="M75 35 L 75 22 M 75 35 L 62 35" stroke="#2a211d" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
                       <path d="M75 65 C 65 80, 35 80, 25 65" stroke="#2a211d" strokeWidth="6" strokeLinecap="round" />
@@ -159,12 +159,24 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
                     </svg>
                   </div>
                 </div>
+
+                {/* Tájékoztató szöveg a gomb alatt */}
+                <div className="text-right pointer-events-none drop-shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-black leading-tight">
+                    3D Előnézet
+                  </p>
+                  <p className="hidden md:block text-[8px] font-bold text-black/50 uppercase mt-1">
+                    Mobilon nézd meg a faladon (AR)
+                  </p>
+                </div>
               </div>
 
               <div className="relative w-full h-full">
                 <Image src={mainImage || "/placeholder.jpg"} alt={product.name} fill className="object-cover" priority sizes="(max-width: 768px) 100vw, 50vw" />
               </div>
             </div>
+
+            {/* MINIATŰRÖK */}
             <div className="flex justify-center gap-4">
               <button onClick={() => setMainImage(product.cover_image)} className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all ${mainImage === product.cover_image ? 'border-[#e3936e]' : 'border-transparent opacity-60'}`}>
                 <Image src={product.cover_image} fill className="object-cover" alt="F1" sizes="80px" />
@@ -174,6 +186,13 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
                   <Image src={product.hover_image} fill className="object-cover" alt="F2" sizes="80px" />
                 </button>
               )}
+            </div>
+
+            {/* JOGI FIGYELMEZTETÉS */}
+            <div className="px-4 mt-2">
+              <p className="text-[10px] leading-relaxed text-[#8a7f76] font-medium italic opacity-70">
+                * A megjelenített kép csak illusztráció. A kész termék színei és arányai minimálisan eltérhetnek a kijelzőn látottaktól a monitor egyedi beállításai és a gyártási folyamat sajátosságai miatt.
+              </p>
             </div>
           </div>
 
@@ -267,7 +286,6 @@ export default function TermekAdatlap({ params }: { params: Promise<{ slug: stri
                 </ul>
               </div>
             </div>
-
           </div>
         </div>
       </div>

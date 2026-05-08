@@ -16,8 +16,8 @@ const CustomCanvasViewer = dynamic<any>(() => import("../components/3d/CumstomCa
   loading: () => <div className="flex items-center justify-center h-full italic text-gray-400">3D Modell betöltése...</div>
 });
 
-const TEMPLATE_IMAGE = "/images/mockup.jpg"; 
-type Ratio = "square" | "portrait" | "landscape" | "panorama"; // Itt is panoramal a név a fájl miatt
+const TEMPLATE_IMAGE = "/images/mockup.webp"; 
+type Ratio = "square" | "portrait" | "landscape" | "panorama"; 
 
 const ratios: Record<Ratio, number> = { 
   square: 1/1, 
@@ -42,29 +42,11 @@ const sizes: Record<Ratio, string[]> = {
 
 function calculatePrice(size: string): number {
   const prices: { [key: string]: number } = {
-    // Álló / Fekvő formátumok
-    "30x40": 7190,
-    "40x60": 9590,
-    "50x80": 11990,
-    
-    // Panoráma formátumok (I. csoport)
-    "90x30": 14490,
-    "120x40": 20490,
-    "150x50": 24990,
-    
-    // Négyzetes formátumok
-    "30x30": 5990,
-    "40x40": 7890,
-    "50x50": 9590,
-    
-    // FEKVŐ formátumok (II. csoport)
-    "50x30": 9480,
-    "70x40": 13890,
-    "90x50": 17890
+    "30x40": 7190, "40x60": 9590, "50x80": 11990,
+    "90x30": 14490, "120x40": 20490, "150x50": 24990,
+    "30x30": 5990, "40x40": 7890, "50x50": 9590,
+    "50x30": 9480, "70x40": 13890, "90x50": 17890
   };
-
-  // Ha megtalálja a méretet, visszaadja az árat, 
-  // különben egy alapértelmezett értéket (pl. az eredeti 11990-et)
   return prices[size] || 11990;
 }
 
@@ -167,10 +149,7 @@ export default function EgyediVaszonkepPage() {
       customData: {
         original_image_url: savedConfig.originalPath,
         ratio: savedConfig.ratio,
-        config: { 
-          zoom: zoom, 
-          crop: finalCrop 
-        }
+        config: { zoom: zoom, crop: finalCrop }
       }
     });
     router.push("/kosar");
@@ -180,34 +159,73 @@ export default function EgyediVaszonkepPage() {
 
   return (
     <main className="min-h-screen bg-[#f7f7f5] text-[#1f1f1f]">
+      <style jsx global>{`
+        .glass-3d-button {
+          background: rgba(255, 255, 255, 0.45);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.6);
+          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+        }
+      `}</style>
       <Script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js" strategy="afterInteractive" />
       <Navbar />
       
       <section className="mx-auto max-w-7xl px-4 md:px-6 py-10">
         <div className="flex flex-col lg:grid lg:grid-cols-[1.45fr_0.85fr] gap-10">
           
-          {/* MOCKUP */}
-          <div className="order-2 lg:order-1 relative aspect-[1.1/1] overflow-hidden rounded-[40px] border border-[#d9d5cf] bg-white shadow-2xl">
-            <img src={TEMPLATE_IMAGE} alt="Mockup" className="h-full w-full object-cover" />
-            
-            {savedConfig && (
-              <button onClick={() => setIsARModalOpen(true)} className="absolute top-6 right-6 z-20 bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl border border-[#d9d5cf] shadow-xl text-black font-black uppercase text-[10px]">
-                📦 {isIOS ? "3D Nézet" : "3D / AR Nézet"}
-              </button>
-            )}
-            
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8">
-              <div className={`transition-all duration-700 ${
-                activeRatio === "square" ? "aspect-square w-[62%]" : 
-                activeRatio === "portrait" ? "aspect-[2/3] w-[42%]" : 
-                activeRatio === "landscape" ? "aspect-[3/2] w-[72%]" : "aspect-[3/1] w-[80%]"
-              }`}>
-                <div className="relative h-full w-full bg-white shadow-[0_35px_80px_rgba(0,0,0,0.45)] overflow-hidden">
-                  {savedConfig?.previewUrl && (
-                    <img src={savedConfig.previewUrl} alt="Preview" className="h-full w-full object-cover relative z-10" />
-                  )}
+          {/* MOCKUP SZEKCIÓ */}
+          <div className="flex flex-col gap-5 order-2 lg:order-1">
+            <div className="group relative aspect-[1.1/1] overflow-hidden rounded-[40px] border border-[#d9d5cf] bg-white shadow-2xl">
+              <img src={TEMPLATE_IMAGE} alt="Mockup" className="h-full w-full object-cover" />
+              
+              {savedConfig && (
+                <div className="absolute top-6 right-6 md:top-8 md:right-8 z-20 flex flex-col items-end gap-3">
+                  <button 
+                    onClick={() => setIsARModalOpen(true)} 
+                    className="flex flex-col items-center gap-2 outline-none"
+                  >
+                    <div className="glass-3d-button relative flex h-16 w-16 items-center justify-center rounded-2xl transition-all duration-500 hover:scale-110 active:scale-95">
+                      <svg className="absolute inset-0 h-full w-full opacity-60" viewBox="0 0 100 100">
+                        <path d="M25 35 C 35 20, 65 20, 75 35 M 75 35 L 75 22 M 75 35 L 62 35" stroke="#000" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M75 65 C 65 80, 35 80, 25 65 M 25 65 L 25 78 M 25 65 L 38 65" stroke="#000" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <span className="text-base font-black tracking-tighter text-black">3D</span>
+                    </div>
+                  </button>
+                  
+                  {/* SEGÍTSÉG SZÖVEG ASZTALRA ÉS MOBILRA */}
+                  <div className="text-right pointer-events-none">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-black leading-tight drop-shadow-sm">
+                      Kattints a 3D nézethez!
+                    </p>
+                    <p className="hidden md:block text-[8px] font-bold text-black/50 uppercase mt-1">
+                      Mobilon helyezd el a faladon (AR)
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8">
+                <div className={`transition-all duration-700 ${
+                  activeRatio === "square" ? "aspect-square w-[62%]" : 
+                  activeRatio === "portrait" ? "aspect-[2/3] w-[42%]" : 
+                  activeRatio === "landscape" ? "aspect-[3/2] w-[72%]" : "aspect-[3/1] w-[80%]"
+                }`}>
+                  <div className="relative h-full w-full bg-white shadow-[0_35px_80px_rgba(0,0,0,0.45)] overflow-hidden">
+                    {savedConfig?.previewUrl && (
+                      <img src={savedConfig.previewUrl} alt="Preview" className="h-full w-full object-cover relative z-10" />
+                    )}
+                  </div>
                 </div>
               </div>
+            </div>
+
+            {/* JOGI NYILATKOZAT */}
+            <div className="px-4">
+              <p className="text-[10px] leading-relaxed text-[#8a7f76] font-medium italic opacity-70">
+                * A megjelenített kép csak illusztráció. A kész termék színei és arányai minimálisan eltérhetnek a kijelzőn látottaktól a monitor egyedi beállításai és a gyártási folyamat sajátosságai miatt.
+              </p>
             </div>
           </div>
 
@@ -252,7 +270,7 @@ export default function EgyediVaszonkepPage() {
 
             <div className="mt-12 pt-8 border-t border-dashed flex justify-between items-center">
               <p className="text-3xl font-black italic">{formatPrice(price)}</p>
-              <button onClick={handleAddToCart} disabled={!savedConfig} className="bg-[#e3936e] text-white px-8 py-4 rounded-2xl font-black uppercase text-xs shadow-xl disabled:opacity-20 transition-all">
+              <button onClick={handleAddToCart} disabled={!savedConfig} className="bg-[#e3936e] text-white px-8 py-4 rounded-2xl font-black uppercase text-xs shadow-xl disabled:opacity-20 transition-all active:scale-95">
                 Kosárba
               </button>
             </div>
@@ -260,14 +278,14 @@ export default function EgyediVaszonkepPage() {
         </div>
       </section>
 
-      {/* AR MODAL - Itt használjuk a panoramal.glb fájlt */}
+      {/* AR MODAL */}
       {isARModalOpen && mounted && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setIsARModalOpen(false)} />
           <div className="relative w-full h-full max-w-5xl bg-[#f8f8f6] md:rounded-[40px] overflow-hidden flex flex-col">
             <div className="p-5 border-b flex justify-between items-center bg-white z-10">
                 <h3 className="font-black uppercase italic text-sm text-black">3D Preview</h3>
-                <button onClick={() => setIsARModalOpen(false)} className="bg-black text-white w-10 h-10 rounded-xl font-bold">✕</button>
+                <button onClick={() => setIsARModalOpen(false)} className="bg-black text-white w-10 h-10 rounded-xl font-bold transition-transform active:scale-90">✕</button>
             </div>
             <div className="flex-1 relative bg-[#efebe6]">
               <CustomCanvasViewer 
@@ -280,7 +298,7 @@ export default function EgyediVaszonkepPage() {
         </div>
       )}
 
-      {/* CROPPER MODAL - JAVÍTVA LÁTHATÓSÁGRA */}
+      {/* CROPPER MODAL */}
       {isCropModalOpen && image && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 md:p-4">
           <div className="w-full h-full md:h-auto md:max-w-2xl bg-white md:rounded-[40px] overflow-hidden flex flex-col">
@@ -293,13 +311,11 @@ export default function EgyediVaszonkepPage() {
                 onCropChange={setCrop} 
                 onCropComplete={(_, p) => setCroppedAreaPixels(p)} 
                 onZoomChange={setZoom} 
-                style={{
-                  containerStyle: { width: '100%', height: '100%', position: 'absolute' }
-                }}
+                style={{ containerStyle: { width: '100%', height: '100%', position: 'absolute' } }}
               />
             </div>
             <div className="p-8 bg-white">
-              <button onClick={handleSaveConfig} disabled={isSaving} className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase text-xs">
+              <button onClick={handleSaveConfig} disabled={isSaving} className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase text-xs transition-all active:scale-95 disabled:opacity-50">
                 {isSaving ? "Feldolgozás..." : "Kép rögzítése"}
               </button>
             </div>

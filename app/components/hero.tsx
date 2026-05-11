@@ -37,8 +37,8 @@ export default function Hero({ products, formatPrice }: HeroProps) {
     const y = e.clientY - box.top;
     const centerX = box.width / 2;
     const centerY = box.height / 2;
-    const rotateX = (y - centerY) / 6; 
-    const rotateY = (centerX - x) / 6; 
+    const rotateX = (y - centerY) / 6;
+    const rotateY = (centerX - x) / 6;
 
     setRotation({ x: rotateX, y: rotateY });
   };
@@ -50,16 +50,35 @@ export default function Hero({ products, formatPrice }: HeroProps) {
 
   if (!products || products.length === 0) return null;
 
+  // SEO: Strukturált adatok (ItemList), hogy a Google megjeleníthesse a többképes snippetet
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": products.slice(0, 6).map((product, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "url": `https://www.dolce-home.hu/termekek/${product.slug}`,
+      "image": `https://www.dolce-home.hu${product.image}`,
+      "name": product.name,
+    })),
+  };
+
   return (
     <section id="hero" className="relative overflow-hidden bg-[#f8f3ef]">
-      {/* Háttérkép */}
+      {/* SEO: JSON-LD beillesztése */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      {/* Háttérkép - Google elől elrejtve (aria-hidden), nincs priority */}
       <div className="absolute inset-0 z-0">
-        <Image 
-          src="/hero-bg.webp" 
-          alt="háttér" 
-          fill 
+        <Image
+          src="/hero-bg.webp"
+          alt="" 
+          fill
           className="object-cover opacity-60"
-          priority 
+          aria-hidden="true"
         />
       </div>
 
@@ -75,7 +94,6 @@ export default function Hero({ products, formatPrice }: HeroProps) {
         
         .perspective-container { perspective: 1200px; }
         
-        /* Modern Üveghatás Stílus - Kompaktabb és tisztább */
         .glass-btn-3d {
           background: rgba(255, 255, 255, 0.4);
           backdrop-filter: blur(10px);
@@ -86,7 +104,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
           align-items: center;
           justify-content: center;
           width: 55px;
-          height: 55pxx;
+          height: 55px;
           border-radius: 24px;
         }
         
@@ -139,7 +157,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
                     <Link href={`/termekek/${product.slug}`} className="group block flex flex-col outline-none">
                       <div className="relative flex items-center justify-center px-4 md:px-10 min-h-[400px] md:min-h-[480px]">
                         
-                        {/* A JAVÍTOTT 3D GOMB ÉS IKON */}
+                        {/* 3D GOMB */}
                         <div className="absolute left-6 top-6 z-40 perspective-container">
                           <div
                             className={`glass-btn-3d transition-all duration-200 ease-out 
@@ -155,12 +173,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
                             onMouseUp={() => setIsPressed(false)}
                           >
                             <div className="flex items-center justify-center w-full h-full" style={{ transform: 'translateZ(30px)' }}>
-                              <svg 
-                                viewBox="0 0 100 100" 
-                                fill="none" 
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-12 h-12" 
-                              >
+                              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-12 h-12">
                                 <path d="M25 35 C 35 20, 65 20, 75 35" stroke="#2a211d" strokeWidth="6" strokeLinecap="round" />
                                 <path d="M75 35 L 75 22 M 75 35 L 62 35" stroke="#2a211d" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
                                 <path d="M75 65 C 65 80, 35 80, 25 65" stroke="#2a211d" strokeWidth="6" strokeLinecap="round" />
@@ -179,7 +192,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
                             alt={product.name}
                             fill
                             className="object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.15)] transition-transform duration-700 group-hover:scale-105"
-                            priority={index === 0}
+                            priority={index === 0} // SEO: Csak az első termékkép kiemelt
                           />
                         </div>
                       </div>
@@ -195,6 +208,13 @@ export default function Hero({ products, formatPrice }: HeroProps) {
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* SEO: Statikus galéria a botoknak, akik nem tudják kezelni a Swipert */}
+      <div className="sr-only" aria-hidden="true">
+        {products.map(product => (
+          <img key={`static-${product.id}`} src={product.image} alt={product.name} />
+        ))}
       </div>
     </section> 
   );

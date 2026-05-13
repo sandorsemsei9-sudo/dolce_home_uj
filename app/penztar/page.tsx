@@ -31,13 +31,21 @@ export default function PenztarPage() {
     setIsHydrated(true);
   }, []);
 
-  const { subtotal, codFee, finalTotal } = useMemo(() => {
+  // --- SZÁLLÍTÁSI ÉS FIZETÉSI LOGIKA ---
+  const { subtotal, codFee, shippingFee, finalTotal } = useMemo(() => {
     const base = getTotalPrice(); 
+    
+    // Utánvét felár (csak ha az utánvétet választja)
     const fee = paymentMethod === "cash_on_delivery" ? 790 : 0;
+    
+    // Szállítási díj: 25.000 Ft alatt 3.000 Ft, felette ingyenes
+    const shipFee = base >= 25000 ? 0 : 3000;
+
     return {
       subtotal: base,
       codFee: fee,
-      finalTotal: base + fee
+      shippingFee: shipFee,
+      finalTotal: base + fee + shipFee
     };
   }, [items, paymentMethod, getTotalPrice]);
 
@@ -79,7 +87,7 @@ export default function PenztarPage() {
           shipping_postcode: finalShippingZip,
           shipping_city: finalShippingCity,
           shipping_address: finalShippingAddr,
-          total_amount: Math.round(finalTotal),
+          total_amount: Math.round(finalTotal), // Ez már tartalmazza a szállítást és utánvétet
           payment_method: paymentMethod,
           status: paymentMethod === "transfer" ? "waiting_for_payment" : "pending",
           note: formData.note
@@ -116,9 +124,8 @@ export default function PenztarPage() {
         await supabase.from("custom_orders").insert(customOrderRecords);
       }
 
-      // 4. KUPON ÉRVÉNYTELENÍTÉSE (Javítva: .ilike és is_used: true)
+      // 4. KUPON ÉRVÉNYTELENÍTÉSE
       if (appliedCoupon && appliedCoupon.code) {
-        console.log("Kupon lezárása:", appliedCoupon.code);
         await supabase
           .from("coupons")
           .update({ is_used: true })
@@ -132,7 +139,12 @@ export default function PenztarPage() {
         const response = await fetch("/api/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items, orderId: orderData.id, totalAmount: finalTotal }),
+          body: JSON.stringify({ 
+            items, 
+            orderId: orderData.id, 
+            totalAmount: finalTotal,
+            shippingFee: shippingFee // Elküldjük az API-nak is
+          }),
         });
         const session = await response.json();
         if (session.url) {
@@ -269,6 +281,14 @@ export default function PenztarPage() {
               )}
 
               <div className="pt-6 border-t border-dashed space-y-3">
+                {/* SZÁLLÍTÁSI DÍJ SOR */}
+                <div className="flex justify-between text-[11px] font-bold uppercase">
+                  <span>Szállítási díj</span>
+                  <span className={shippingFee === 0 ? "text-green-600" : ""}>
+                    {shippingFee === 0 ? "Ingyenes" : `+ ${formatPrice(shippingFee)}`}
+                  </span>
+                </div>
+
                 {codFee > 0 && (
                   <div className="flex justify-between text-[11px] font-bold uppercase text-[#e3936e]">
                     <span>Utánvét felár</span>
@@ -279,6 +299,13 @@ export default function PenztarPage() {
                   <span className="text-[10px] uppercase tracking-widest text-gray-400 self-center font-normal">Fizetendő</span>
                   <span>{formatPrice(finalTotal)}</span>
                 </div>
+                
+                {/* KIS ÖSZTÖNZŐ ÜZENET */}
+                {shippingFee > 0 && (
+                  <p className="text-[9px] text-center font-bold text-gray-400 uppercase tracking-tighter">
+                    Vásárolj még {formatPrice(25000 - subtotal)} értékben az ingyenes szállításhoz!
+                  </p>
+                )}
               </div>
             </div>
           </div>

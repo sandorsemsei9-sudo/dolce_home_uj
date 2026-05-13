@@ -7,15 +7,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 
 export async function POST(req: Request) {
   try {
-    const { items, orderId } = await req.json();
+    // Kinyerjük a shippingFee-t is a kérésből
+    const { items, orderId, shippingFee } = await req.json();
 
+    // 1. Termékek átalakítása Stripe formátumra
     const line_items = items.map((item: any) => {
-      // Ha az ár pl. 110.00, akkor meg kell szoroznunk 100-zal, hogy 11000 legyen.
-      // A Math.round biztosítja, hogy ne maradjon tizedesjegy.
       const correctedPrice = Math.round(Number(item.price) * 100);
       
-      console.log(`Eredeti ár: ${item.price} -> Stripe-nak küldött ár: ${correctedPrice} HUF`);
-
       return {
         price_data: {
           currency: "huf",
@@ -28,6 +26,21 @@ export async function POST(req: Request) {
       };
     });
 
+    // 2. Szállítási díj hozzáadása külön tételként, ha van
+    if (shippingFee && shippingFee > 0) {
+      line_items.push({
+        price_data: {
+          currency: "huf",
+          product_data: {
+            name: "Szállítási díj",
+          },
+          unit_amount: Math.round(shippingFee * 100), // Itt is váltunk fillérre (százas szorzó)
+        },
+        quantity: 1,
+      });
+    }
+
+    // 3. Stripe Checkout session létrehozása
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items,

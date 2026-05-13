@@ -10,10 +10,12 @@ const allura = Allura({
   weight: "400",
 });
 
+// Kibővítettem a menüpontokat a Blog-gal
 const navLinks = [
   { label: "Főoldal", href: "/" },
   { label: "Egyedi vászonkép", href: "/egyedi-vaszonkep" },
   { label: "Galériánk", href: "/termekek" },
+  { label: "Blog", href: "/blog" }, // <-- ÚJ MENÜPONT
   { label: "Kapcsolat", href: "/kapcsolat" },
 ];
 
@@ -48,13 +50,12 @@ export default function Navbar() {
               <img src="/logo.png" alt="Dolce Home" className="h-full w-full object-contain" />
             </div>
             
-            {/* A -mb-1 húzza lejjebb a szöveget, hogy optikailag középen legyen a logóval */}
             <span className={`${allura.className} text-3xl md:text-4xl text-[#2a211d] transition-all duration-300 group-hover:text-[#d17d58] -mb-1`}>
               Dolce Home
             </span>
           </Link>
 
-          {/* DESKTOP NAV - Aláhúzás animációval */}
+          {/* DESKTOP NAV - A Blog menüpont automatikusan bekerül ide */}
           <nav className="hidden items-center gap-10 lg:flex">
             {navLinks.map((link) => (
               <Link

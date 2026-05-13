@@ -23,6 +23,7 @@ export default function AdminLayout({
     { name: "Kategóriák", href: "/admin/categories" },
     { name: "Kuponok", href: "/admin/coupons" },
     { name: "Hírlevél", href: "/admin/newsletter" },
+    { name: 'Blog', href: "/admin/blog"},
   ];
 
   return (

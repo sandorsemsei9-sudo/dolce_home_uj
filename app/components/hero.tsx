@@ -57,7 +57,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
     "itemListElement": products.slice(0, 6).map((product, index) => ({
       "@type": "ListItem",
       "position": index + 1,
-      "url": `https://www.dolce-home.hu/termekek/${product.slug}`,
+      "url": `https://www.dolce-home.hu/vaszonkepek/${product.slug}`,
       "image": `https://www.dolce-home.hu${product.image}`,
       "name": product.name,
     })),
@@ -72,15 +72,16 @@ export default function Hero({ products, formatPrice }: HeroProps) {
       />
 
       {/* Háttérkép - Google elől elrejtve (aria-hidden), nincs priority */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/hero-bg.webp"
-          alt="" 
-          fill
-          className="object-cover opacity-60"
-          aria-hidden="true"
-        />
-      </div>
+<div className="absolute inset-0 z-0">
+  <Image
+    src="/hero-bg.webp"
+    alt="Dolce Home vászonkép háttér" 
+    fill
+    className="object-cover opacity-60"
+    priority // Ez javítja ki a hibaüzenetet és gyorsítja az LCP-t
+    sizes="100vw" // Segít a Next.js-nek a megfelelő méret kiválasztásában
+  />
+</div>
 
       <style jsx global>{`
         @keyframes fadeInSlide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -132,7 +133,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
           <p className="animate-hero-text delay-2 mt-5 max-w-lg text-base leading-relaxed text-[#5e4d45] md:text-lg"> Válogass modern kollekcióinkból, vagy készíts egyedi vászonképet a saját fotódból. </p>
           <div className="animate-hero-text delay-3 mt-8 flex flex-wrap gap-4">
             <Link href="/egyedi-vaszonkep" className="rounded-2xl bg-[#d17d58] px-7 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-[#b06a4a] hover:-translate-y-0.5"> Feltöltöm a képem </Link>
-            <Link href="/termekek" className="rounded-2xl border border-[#dccfc5] bg-white/90 px-7 py-3.5 text-base font-semibold text-[#463732] shadow-sm transition hover:bg-white"> Kollekció megtekintése </Link>
+            <Link href="/vaszonkepek" className="rounded-2xl border border-[#dccfc5] bg-white/90 px-7 py-3.5 text-base font-semibold text-[#463732] shadow-sm transition hover:bg-white"> Kollekció megtekintése </Link>
           </div>
         </div>
 
@@ -154,7 +155,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
               >
                 {products.map((product, index) => (
                   <SwiperSlide key={product.id}>
-                    <Link href={`/termekek/${product.slug}`} className="group block flex flex-col outline-none">
+                    <Link href={`/vaszonkepek/${product.slug}`} className="group block flex flex-col outline-none">
                       <div className="relative flex items-center justify-center px-4 md:px-10 min-h-[400px] md:min-h-[480px]">
                         
                         {/* 3D GOMB */}

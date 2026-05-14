@@ -152,7 +152,7 @@ export default function Footer() {
           <div className="flex flex-col gap-4">
             <p className="text-xs font-black uppercase tracking-widest text-[#d17d58]">Felfedezés</p>
             <nav className="flex flex-col gap-3 text-sm font-medium">
-              <Link href="/termekek" className="text-[#5e4d45] transition hover:text-[#d17d58]">Galéria</Link>
+              <Link href="/vaszonkepek" className="text-[#5e4d45] transition hover:text-[#d17d58]">Vászonképek</Link>
               <Link href="/egyedi-vaszonkep" className="text-[#5e4d45] transition hover:text-[#d17d58]">Egyedi készítés</Link>
               <Link href="/blog" className="text-[#5e4d45] transition hover:text-[#d17d58]">Blog</Link> {/* <-- ÚJ LINK */}
               <Link href="/kapcsolat" className="text-[#5e4d45] transition hover:text-[#d17d58]">Kapcsolat</Link>

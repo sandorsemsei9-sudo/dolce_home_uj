@@ -16,28 +16,28 @@ export default function Categories() {
       title: "Absztrakt & Modern",
       subtitle: "Modern, karakteres kompozíciók",
       image: "/images/lo.webp",
-      href: "/termekek",
+      href: "/vaszonkepek",
       gridClass: "md:col-span-4 h-[350px]", // Hosszabb elem
     },
     {
       title: "Természet & Tájképek",
       subtitle: "Lágy, elegáns hangulatú képek",
       image: "/images/falu.webp",
-      href: "/termekek",
+      href: "/vaszonkepek",
       gridClass: "md:col-span-2 h-[350px]", // Rövidebb elem
     },
     {
       title: "Városi & Építészeti",
       subtitle: "Letisztult formák, finom részletek",
       image: "/images/parizs.webp",
-      href: "/termekek",
+      href: "/vaszonkepek",
       gridClass: "md:col-span-3 h-[350px]", // Közepes elem
     },
     {
       title: "Gyerekszoba",
       subtitle: "Vidám, mesés dekorációk",
       image: "/images/halacskak.webp",
-      href: "/termekek",
+      href: "/vaszonkepek",
       gridClass: "md:col-span-3 h-[350px]", // Közepes elem
     },
   ];

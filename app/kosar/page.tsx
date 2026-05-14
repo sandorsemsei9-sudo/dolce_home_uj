@@ -71,7 +71,7 @@ export default function KosarPage() {
         {items.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border">
             <p className="text-gray-500">Üres a kosarad.</p>
-            <Link href="/termekek" className="mt-4 inline-block text-[#e3936e] font-bold underline">Irány a webshop</Link>
+            <Link href="/vaszonkepek" className="mt-4 inline-block text-[#e3936e] font-bold underline">Irány a webshop</Link>
           </div>
         ) : (
           <div className="grid gap-8 lg:grid-cols-[1fr_350px]">

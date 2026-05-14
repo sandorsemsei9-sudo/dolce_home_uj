@@ -205,7 +205,7 @@ function TermekekContent() {
                 <article key={product.id} className="group flex flex-col relative">
                   
                   <Link 
-                    href={`/termekek/${product.slug}`} 
+                    href={`/vaszonkepek/${product.slug}`} 
                     className="relative mb-8 block aspect-[4/5] overflow-hidden rounded-[48px] border border-[#efebe6] bg-white transition-all duration-500 hover:shadow-[0_30px_60px_rgba(42,33,29,0.08)]"
                   >
                     {/* STATIKUS 3D IKON (A megadott 300 soros kód lényege) */}
@@ -255,7 +255,7 @@ function TermekekContent() {
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d17d58]">
                       {product.display_category}
                     </p>
-                    <Link href={`/termekek/${product.slug}`}>
+                    <Link href={`/vaszonkepek/${product.slug}`}>
                       <h3 className="mt-3 text-xl font-bold text-[#2a211d] transition-colors hover:text-[#d17d58]">
                         {product.name}
                       </h3>
@@ -270,7 +270,7 @@ function TermekekContent() {
                       </p>
                       
                       <Link 
-                        href={`/termekek/${product.slug}`}
+                        href={`/vaszonkepek/${product.slug}`}
                         className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[#efebe6] text-[#2a211d] transition-all duration-300 hover:bg-[#2a211d] hover:text-white hover:border-[#2a211d] hover:scale-110"
                       >
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>

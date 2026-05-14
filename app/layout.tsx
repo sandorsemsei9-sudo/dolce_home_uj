@@ -9,29 +9,28 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "Vászonképek és Egyedi Faldekorációk | Dolce Home",
+    // SEO FÓKUSZ: Márkanév + Kulcsszavak az elején a Google rangsoroláshoz
+    default: "Dolce Home Vászonképek | Egyedi Vászonképek", 
     template: "%s | Dolce Home",
   },
-  description: "Varázsold otthonod emlékeid színhelyévé! Egyedi vászonkép készítés saját fotóból, prémium minőségben és gyors szállítással a Dolce Home-tól.",
+  description: "Varázsold otthonod emlékeid színhelyévé! Prémium egyedi vászonkép készítés saját fotóból, vakrámázott kivitelben, gyors szállítással a Dolce Home-tól.",
   keywords: [
-    "vászonképek", 
-    "vászonkép",
+    "vászonkép", 
+    "vászonképek",
     "egyedi vászonkép", 
-    "egyedi vászonképek",
     "vászonkép saját fotóból", 
+    "vászonkép rendelés",
     "faldekoráció", 
     "lakberendezés", 
-    "prémium ajándék", 
     "Dolce Home"
   ],
   authors: [{ name: "Dolce Home" }],
   creator: "Dolce Home",
-  // JAVÍTÁS: Mindig a végleges, WWW-s URL-t használd!
+  // KRITIKUS: A metadataBase és az URL-ek már a www-s verzióra mutatnak a 301-es hiba elkerülése végett
   metadataBase: new URL("https://www.dolce-home.hu"), 
   openGraph: {
-    title: "Dolce Home | Egyedi Vászonképek",
+    title: "Dolce Home Vászonképek | Egyedi Faldekoráció",
     description: "Készíttess prémium vászonképet saját fotóidból! Gyors gyártás, országos szállítás.",
-    // JAVÍTÁS: Itt is legyen ott a www
     url: "https://www.dolce-home.hu", 
     siteName: "Dolce Home",
     locale: "hu_HU",
@@ -51,7 +50,7 @@ export default function RootLayout({
   return (
     <html lang="hu">
       <head>
-        {/* LCP Optimalizálás */}
+        {/* LCP Optimalizálás: A hős (hero) háttérkép előtöltése a gyorsabb betöltésért */}
         <link 
           rel="preload" 
           as="image" 

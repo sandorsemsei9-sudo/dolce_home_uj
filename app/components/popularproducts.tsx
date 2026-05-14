@@ -62,7 +62,7 @@ export default function PopularProducts({
           </div>
 
           <Link
-            href="/termekek"
+            href="/vaszonkepek"
             className="group hidden md:flex items-center gap-2 text-sm font-bold text-[#7a665c] transition-colors hover:text-[#d17d58]"
           >
             Összes termék
@@ -129,7 +129,7 @@ export default function PopularProducts({
                       </span>
                     </div>
 
-                    <Link href={`/termekek/${product.slug}`} className="block h-full w-full">
+                    <Link href={`/vaszonkepek/${product.slug}`} className="block h-full w-full">
                       <div className="relative h-full w-full p-10 transition-all duration-700 ease-in-out group-hover:scale-110 group-hover:opacity-0 group-hover:blur-md">
                         <Image
                           src={product.image}
@@ -166,7 +166,7 @@ export default function PopularProducts({
                         {formatPrice(product.price)} Ft -tól
                       </p>
                       <Link 
-                        href={`/termekek/${product.slug}`}
+                        href={`/vaszonkepek/${product.slug}`}
                         className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f8f3ef] text-[#2a211d] transition-all hover:bg-[#d17d58] hover:text-white"
                       >
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

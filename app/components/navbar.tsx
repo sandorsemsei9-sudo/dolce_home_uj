@@ -13,8 +13,8 @@ const allura = Allura({
 // Kibővítettem a menüpontokat a Blog-gal
 const navLinks = [
   { label: "Főoldal", href: "/" },
+    { label: "Vászonképek", href: "/vaszonkepek" },
   { label: "Egyedi vászonkép", href: "/egyedi-vaszonkep" },
-  { label: "Galériánk", href: "/termekek" },
   { label: "Blog", href: "/blog" }, // <-- ÚJ MENÜPONT
   { label: "Kapcsolat", href: "/kapcsolat" },
 ];

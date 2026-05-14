@@ -14,8 +14,10 @@ export const metadata: Metadata = {
   },
   description: "Varázsold otthonod emlékeid színhelyévé! Egyedi vászonkép készítés saját fotóból, prémium minőségben és gyors szállítással a Dolce Home-tól.",
   keywords: [
-    "vászonkép", 
+    "vászonképek", 
+    "vászonkép",
     "egyedi vászonkép", 
+    "egyedi vászonképek",
     "vászonkép saját fotóból", 
     "faldekoráció", 
     "lakberendezés", 
@@ -24,11 +26,13 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Dolce Home" }],
   creator: "Dolce Home",
-  metadataBase: new URL("https://dolce-home.hu"),
+  // JAVÍTÁS: Mindig a végleges, WWW-s URL-t használd!
+  metadataBase: new URL("https://www.dolce-home.hu"), 
   openGraph: {
     title: "Dolce Home | Egyedi Vászonképek",
     description: "Készíttess prémium vászonképet saját fotóidból! Gyors gyártás, országos szállítás.",
-    url: "https://dolce-home.hu",
+    // JAVÍTÁS: Itt is legyen ott a www
+    url: "https://www.dolce-home.hu", 
     siteName: "Dolce Home",
     locale: "hu_HU",
     type: "website",
@@ -47,9 +51,7 @@ export default function RootLayout({
   return (
     <html lang="hu">
       <head>
-        {/* LCP Optimalizálás: A háttérkép előtöltése. 
-            Fontos, hogy a href pontosan egyezzen a Hero-ban használt elérési úttal!
-        */}
+        {/* LCP Optimalizálás */}
         <link 
           rel="preload" 
           as="image" 

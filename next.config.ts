@@ -1,24 +1,20 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // 1. Átirányítások kezelése (307 helyett 301)
+  async redirects() {
+    return [
+      {
+        source: '/regi-aloldal', // Ide írd a régi linket
+        destination: '/uj-aloldal', // Ide az újat
+        permanent: true, // Ez állítja át 301-es végleges kódra a Google számára
+      },
+    ];
+  },
+
+  // 2. Képoptimalizálás teljes kikapcsolása
   images: {
-    // Ez kapcsolja ki globálisan a Vercel képoptimalizálást (és a limit fogyasztását)
-    unoptimized: true, 
-    
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'gbaduiirlnkaycrcdbpd.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
-    ],
+    unoptimized: true,
   },
 };
 

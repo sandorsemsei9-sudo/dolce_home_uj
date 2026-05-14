@@ -1,20 +1,27 @@
-import type { NextConfig } from 'next';
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // 1. Átirányítások kezelése (307 helyett 301)
+  // 1. Átirányítások javítása (307 -> 301 kényszerítése)
   async redirects() {
     return [
       {
-        source: '/regi-aloldal', // Ide írd a régi linket
-        destination: '/uj-aloldal', // Ide az újat
-        permanent: true, // Ez állítja át 301-es végleges kódra a Google számára
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'dolce-home.hu',
+          },
+        ],
+        destination: 'https://www.dolce-home.hu/:path*',
+        permanent: true, // Ez javítja az indexelési hibát
       },
     ];
   },
 
-  // 2. Képoptimalizálás teljes kikapcsolása
+  // 2. Képkezelés
   images: {
-    unoptimized: true,
+    // Mivel ez true, a remotePatterns-re nincs szükség
+    unoptimized: true, 
   },
 };
 

@@ -177,13 +177,18 @@ export default function EgyediVaszonkepPage() {
           {/* MOCKUP SZEKCIÓ */}
           <div className="flex flex-col gap-5 order-2 lg:order-1">
             <div className="group relative aspect-[1.1/1] overflow-hidden rounded-[40px] border border-[#d9d5cf] bg-white shadow-2xl">
-              <img src={TEMPLATE_IMAGE} alt="Mockup" className="h-full w-full object-cover" />
+              <img 
+                src={TEMPLATE_IMAGE} 
+                alt="Egyedi vászonkép tervező előnézet nappali környezetben" 
+                className="h-full w-full object-cover" 
+              />
               
               {savedConfig && (
                 <div className="absolute top-6 right-6 md:top-8 md:right-8 z-20 flex flex-col items-end gap-3">
                   <button 
                     onClick={() => setIsARModalOpen(true)} 
                     className="flex flex-col items-center gap-2 outline-none"
+                    aria-label="3D és AR nézet megnyitása"
                   >
                     <div className="glass-3d-button relative flex h-16 w-16 items-center justify-center rounded-2xl transition-all duration-500 hover:scale-110 active:scale-95">
                       <svg className="absolute inset-0 h-full w-full opacity-60" viewBox="0 0 100 100">
@@ -194,7 +199,6 @@ export default function EgyediVaszonkepPage() {
                     </div>
                   </button>
                   
-                  {/* SEGÍTSÉG SZÖVEG ASZTALRA ÉS MOBILRA */}
                   <div className="text-right pointer-events-none">
                     <p className="text-[10px] font-black uppercase tracking-wider text-black leading-tight drop-shadow-sm">
                       Kattints a 3D nézethez!
@@ -214,15 +218,30 @@ export default function EgyediVaszonkepPage() {
                 }`}>
                   <div className="relative h-full w-full bg-white shadow-[0_35px_80px_rgba(0,0,0,0.45)] overflow-hidden">
                     {savedConfig?.previewUrl && (
-                      <img src={savedConfig.previewUrl} alt="Preview" className="h-full w-full object-cover relative z-10" />
+                      <img src={savedConfig.previewUrl} alt="Saját fotó előnézete vásznon" className="h-full w-full object-cover relative z-10" />
                     )}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* JOGI NYILATKOZAT */}
-            <div className="px-4">
+            {/* SEO STATIKUS SZÖVEG - Segít a Google-nek érteni az oldal tartalmát */}
+            <div className="mt-4 px-4 grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h2 className="text-sm font-black uppercase mb-2">Prémium Minőség</h2>
+                <p className="text-xs leading-relaxed text-[#6b6661]">
+                  Minden egyedi vászonképünket 380g-os finom szövésű művészvászonra nyomtatjuk, melyet kézzel feszítünk tartós, osztrák fenyőből készült vakrámára.
+                </p>
+              </div>
+              <div>
+                <h2 className="text-sm font-black uppercase mb-2">3D Tervezés és AR</h2>
+                <p className="text-xs leading-relaxed text-[#6b6661]">
+                  Használd online tervezőnket: töltsd fel a fotód, vágd méretre, és nézd meg 3D-ben vagy kiterjesztett valóságban (AR) közvetlenül a saját faladon.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-4 mt-4">
               <p className="text-[10px] leading-relaxed text-[#8a7f76] font-medium italic opacity-70">
                 * A megjelenített kép csak illusztráció. A kész termék színei és arányai minimálisan eltérhetnek a kijelzőn látottaktól a monitor egyedi beállításai és a gyártási folyamat sajátosságai miatt.
               </p>
@@ -231,11 +250,11 @@ export default function EgyediVaszonkepPage() {
 
           {/* VEZÉRLŐK */}
           <div className="order-1 lg:order-2 rounded-[35px] border border-[#d9d5cf] bg-white p-6 md:p-8 shadow-xl">
-            <h1 className="text-3xl font-black italic uppercase mb-8">Egyedi Vászonkép</h1>
+            <h1 className="text-3xl font-black italic uppercase mb-8">Egyedi Vászonkép Tervező</h1>
             
             <div className="space-y-6">
               <div className={savedConfig ? "opacity-40 pointer-events-none" : ""}>
-                <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">1. Formátum</p>
+                <h3 className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">1. Formátum kiválasztása</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {(Object.keys(ratios) as Ratio[]).map(r => (
                     <button key={r} onClick={() => { setRatio(r); setSize(sizes[r][0]); }} className={`py-3 border-2 rounded-xl text-[10px] font-black uppercase transition-all ${ratio === r ? 'border-black bg-black text-white' : 'border-gray-100 text-gray-400'}`}>{ratioLabels[r]}</button>
@@ -244,7 +263,7 @@ export default function EgyediVaszonkepPage() {
               </div>
 
               <div className={savedConfig ? "opacity-40 pointer-events-none" : ""}>
-                <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">2. Méret (cm)</p>
+                <h3 className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">2. Méret kiválasztása (cm)</h3>
                 <div className="flex flex-wrap gap-2">
                   {sizes[ratio].map(s => (
                     <button key={s} onClick={() => setSize(s)} className={`px-4 py-2 border-2 rounded-lg text-xs font-black transition-all ${size === s ? 'border-black bg-black text-white' : 'border-gray-100 text-gray-500'}`}>{s}</button>
@@ -253,10 +272,10 @@ export default function EgyediVaszonkepPage() {
               </div>
 
               <div>
-                <p className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">3. Fotó feltöltése</p>
+                <h3 className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">3. Saját fotó feltöltése</h3>
                 {!image ? (
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-200 rounded-[25px] cursor-pointer hover:bg-orange-50 transition-all">
-                    <span className="text-[10px] font-black uppercase text-orange-600">Kép kiválasztása</span>
+                    <span className="text-[10px] font-black uppercase text-orange-600">Kép kiválasztása a gépedről</span>
                     <input type="file" accept="image/*" onChange={onFileChange} className="hidden" />
                   </label>
                 ) : (
@@ -269,22 +288,29 @@ export default function EgyediVaszonkepPage() {
             </div>
 
             <div className="mt-12 pt-8 border-t border-dashed flex justify-between items-center">
-              <p className="text-3xl font-black italic">{formatPrice(price)}</p>
-              <button onClick={handleAddToCart} disabled={!savedConfig} className="bg-[#e3936e] text-white px-8 py-4 rounded-2xl font-black uppercase text-xs shadow-xl disabled:opacity-20 transition-all active:scale-95">
-                Kosárba
+              <div>
+                <p className="text-[10px] font-black uppercase text-gray-400 italic">Várható ár:</p>
+                <p className="text-3xl font-black italic">{formatPrice(price)}</p>
+              </div>
+              <button 
+                onClick={handleAddToCart} 
+                disabled={!savedConfig} 
+                className="bg-[#e3936e] text-white px-8 py-4 rounded-2xl font-black uppercase text-xs shadow-xl disabled:opacity-20 transition-all active:scale-95"
+              >
+                Kosárba teszem
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* AR MODAL */}
+      {/* AR/3D MODAL */}
       {isARModalOpen && mounted && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setIsARModalOpen(false)} />
           <div className="relative w-full h-full max-w-5xl bg-[#f8f8f6] md:rounded-[40px] overflow-hidden flex flex-col">
             <div className="p-5 border-b flex justify-between items-center bg-white z-10">
-                <h3 className="font-black uppercase italic text-sm text-black">3D Preview</h3>
+                <h3 className="font-black uppercase italic text-sm text-black">3D Modell Előnézet</h3>
                 <button onClick={() => setIsARModalOpen(false)} className="bg-black text-white w-10 h-10 rounded-xl font-bold transition-transform active:scale-90">✕</button>
             </div>
             <div className="flex-1 relative bg-[#efebe6]">
@@ -316,7 +342,7 @@ export default function EgyediVaszonkepPage() {
             </div>
             <div className="p-8 bg-white">
               <button onClick={handleSaveConfig} disabled={isSaving} className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase text-xs transition-all active:scale-95 disabled:opacity-50">
-                {isSaving ? "Feldolgozás..." : "Kép rögzítése"}
+                {isSaving ? "Feldolgozás..." : "Kép rögzítése és mentése"}
               </button>
             </div>
           </div>

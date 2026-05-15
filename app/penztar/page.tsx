@@ -38,8 +38,8 @@ export default function PenztarPage() {
     // Utánvét felár (csak ha az utánvétet választja)
     const fee = paymentMethod === "cash_on_delivery" ? 790 : 0;
     
-    // Szállítási díj: 25.000 Ft alatt 3.000 Ft, felette ingyenes
-    const shipFee = base >= 25000 ? 0 : 3000;
+    // Szállítási díj: 25.000 Ft alatt 1.990 Ft, felette ingyenes
+    const shipFee = base >= 25000 ? 0 : 1990;
 
     return {
       subtotal: base,

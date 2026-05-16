@@ -32,7 +32,7 @@ export async function generateMetadata({
       type: "article",
     },
     alternates: {
-      canonical: `https://dolcehome.hu/blog/${slug}`,
+      canonical: `https://dolce-home.hu/blog/${slug}`,
     },
   };
 }

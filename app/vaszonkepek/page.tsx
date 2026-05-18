@@ -69,11 +69,21 @@ function TermekekContent() {
     fetchData();
   }, [supabase]);
 
+  // Nyers URL paraméter biztonságos dekódolása az összehasonlításhoz
+  const cleanedSelectedCategory = useMemo(() => {
+    return decodeURIComponent(selectedCategory.replace(/\+/g, " ")).toLowerCase().trim();
+  }, [selectedCategory]);
+
   const filteredProducts = useMemo(() => {
     let filtered = [...dbProducts];
 
-    if (selectedCategory !== "Összes") {
-      filtered = filtered.filter((p) => p.display_category === selectedCategory);
+    if (cleanedSelectedCategory !== "összes") {
+      filtered = filtered.filter((p) => {
+        const displayCat = p.display_category ? p.display_category.toLowerCase().trim() : "";
+        const rawCat = p.categories?.name ? p.categories.name.toLowerCase().trim() : "";
+
+        return displayCat === cleanedSelectedCategory || rawCat === cleanedSelectedCategory;
+      });
     }
 
     if (sortBy === "price-asc") {
@@ -85,7 +95,7 @@ function TermekekContent() {
     }
 
     return filtered;
-  }, [dbProducts, selectedCategory, sortBy]);
+  }, [dbProducts, cleanedSelectedCategory, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
 
@@ -95,9 +105,20 @@ function TermekekContent() {
     return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredProducts, currentPage, totalPages]);
 
+  // JAVÍTÁS: URL-biztos paraméter frissítés, ami kódolja a kényes karaktereket (mint az &)
   const updateParams = (newParams: Record<string, string | number>, shouldScrollToGrid: boolean = false) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams();
     
+    // Átvesszük a meglévő paramétereket tisztán
+    searchParams.forEach((value, key) => {
+      // Ha az új paraméterek között felülírjuk a kategóriát vagy rendezést, a régit kihagyjuk
+      if (key === "category" && newParams.category) return;
+      if (key === "sort" && newParams.sort) return;
+      if (key === "page" && (newParams.category || newParams.sort || newParams.page)) return;
+      params.set(key, value);
+    });
+    
+    // Beállítjuk az új értékeket
     Object.entries(newParams).forEach(([key, value]) => {
       params.set(key, value.toString());
     });
@@ -106,6 +127,7 @@ function TermekekContent() {
       params.set("page", "1");
     }
 
+    // A router.push-nak a params.toString() már tökéletesen kódolt (%26) URL-t ad át
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
 
     if (shouldScrollToGrid) {
@@ -160,7 +182,7 @@ function TermekekContent() {
                   key={cat}
                   onClick={() => updateParams({ category: cat }, true)}
                   className={`whitespace-nowrap rounded-full px-6 py-2.5 text-[11px] font-bold uppercase tracking-widest transition-all duration-300 ${
-                    selectedCategory === cat
+                    cleanedSelectedCategory === cat.toLowerCase().trim()
                       ? "bg-[#2a211d] text-white shadow-lg shadow-[#2a211d]/10"
                       : "bg-white border border-[#efebe6] text-[#7a665c] hover:border-[#d17d58] hover:text-[#d17d58]"
                   }`}
@@ -208,7 +230,6 @@ function TermekekContent() {
                     href={`/vaszonkepek/${product.slug}`} 
                     className="relative mb-8 block aspect-[4/5] overflow-hidden rounded-[48px] border border-[#efebe6] bg-white transition-all duration-500 hover:shadow-[0_30px_60px_rgba(42,33,29,0.08)]"
                   >
-                    {/* STATIKUS 3D IKON (A megadott 300 soros kód lényege) */}
                     <div className="absolute left-7 top-7 z-20 flex flex-col items-center gap-2 pointer-events-none">
                       <div className="glass-3d-badge relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-500 group-hover:scale-110">
                         <svg className="absolute inset-0 h-full w-full opacity-60" viewBox="0 0 100 100">
@@ -228,7 +249,6 @@ function TermekekContent() {
                       </span>
                     </div>
 
-                    {/* Alap kép */}
                     <div className="relative h-full w-full p-8 transition-all duration-700 ease-in-out group-hover:scale-110 group-hover:opacity-0 group-hover:blur-md">
                       <Image
                         src={product.cover_image || "/placeholder.jpg"}
@@ -239,7 +259,6 @@ function TermekekContent() {
                       />
                     </div>
 
-                    {/* Hover kép / Mockup */}
                     <div className="absolute inset-0 h-full w-full opacity-0 transition-all duration-700 ease-in-out scale-105 group-hover:opacity-100 group-hover:scale-100">
                       <Image
                         src={product.hover_image || "/images/mockup.jpg"}

@@ -1,4 +1,3 @@
-// app/vaszonkepek/layout.tsx
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -14,17 +13,36 @@ export const metadata: Metadata = {
     "prémium faliképek",
     "vászonkép rendelés"
   ],
+  
+  // JAVÍTÁS: Kifejezett canonical URL beállítása a duplikációk elkerülésére
+  alternates: {
+    canonical: "https://www.dolce-home.hu/vaszonkepek",
+  },
+
+  // JAVÍTÁS: Keresőrobotok explicit utasítása
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+
   openGraph: {
     title: "Vászonkép Katalógus | Dolce Home",
-    description: "Fedezd fel prémium faldekorációs kollekciónkat és válaszd ki a kedvencedet!",
-    // JAVÍTÁS: Az URL most már az új, SEO-barát útvonalat tükrözi
+    description: "Fedezd felel prémium faldekorációs kollekciónkat és válaszd ki a kedvencedet!",
     url: "https://www.dolce-home.hu/vaszonkepek", 
     siteName: "Dolce Home",
     locale: "hu_HU",
     type: "website",
     images: [
       {
-        url: "/images/4evszak.png", 
+        // JAVÍTÁS: Az OG képeknél a robotok a teljes (https://...) URL-t preferálják
+        url: "https://www.dolce-home.hu/images/4evszak.png", 
         width: 1200,
         height: 630,
         alt: "Dolce Home Vászonkép Kínálat",

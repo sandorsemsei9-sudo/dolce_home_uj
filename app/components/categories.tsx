@@ -1,44 +1,47 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 
 type CategoryItem = {
   title: string;
   subtitle: string;
   image: string;
   href: string;
-  gridClass: string; // Itt határozzuk meg az egyedi méretet
+  gridClass: string;
 };
 
 export default function Categories() {
+  // JAVÍTÁS: Az '&' jeleket kicseréltük '%26'-ra, a szóközöket pedig '%20'-ra, 
+  // hogy az URL teljesen szabványos legyen és ne törjön szét a paraméterezés!
   const items: CategoryItem[] = [
     {
       title: "Absztrakt & Modern",
       subtitle: "Modern, karakteres kompozíciók",
       image: "/images/lo.webp",
-      href: "/vaszonkepek",
-      gridClass: "md:col-span-4 h-[350px]", // Hosszabb elem
+      href: "/vaszonkepek?category=Absztrakt%20%26%20Modern&page=1",
+      gridClass: "md:col-span-4 h-[350px]",
     },
-    {
-      title: "Természet & Tájképek",
+{
+      title: "Természet & Tájkép", // Itt is átírhatod egyes számra a szép megjelenésért
       subtitle: "Lágy, elegáns hangulatú képek",
       image: "/images/falu.webp",
-      href: "/vaszonkepek",
-      gridClass: "md:col-span-2 h-[350px]", // Rövidebb elem
+      href: "/vaszonkepek?category=Term%C3%A9szet%20%26%20T%C3%A1jk%C3%A9p&page=1", // FIX: Egyes szám!
+      gridClass: "md:col-span-2 h-[350px]",
     },
     {
       title: "Városi & Építészeti",
       subtitle: "Letisztult formák, finom részletek",
       image: "/images/parizs.webp",
-      href: "/vaszonkepek",
-      gridClass: "md:col-span-3 h-[350px]", // Közepes elem
+      href: "/vaszonkepek?category=V%C3%A1rosi%20%26%20%C3%89p%C3%ADt%C3%A9szeti&page=1",
+      gridClass: "md:col-span-3 h-[350px]",
     },
     {
       title: "Gyerekszoba",
       subtitle: "Vidám, mesés dekorációk",
       image: "/images/halacskak.webp",
-      href: "/vaszonkepek",
-      gridClass: "md:col-span-3 h-[350px]", // Közepes elem
+      href: "/vaszonkepek?category=Gyerekszoba&page=1",
+      gridClass: "md:col-span-3 h-[350px]",
     },
   ];
 
@@ -58,7 +61,7 @@ export default function Categories() {
         {/* Dinamikus Grid rendszer */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-6">
           {items.map((item, index) => (
-            <a
+            <Link
               key={index}
               href={item.href}
               className={`group relative flex flex-col overflow-hidden rounded-[40px] bg-[#2a211d] transition-all duration-500 ease-in-out hover:shadow-2xl ${item.gridClass}`}
@@ -96,7 +99,7 @@ export default function Categories() {
                   </svg>
                 </div>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </div>

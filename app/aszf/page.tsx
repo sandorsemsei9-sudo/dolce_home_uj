@@ -13,7 +13,8 @@ export default function ASZFPage() {
           
           <header className="border-b pb-8">
             <h1 className="text-4xl font-black uppercase tracking-tighter italic mb-4">Általános Szerződési Feltételek</h1>
-            <p className="text-sm text-gray-400 font-medium">Utoljára frissítve: 2024. 05. 22.</p>
+            <h3>HAMAROSAN!</h3>
+            <p className="text-sm text-gray-400 font-medium">Utoljára frissítve: 2026. 05. 01.</p>
           </header>
 
           <div className="prose prose-orange max-w-none space-y-8 text-gray-700 leading-relaxed">
@@ -25,12 +26,11 @@ export default function ASZFPage() {
                 Üzemeltetői adatok
               </h2>
               <div className="bg-gray-50 p-6 rounded-2xl border border-dashed border-gray-200 text-sm space-y-2">
-                <p><strong>Szolgáltató neve:</strong> [Vállalkozás Neve / Egyéni Vállalkozó Neve]</p>
-                <p><strong>Székhely:</strong> [Település, Utca, Házszám]</p>
-                <p><strong>Adószám:</strong> [Adószám]</p>
-                <p><strong>Nyilvántartási szám:</strong> [Vállalkozói igazolvány száma]</p>
-                <p><strong>E-mail cím:</strong> [Email cím]</p>
-                <p><strong>Telefonszám:</strong> [Telefonszám]</p>
+                <p><strong>Szolgáltató neve:</strong> Dolce Home</p>
+                <p><strong>Székhely:</strong> 8533 Malomsok, Szabadság utca 16.</p>
+                <p><strong>Adószám:</strong> HAMAROSAN</p>
+                <p><strong>E-mail cím:</strong> dolce.home.hungary@gmail.com</p>
+                <p><strong>Telefonszám:</strong> 06702465783</p>
               </div>
             </section>
 

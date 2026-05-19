@@ -10,10 +10,11 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: {
     // SEO FÓKUSZ: Márkanév + Kulcsszavak az elején a Google rangsoroláshoz
-    default: "Dolce Home Vászonképek | Egyedi Vászonképek", 
+    default: "Vászonképek és Egyedi Vászonkép Készítés | Dolce Home", 
     template: "%s | Dolce Home",
   },
-  description: "Varázsold otthonod emlékeid színhelyévé! Prémium egyedi vászonkép készítés saját fotóból, vakrámázott kivitelben, gyors szállítással a Dolce Home-tól.",
+  description:
+  "Prémium vászonképek és egyedi vászonkép készítés saját fotóból. Modern faldekoráció, több méretben, gyors gyártással és országos szállítással.",
   keywords: [
     "vászonkép", 
     "vászonképek",

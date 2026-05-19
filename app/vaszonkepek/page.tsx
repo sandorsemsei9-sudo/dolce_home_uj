@@ -166,7 +166,7 @@ function TermekekContent() {
             Válogatás
           </p>
           <h1 className="text-4xl font-bold tracking-tight text-[#2a211d] md:text-6xl italic leading-tight">
-            Összes termék
+            Vászonképek – Modern és Egyedi Fali Dekorációk
           </h1>
         </div>
       </section>

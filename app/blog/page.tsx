@@ -1,56 +1,171 @@
-// app/blog/page.tsx
-import { createClient } from "@/lib/supabase/server"; 
+// app/blog/[slug]/page.tsx
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Metadata } from "next";
 
-export default async function BlogPage() {
-  // 1. Megvárjuk, amíg a kliens létrejön
-  const supabase = await createClient(); 
-  
-  // 2. Most már van .from() metódusunk
-  const { data: posts } = await supabase
+// --- 1. DINAMIKUS SEO METAADATOK ---
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createClient();
+
+  // Lekérjük a cikk adatait az adatbázisból
+  const { data: post } = await supabase
+    .from("posts")
+    .select("title, excerpt, image_url")
+    .eq("slug", slug)
+    .single();
+
+  if (!post) return { title: "Bejegyzés nem található" };
+
+  // Ha van a cikknek saját képe, azt használjuk, ha nincs, egy biztonsági alapértelmezettet
+  const ogImage = post.image_url 
+    ? [post.image_url] 
+    : ["https://www.dolce-home.hu/images/4evszak.png"];
+
+  return {
+    title: `${post.title} | Dolce Home Blog`,
+    description: post.excerpt,
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+      },
+    },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      url: `https://www.dolce-home.hu/blog/${slug}`,
+      type: "article",
+      images: ogImage, // Itt adjuk át a cikk saját képét a Google/Facebook felé
+    },
+    alternates: {
+      canonical: `https://www.dolce-home.hu/blog/${slug}`,
+    },
+  };
+}
+
+export default async function BlogPostPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const supabase = await createClient();
+
+  const { data: post, error } = await supabase
     .from("posts")
     .select("*")
-    .eq("published", true)
-    .order("created_at", { ascending: false });
+    .eq("slug", slug)
+    .single();
+
+  if (error || !post) {
+    notFound();
+  }
+
+  // --- 2. SEO STRUKTURÁLT ADATOK (SCHEMAS) ---
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": post.title,
+    "image": post.image_url || "https://www.dolce-home.hu/images/4evszak.png",
+    "datePublished": post.created_at,
+    "author": {
+      "@type": "Person",
+      "name": post.author_name || "Dolce Home Team",
+    },
+    "description": post.excerpt,
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://www.dolce-home.hu/blog/${slug}`
+    }
+  };
 
   return (
-    <section className="py-12">
-      <h1 className="text-4xl font-black italic uppercase tracking-tighter mb-12">
-        Dolce Home Blog
-      </h1>
+    <>
+      {/* Láthatatlan strukturált adat a Google robotoknak */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {posts && posts.length > 0 ? (
-          posts.map((post) => (
-            <Link key={post.id} href={`/blog/${post.slug}`} className="group">
-              <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm transition-all hover:shadow-xl">
-                <div className="aspect-video overflow-hidden bg-gray-100">
-                  {post.image_url && (
-                    <img 
-                      src={post.image_url} 
-                      alt={post.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  )}
-                </div>
-                <div className="p-6">
-                  <span className="text-[10px] font-black text-[#e3936e] uppercase tracking-[0.2em]">
-                    {new Date(post.created_at).toLocaleDateString('hu-HU')}
-                  </span>
-                  <h2 className="text-xl font-bold mt-2 group-hover:text-[#e3936e] transition-colors">
-                    {post.title}
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-3 line-clamp-2">
-                    {post.excerpt}
-                  </p>
-                </div>
-              </div>
-            </Link>
-          ))
-        ) : (
-          <p className="text-gray-400 italic">Hamarosan érkeznek az első bejegyzések...</p>
+      {/* Cikk vizuális megjelenítése */}
+      <article className="mx-auto max-w-4xl pt-4 pb-12 md:pt-8">
+        
+        {/* Vissza gomb */}
+        <Link 
+          href="/blog" 
+          className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#e3936e] transition-colors flex items-center gap-2 mb-4"
+        >
+          ← Vissza a blogra
+        </Link>
+
+        {/* Fejléc (Kategória, Dátum, Cím, Kivonat) */}
+        <header className="space-y-3 mb-8">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-black text-[#e3936e] uppercase tracking-[0.3em]">
+              {post.category || "Lakberendezés"}
+            </span>
+            <span className="text-gray-300">•</span>
+            <time 
+              dateTime={post.created_at}
+              className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]"
+            >
+              {new Date(post.created_at).toLocaleDateString('hu-HU')}
+            </time>
+          </div>
+          
+          <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter italic leading-[1.1] text-[#1a1a1a]">
+            {post.title}
+          </h1>
+          
+          <p className="text-lg text-gray-500 font-medium leading-relaxed italic border-l-4 border-[#e3936e] pl-6 py-1">
+            {post.excerpt}
+          </p>
+        </header>
+
+        {/* Borítókép */}
+        {post.image_url && (
+          <div className="rounded-[40px] overflow-hidden shadow-2xl mb-10 aspect-[16/9] bg-gray-100">
+            <img 
+              src={post.image_url} 
+              alt={post.title} 
+              className="w-full h-full object-cover"
+            />
+          </div>
         )}
-      </div>
-    </section>
+
+        {/* Rich Text Tartalom */}
+        <div className="prose prose-orange max-w-none">
+          <div 
+            className="text-lg leading-relaxed space-y-6 text-gray-800 font-medium blog-content"
+            dangerouslySetInnerHTML={{ __html: post.content }} 
+          />
+        </div>
+
+        {/* Szerzői kártya és CTA */}
+        <div className="mt-16 pt-10 border-t border-dashed border-gray-200">
+          <div className="bg-white p-8 rounded-[30px] flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm border border-gray-50">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Szerző</p>
+              <p className="font-bold text-xl text-[#1a1a1a]">{post.author_name || "Dolce Home Team"}</p>
+            </div>
+            <Link 
+              href="/" 
+              className="w-full md:w-auto bg-[#1a1a1a] text-white px-10 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-[#e3936e] hover:scale-105 transition-all duration-300 text-center"
+            >
+              Irány a webshop
+            </Link>
+          </div>
+        </div>
+      </article>
+    </>
   );
 }

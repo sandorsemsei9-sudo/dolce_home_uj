@@ -1,11 +1,9 @@
-// app/blog/[slug]/page.tsx
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Footer from "@/app/components/footer";
 import { Metadata } from "next";
 
-// --- 1. SEO METAADATOK ---
+// --- 1. DINAMIKUS SEO METAADATOK ---
 export async function generateMetadata({
   params,
 }: {
@@ -22,17 +20,29 @@ export async function generateMetadata({
 
   if (!post) return { title: "Bejegyzés nem található" };
 
+  const fullImageUrl = post.image_url ? [post.image_url] : [];
+
   return {
     title: `${post.title} | Dolce Home Blog`,
     description: post.excerpt,
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+      },
+    },
     openGraph: {
       title: post.title,
       description: post.excerpt,
-      images: post.image_url ? [post.image_url] : [],
+      images: fullImageUrl,
       type: "article",
+      url: `https://www.dolce-home.hu/blog/${slug}`,
     },
     alternates: {
-      canonical: `https://dolce-home.hu/blog/${slug}`,
+      canonical: `https://www.dolce-home.hu/blog/${slug}`,
     },
   };
 }
@@ -67,23 +77,22 @@ export default async function BlogPostPage({
       "name": post.author_name || "Dolce Home Team",
     },
     "description": post.excerpt,
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://www.dolce-home.hu/blog/${slug}`
+    }
   };
 
   return (
-    <main className="min-h-screen bg-[#fcfaf8] text-[#1f1f1f]">
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       
-      {/* 
-          NAVBAR TÖRÖLVE INNEN, 
-          mert a layout.tsx már tartalmazza! 
-      */}
-      
-      <article className="mx-auto max-w-4xl px-6 pt-4 pb-12 md:pt-8">
+      <article className="mx-auto max-w-4xl pt-4 pb-12 md:pt-8">
         
-        {/* Vissza gomb - most már közel lesz a menühöz */}
+        {/* Vissza gomb */}
         <Link 
           href="/blog" 
           className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#e3936e] transition-colors flex items-center gap-2 mb-4"
@@ -150,8 +159,6 @@ export default async function BlogPostPage({
           </div>
         </div>
       </article>
-
-      <Footer />
-    </main>
+    </>
   );
 }

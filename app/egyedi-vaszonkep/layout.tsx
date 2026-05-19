@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     "fali dekoráció"
   ],
   alternates: {
-    canonical: "https://dolce-home.hu/egyedi-vaszonkep",
+    canonical: "https://www.dolce-home.hu/egyedi-vaszonkep",
   },
   openGraph: {
     title: "Egyedi Vászonkép Tervező | Dolce Home",

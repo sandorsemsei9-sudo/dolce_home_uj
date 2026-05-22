@@ -10,7 +10,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: {
     // SEO FÓKUSZ: Márkanév + Kulcsszavak az elején a Google rangsoroláshoz
-    default: "Vászonképek és Egyedi Vászonkép Készítés | Dolce Home", 
+    default: "Vászonképek és egyedi vászonkép készítés | Modern faliképek | Dolce Home", 
     template: "%s | Dolce Home",
   },
   description:
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   // KRITIKUS: A metadataBase és az URL-ek már a www-s verzióra mutatnak a 301-es hiba elkerülése végett
   metadataBase: new URL("https://www.dolce-home.hu"), 
   openGraph: {
-    title: "Dolce Home Vászonképek | Egyedi Faldekoráció",
+    title: "Vászonképek és egyedi vászonkép készítés | Dolce Home",
     description: "Készíttess prémium vászonképet saját fotóidból! Gyors gyártás, országos szállítás.",
     url: "https://www.dolce-home.hu", 
     siteName: "Dolce Home",

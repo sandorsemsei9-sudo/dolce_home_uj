@@ -251,15 +251,12 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
     <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#1f1f1f] mb-4 border-l-2 border-[#e3936e] pl-3">
       A termékről
     </h3>
-    <p className="text-[14px] leading-relaxed text-gray-600">
-      {/* Ha van egyedi leírás a Supabase-ben, azt írja ki. 
-        Ha nincs (null vagy üres), akkor a sablonszöveget rakja be a terméknévvel.
-      */}
-      {product.description && product.description.trim() !== "" 
-        ? product.description 
-        : `Dobja fel otthona hangulatát ezzel a prémium minőségű ${product.name}-el. Minden darabunkat nagy odafigyeléssel, vakráma technológiával készítjük.`
-      }
-    </p>
+<p className="text-[14px] leading-relaxed text-gray-600 whitespace-pre-line">
+  {product.description && product.description.trim() !== "" 
+    ? product.description 
+    : `Dobja fel otthona hangulatát ezzel a prémium minőségű ${product.name}-el. Minden darabunkat nagy odafigyeléssel, vakráma technológiával készítjük.`
+  }
+</p>
   </div>
 
   {/* A TECHNIKAI ADATOK BLOKK VÁLTOZATLANUL ÉS FIXEN MARAD */}

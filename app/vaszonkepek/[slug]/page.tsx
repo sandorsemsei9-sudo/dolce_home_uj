@@ -49,6 +49,7 @@ export default async function Page({ params }: Props) {
   const supabase = await createClient();
 
   // Lekérjük a termék alapadatait szerver oldalon
+  // (Kiegészítve az esetleges értékelési mezőkkel, ha vannak ilyenek a tábládban - pl. rating_avg, review_count)
   const { data: product } = await supabase
     .from("products")
     .select("id, name, description, cover_image, orientation, texture_image, slug, hover_image, categories(name)")
@@ -69,21 +70,74 @@ export default async function Page({ params }: Props) {
   // Megkeressük a legolcsóbb árat a Google sémához
   const productPrice = allVariants && allVariants.length > 0 ? allVariants[0].price : "5990";
 
-  // Összerakjuk a Google-nek a hivatalos termék sémát
-  const jsonLd = {
+  // Alap séma struktúra felépítése
+  const jsonLd: any = {
     "@context": "https://schema.org",
     "@type": "Product",
     "name": product.name,
     "image": [product.cover_image],
     "description": product.description || `${product.name} prémium minőségű vászonkép.`,
+    "brand": {
+      "@type": "Brand",
+      "name": "Dolce Home"
+    },
+    // Mivel egyedi vászonképekről van szó, jelezzük a Google-nek, hogy nincs globális vonalkód (GTIN)
+    "identifierExists": "false", 
     "offers": {
       "@type": "Offer",
       "price": productPrice,
       "priceCurrency": "HUF",
       "availability": "https://schema.org/InStock",
-      "url": `https://www.dolce-home.hu/vaszonkepek/${slug}`
+      "url": `https://www.dolce-home.hu/vaszonkepek/${slug}`,
+      "priceValidUntil": "2027-12-31", // Ajánlott mező, hogy meddig érvényes az ár
+      
+      // KIEGÉSZÍTÉS: Szállítási információk (pl. 1990 Ft, 2-3 munkanap)
+      "shippingDetails": {
+        "@type": "OfferShippingDetails",
+        "shippingRate": {
+          "@type": "MonetaryAmount",
+          "value": "1990",
+          "currency": "HUF"
+        },
+        "deliveryTime": {
+          "@type": "ShippingDeliveryTime",
+          "handlingTime": {
+            "@type": "QuantitativeValue",
+            "minValue": "0",
+            "maxValue": "1",
+            "unitCode": "DAY"
+          },
+          "transitTime": {
+            "@type": "QuantitativeValue",
+            "minValue": "1",
+            "maxValue": "2",
+            "unitCode": "DAY"
+          }
+        }
+      },
+
+      // KIEGÉSZÍTÉS: 14 napos törvényes visszaküldési szabályzat
+      "hasMerchantReturnPolicy": {
+        "@type": "MerchantReturnPolicy",
+        "applicableCountry": "HU",
+        "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnPeriod",
+        "merchantReturnDays": "14",
+        "returnMethod": "https://schema.org/ReturnByMail",
+        "returnFees": "https://schema.org/ReturnFeesCustomerPaying"
+      }
     }
   };
+
+  // KIEGÉSZÍTÉS: Feltételes Értékelés kezelés
+  // Ha a jövőben a 'product' objektumod tartalmazni fog értékelési adatokat a Supabase-ből,
+  // ez a rész automatikusan beilleszti. Ha nincs értékelés (vagy 0), teljesen kihagyja, így nincs SC hiba!
+  if (product && (product as any).rating_avg && (product as any).review_count > 0) {
+    jsonLd.aggregateRating = {
+      "@type": "AggregateRating",
+      "ratingValue": (product as any).rating_avg,
+      "reviewCount": (product as any).review_count
+    };
+  }
 
   return (
     <>
@@ -93,9 +147,7 @@ export default async function Page({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       
-      {/* A kliensoldali komponens hívása. 
-        Közvetlenül átadjuk a szerveren már letöltött terméket és variánsokat propként!
-      */}
+      {/* A kliensoldali komponens hívása. */}
       <TermekAdatlapClient 
         initialProduct={product} 
         initialVariants={allVariants || []} 

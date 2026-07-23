@@ -175,7 +175,7 @@ export default function Footer() {
             <p className="text-xs font-black uppercase tracking-widest text-[#d17d58]">Kapcsolat</p>
             <div className="flex flex-col gap-3 text-sm font-medium">
               <a href="mailto:info@dolce-home.hu" className="flex items-center gap-2 text-[#5e4d45] transition hover:text-[#d17d58]">
-                <span>✉</span> info@dolce-home.hu
+                <span>✉</span> dolce.home.hungary@gmail.com
               </a>
               <a href="tel:+36702465783" className="flex items-center gap-2 text-[#5e4d45] transition hover:text-[#d17d58]">
                 <span>📞</span> +36 70 246 5783
@@ -183,9 +183,6 @@ export default function Footer() {
               <a href="tel:+36705310124" className="flex items-center gap-2 text-[#5e4d45] transition hover:text-[#d17d58]">
                 <span>📞</span> +36 70 531 0124
               </a>
-              <p className="mt-2 flex items-start gap-2 text-[#7a746d]">
-                <span className="mt-0.5 text-xs">📍</span> Győr Rét Utca 22. Magyarország
-              </p>
             </div>
           </div>
         </div>

@@ -29,10 +29,10 @@ export default function AdatvedelemPage() {
                 Ki kezeli az adataidat?
               </h2>
               <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-2">
-                <p><strong>Adatkezelő neve:</strong> [Vállalkozás Neve]</p>
-                <p><strong>Székhely:</strong> [Cím]</p>
-                <p><strong>E-mail:</strong> [Email cím]</p>
-                <p><strong>Weboldal:</strong> [Domain név]</p>
+                <p><strong>Adatkezelő neve:</strong> Semsei Sándor E.V.</p>
+                <p><strong>Székhely:</strong> 8533 Malomsok, Szabadság utca 16.</p>
+                <p><strong>E-mail:</strong> dolce.home.hungary@gmail.com</p>
+                <p><strong>Weboldal:</strong> www.dolce-home.hu</p>
               </div>
             </section>
 
@@ -66,8 +66,8 @@ export default function AdatvedelemPage() {
               </h2>
               <p>Az adataidat csak a szolgáltatás teljesítéséhez szükséges partnereknek továbbítjuk:</p>
               <ul className="list-disc pl-5 mt-2 space-y-1">
-                <li><strong>Szállítás:</strong> [Futárszolgálat neve, pl. GLS / MPL / Foxpost]</li>
-                <li><strong>Fizetés:</strong> Stripe (bankkártyás fizetés esetén)</li>
+                <li><strong>Szállítás:</strong> GLS / MPL / Foxpost / DPD</li>
+                <li><strong>Fizetés:</strong> Stripe (bankkártyás fizetés esetén), utánvétel, átutalással</li>
                 <li><strong>Tárhely/Adatbázis:</strong> Supabase / Vercel</li>
               </ul>
             </section>

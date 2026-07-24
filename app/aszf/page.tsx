@@ -26,9 +26,9 @@ export default function ASZFPage() {
                 Üzemeltetői adatok
               </h2>
               <div className="bg-gray-50 p-6 rounded-2xl border border-dashed border-gray-200 text-sm space-y-2">
-                <p><strong>Szolgáltató neve:</strong> Dolce Home</p>
+                <p><strong>Szolgáltató neve:</strong> Semsei Sándor E.V.</p>
                 <p><strong>Székhely:</strong> 8533 Malomsok, Szabadság utca 16.</p>
-                <p><strong>Adószám:</strong> HAMAROSAN</p>
+                <p><strong>Adószám:</strong> 92235647139</p>
                 <p><strong>E-mail cím:</strong> dolce.home.hungary@gmail.com</p>
                 <p><strong>Telefonszám:</strong> 06702465783</p>
               </div>

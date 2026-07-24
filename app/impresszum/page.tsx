@@ -55,10 +55,10 @@ export default function Impresszum() {
           <section className="bg-[#fffcf9] p-6 rounded-2xl border border-[#f3e9e0]">
             <h2 className="text-xl font-bold text-[#2a211d] mb-3">Nyilvántartási adatok</h2>
             <div className="space-y-3">
-              <p><span className="font-semibold">Adószám:</span> [Ide az adószámodat]</p>
-              <p><span className="font-semibold">Cégjegyzékszám / Nyilvántartási szám:</span> [Ide a számodat]</p>
-              <p><span className="font-semibold">Bejegyző hatóság:</span> [Pl. Fővárosi Törvényszék Cégbírósága]</p>
-              <p><span className="font-semibold">Kamarai tagság:</span> [Pl. Budapesti Kereskedelmi és Iparkamara]</p>
+              <p><span className="font-semibold">Adószám:</span> 92235647139</p>
+              <p><span className="font-semibold">Nyilvántartási szám:</span> 62602408</p>
+              <p><span className="font-semibold">Bejegyző hatóság:</span> Nemzeti Adó- és Vámhivatal (NAV)</p>
+              <p><span className="font-semibold">Kamarai tagság:</span>Veszprém Vármegyei Kereskedelmi és Iparkamara</p>
             </div>
           </section>
 
@@ -66,9 +66,8 @@ export default function Impresszum() {
           <section>
             <h2 className="text-xl font-bold text-[#2a211d] mb-3">Tárhelyszolgáltató adatai</h2>
             <div className="p-4 border-l-4 border-[#d17d58] bg-[#fdfaf8]">
-              <p className="font-semibold text-[#2a211d]">[Tárhelyszolgáltató neve]</p>
-              <p>Székhely: [Tárhelyszolgáltató címe]</p>
-              <p>E-mail: [Tárhelyszolgáltató email címe]</p>
+              <p className="font-semibold text-[#2a211d]">VERCEL</p>
+              <p>Székhely: https://vercel.com/</p>
             </div>
           </section>
 

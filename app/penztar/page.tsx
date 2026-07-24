@@ -179,10 +179,6 @@ export default function PenztarPage() {
             <div className="space-y-6">
               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#e3936e] border-b pb-2">Számlázási adatok</h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                <input required name="name" placeholder="Név / Cégnév *" onChange={handleChange} className="w-full h-14 bg-white border rounded-2xl px-5 outline-none font-medium focus:border-[#e3936e] transition-colors" />
-                <input name="tax_number" placeholder="Adószám (opcionális)" onChange={handleChange} className="w-full h-14 bg-white border rounded-2xl px-5 outline-none font-medium focus:border-[#e3936e] transition-colors" />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
                 <input required name="email" type="email" placeholder="E-mail cím *" onChange={handleChange} className="w-full h-14 bg-white border rounded-2xl px-5 outline-none font-medium focus:border-[#e3936e] transition-colors" />
                 <input required name="phone" placeholder="Telefonszám *" onChange={handleChange} className="w-full h-14 bg-white border rounded-2xl px-5 outline-none font-medium focus:border-[#e3936e] transition-colors" />
               </div>

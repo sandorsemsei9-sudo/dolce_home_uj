@@ -70,22 +70,15 @@ export default function KapcsolatPage() {
                   <span className="text-xl">✉</span>
                   <div>
                     <p className="text-xs font-bold text-[#2a211d]">E-mail</p>
-                    <p className="text-sm text-[#5e4d45]">info@dolcehome.hu</p>
+                    <p className="text-sm text-[#5e4d45]">dolce.home.hungary@gmail.com</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4 pt-4 border-t border-[#f7f3f0]">
                   <span className="text-xl">📞</span>
                   <div>
                     <p className="text-xs font-bold text-[#2a211d]">Telefon</p>
-                    <p className="text-sm text-[#5e4d45]">+36 30 123 4567</p>
-                    <p className="text-[11px] text-[#9a8f84] mt-1">H-P: 9:00 - 17:00</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4 pt-4 border-t border-[#f7f3f0]">
-                  <span className="text-xl">📍</span>
-                  <div>
-                    <p className="text-xs font-bold text-[#2a211d]">Cím</p>
-                    <p className="text-sm text-[#5e4d45]">1111 Budapest, Minta utca 12.</p>
+                    <p className="text-sm text-[#5e4d45]">+36 70 246 5783</p>
+                    <p className="text-[11px] text-[#9a8f84] mt-1">H-P: 9:00 - 18:00</p>
                   </div>
                 </div>
               </div>

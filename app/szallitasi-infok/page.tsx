@@ -25,7 +25,7 @@ export default function SzallitasPage() {
                 🚚
               </div>
               <h3 className="font-black uppercase tracking-widest text-[10px] text-gray-400">Házhozszállítás</h3>
-              <p className="text-sm text-gray-500 font-medium">Szerződött futárszolgálatunk az ország egész területén házhoz szállítja a csomagodat.</p>
+              <p className="text-sm text-gray-500 font-medium">Szerződött futárszolgálatunk az ország egész területén házhoz szállítja a csomagodat. 25.000 Ft felett ingyenes házhoz szállítás.</p>
               <span className="text-2xl font-black text-[#e3936e]">1.990 Ft</span>
             </div>
 

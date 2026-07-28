@@ -402,7 +402,7 @@ function TermekekContent() {
               <ul className="space-y-2 text-xs md:text-sm text-[#7a665c]">
                 <li><strong>Anyag:</strong> 360g/m² súlyú, művészi texturált vászon alapanyag</li>
                 <li><strong>Nyomtatás:</strong> UV-álló pigment alapú nyomtatás, fakulásmentes színek</li>
-                <li><strong>Keret:</strong>2 cm vastag, szárított fenyőfa vakráma keret</li>
+                <li><strong>Keret:</strong> 2 cm vastag, szárított fenyőfa vakráma keret</li>
                 <li><strong>Felszerelés:</strong> Falra akasztható, beépített akasztóval érkezik</li>
                 <li><strong>Tartósság:</strong> Hosszú élettartamú nyomat, amely megőrzi élénk színeit</li>
               </ul>

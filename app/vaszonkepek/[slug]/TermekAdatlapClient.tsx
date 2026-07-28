@@ -150,9 +150,6 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
                   <p className="text-[10px] font-black uppercase tracking-wider text-black leading-tight">
                     3D Előnézet
                   </p>
-                  <p className="hidden md:block text-[8px] font-bold text-black/50 uppercase mt-1">
-                    Mobilon nézd meg a faladon (AR)
-                  </p>
                 </div>
               </div>
 

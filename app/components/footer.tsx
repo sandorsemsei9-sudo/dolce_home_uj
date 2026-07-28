@@ -145,6 +145,14 @@ export default function Footer() {
               <Link href="https://www.instagram.com/dolce.home.hungary/" className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#efebe6] text-[#5e4d45] transition-all hover:border-[#d17d58] hover:text-[#d17d58]">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.5A5.5 5.5 0 1017.5 13 5.5 5.5 0 0012 7.5zm0 2A3.5 3.5 0 1115.5 13 3.5 3.5 0 0112 9.5zM18 6.5a1 1 0 110 2 1 1 0 010-2z" /></svg>
               </Link>
+                <Link
+    href="https://www.tiktok.com/@dolce.home.vaszonkepek"
+    className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#efebe6] text-[#5e4d45] transition-all hover:border-[#d17d58] hover:text-[#d17d58]"
+  >
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.24h-3.06v13.18a2.74 2.74 0 11-2.74-2.74c.31 0 .61.05.89.15V9.93a5.8 5.8 0 00-.89-.07A5.8 5.8 0 1015.82 15V8.31a7.84 7.84 0 004.59 1.48V6.69h-.82z"/>
+    </svg>
+  </Link>
             </div>
           </div>
 

@@ -25,7 +25,7 @@ export default function Features() {
         </svg>
       ),
       title: "Ingyenes szállítás",
-      desc: "Bizonyos összeg felett teljesen díjmentes.",
+      desc: "25.000.- Ft összeg felett teljesen díjmentes.",
     },
     {
       // Pajzs/Lakat - Biztonságérzetet adó teli forma
@@ -35,7 +35,7 @@ export default function Features() {
         </svg>
       ),
       title: "Biztonságos fizetés",
-      desc: "Titkosított és megbízható checkout.",
+      desc: "Gyors és egyszerű fizetés, teljes biztonságban.",
     },
     {
       // Visszaküldés - Meghagytuk az eredeti vonalas stílust, mert az tetszett

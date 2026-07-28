@@ -22,6 +22,9 @@ function TermekekContent() {
   const [dbCategories, setDbCategories] = useState<string[]>(["Összes"]);
   const [loading, setLoading] = useState(true);
 
+  // FAQ lenyitás kezelése
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
   const currentPage = Number(searchParams.get("page")) || 1;
   const selectedCategory = searchParams.get("category") || "Összes";
   const sortBy = searchParams.get("sort") || "default";
@@ -69,7 +72,6 @@ function TermekekContent() {
     fetchData();
   }, [supabase]);
 
-  // Nyers URL paraméter biztonságos dekódolása az összehasonlításhoz
   const cleanedSelectedCategory = useMemo(() => {
     return decodeURIComponent(selectedCategory.replace(/\+/g, " ")).toLowerCase().trim();
   }, [selectedCategory]);
@@ -105,20 +107,16 @@ function TermekekContent() {
     return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredProducts, currentPage, totalPages]);
 
-  // JAVÍTÁS: URL-biztos paraméter frissítés, ami kódolja a kényes karaktereket (mint az &)
   const updateParams = (newParams: Record<string, string | number>, shouldScrollToGrid: boolean = false) => {
     const params = new URLSearchParams();
     
-    // Átvesszük a meglévő paramétereket tisztán
     searchParams.forEach((value, key) => {
-      // Ha az új paraméterek között felülírjuk a kategóriát vagy rendezést, a régit kihagyjuk
       if (key === "category" && newParams.category) return;
       if (key === "sort" && newParams.sort) return;
       if (key === "page" && (newParams.category || newParams.sort || newParams.page)) return;
       params.set(key, value);
     });
     
-    // Beállítjuk az új értékeket
     Object.entries(newParams).forEach(([key, value]) => {
       params.set(key, value.toString());
     });
@@ -127,7 +125,6 @@ function TermekekContent() {
       params.set("page", "1");
     }
 
-    // A router.push-nak a params.toString() már tökéletesen kódolt (%26) URL-t ad át
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
 
     if (shouldScrollToGrid) {
@@ -137,6 +134,25 @@ function TermekekContent() {
       }
     }
   };
+
+  const faqItems = [
+    {
+      question: "Mennyi a szállítási idő?",
+      answer: "A legtöbb vászonképet 2–4 munkanapon belül elkészítjük és kiszállítjuk, így a rendelés rövid időn belül megérkezik hozzád. Egyedi gyártású vászonképek esetén az elkészítési és szállítási idő általában 3–5 munkanap",
+    },
+    {
+      question: "Egyedi képeknél milyen felbontású kép szükséges a feltöltéshez?",
+      answer: "A tökéletes végeredmény érdekében legalább 2-3 MB méretű, nagy felbontású JPEG vagy PNG fájlt javasolunk. Rendszerünk jelzi, ha a kép minősége túl alacsony lenne.",
+    },
+    {
+      question: "Van lehetőség utánvétes fizetésre?",
+      answer: "Természetesen! A futárnál készpénzzel és bankkártyával is fizethetsz a csomag átvételekor. Emellett biztonságos online bankkártyás fizetést is biztosítunk.",
+    },
+    {
+      question: "Hogyan tisztíthatom a vászonképet?",
+      answer: "Egy száraz vagy enyhén nedves mikroszálas törlőkendővel óvatosan portalaníthatók.",
+    },
+  ];
 
   return (
     <main className="min-h-screen bg-[#fdfbf9] text-[#2a211d]">
@@ -319,8 +335,116 @@ function TermekekContent() {
                 ))}
               </div>
             )}
+            
           </>
         )}
+      </section>
+
+      {/* --- SEO & INFO SZEKCIÓ --- */}
+      <section className="border-t border-[#efebe6] bg-[#f8f3ef]/40 py-20">
+        <div className="mx-auto max-w-5xl px-6 space-y-16">
+          
+          {/* Fő leírás */}
+          <div className="space-y-6 text-[#7a665c] leading-relaxed text-sm md:text-base">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[#2a211d] italic">
+              Modern vászonképek otthonod stílusához
+            </h2>
+            <p>
+        A <strong>Dolce Home vászonképei</strong> ideális választást jelentenek,
+        ha gyorsan és egyszerűen szeretnéd feldobni otthonod vagy munkahelyed
+        hangulatát egy elegáns fali dekorációval. Webáruházunkban gondosan
+        válogatott, előregyártott vászonképek közül választhatsz, amelyek
+        modern megjelenésükkel tökéletesen illeszkednek különböző enteriőrökbe.            </p>
+            <p>
+  Válogatott vászonkép kollekcióink között megtalálhatók a modern,
+  elegáns és időtálló faldekorációk. Kínálatunkban absztrakt minták,
+  természetes hangulatú képek, virágos dekorációk, állatos motívumok és
+  minimalista dizájnok egyaránt elérhetők. Minden vászonkép célja, hogy
+  stílusos kiegészítője legyen otthonodnak, és harmonikusan illeszkedjen
+  a választott tér hangulatához.           </p>
+            <p className="font-medium text-[#2a211d]">
+        Vászonképeink kiváló minőségű művészvászonra készülnek, amelyet stabil
+        fa vakrámára feszítünk. A részletgazdag nyomtatásnak köszönhetően a
+        képek élénk színekkel és tartós megjelenéssel díszítik a falakat.
+        A kész vászonkép azonnal kihelyezhető, így nincs szükség külön
+        keretezésre vagy további előkészítésre.            </p>
+          </div>
+
+          {/* Miért válassz vászonképet? */}
+          <div className="grid md:grid-cols-2 gap-8 items-start pt-6 border-t border-[#efebe6]">
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-[#2a211d]">Miért népszerű választás a vászonkép dekoráció?</h3>
+              <ul className="space-y-3 text-sm text-[#7a665c]">
+                <li className="flex items-start gap-2">
+                  <span>✔️</span> <span><strong>Gyorsan és egyszerűen megváltoztatja egy helyiség hangulatát</strong></span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span>✔️</span> <span><strong>Egyedi stílust és karaktert ad az üres falfelületeknek</strong></span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span>✔️</span> <span><strong>Modern és klasszikus lakberendezési stílusokhoz is passzol</strong></span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span>✔️</span> <span><strong>Tartós dekoráció, amely hosszú éveken át díszíti az otthont</strong></span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span>✔️</span> <span><strong>Festményekhez képest kedvezőbb árú alternatíva</strong></span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span>✔️</span> <span><strong>Keretezés nélkül, kész állapotban használható</strong></span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Technikai részletek */}
+            <div className="space-y-4 bg-white p-6 rounded-3xl border border-[#efebe6] shadow-sm">
+              <h3 className="text-xl font-bold text-[#2a211d]">Technikai részletek</h3>
+              <ul className="space-y-2 text-xs md:text-sm text-[#7a665c]">
+                <li><strong>Anyag:</strong> 360g/m² súlyú, művészi texturált vászon alapanyag</li>
+                <li><strong>Nyomtatás:</strong> UV-álló pigment alapú nyomtatás, fakulásmentes színek</li>
+                <li><strong>Keret opciók:</strong>2 cm vastag, szárított fenyőfa vakráma keret</li>
+                <li><strong>Felszerelés:</strong> Falra akasztható, beépített akasztóval érkezik</li>
+                <li><strong>Tartósság:</strong> Hosszú élettartamú nyomat, amely megőrzi élénk színeit</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Gyakran Ismételt Kérdések (Lenyitható / Accordion) */}
+          <div className="pt-6 border-t border-[#efebe6]">
+            <h3 className="text-2xl font-bold text-[#2a211d] mb-8 text-center md:text-left">
+              Gyakran ismételt kérdések
+            </h3>
+            
+            <div className="space-y-4">
+              {faqItems.map((item, index) => {
+                const isOpen = openFaqIndex === index;
+                return (
+                  <div 
+                    key={index} 
+                    className="bg-white border border-[#efebe6] rounded-2xl overflow-hidden transition-all duration-300 shadow-sm"
+                  >
+                    <button
+                      onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                      className="w-full flex items-center justify-between p-6 text-left font-bold text-[#2a211d] hover:text-[#d17d58] transition-colors"
+                    >
+                      <span>{item.question}</span>
+                      <span className={`transform transition-transform duration-300 text-xl font-normal text-[#d17d58] ${isOpen ? "rotate-45" : ""}`}>
+                        +
+                      </span>
+                    </button>
+                    
+                    {isOpen && (
+                      <div className="px-6 pb-6 text-sm text-[#7a665c] leading-relaxed border-t border-[#f8f3ef] pt-4">
+                        {item.answer}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
       </section>
 
       <Footer />

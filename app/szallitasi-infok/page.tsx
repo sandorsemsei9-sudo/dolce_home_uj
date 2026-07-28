@@ -34,7 +34,7 @@ export default function SzallitasPage() {
                 ⏱️
               </div>
               <h3 className="font-black uppercase tracking-widest text-[10px] text-gray-400">Szállítási idő</h3>
-              <p className="text-sm text-gray-500 font-medium">A raktáron lévő termékeknél 2-3 munkanap, egyedi gyártású képeknél 3-5 munkanap.</p>
+              <p className="text-sm text-gray-500 font-medium">A raktáron lévő termékeknél 2-4 munkanap, egyedi gyártású képeknél 3-5 munkanap.</p>
               <span className="text-2xl font-black text-[#e3936e]">Gyors gyártás</span>
             </div>
           </div>

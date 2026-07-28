@@ -11,7 +11,7 @@ export default function KapcsolatPage() {
   const faqs = [
     {
       q: "Mennyi idő alatt készül el egy egyedi vászonkép?",
-      a: "Az egyedi képek gyártása általában 1-2 munkanapot vesz igénybe, majd ezt követi a 1-2 napos szállítás, így összesen 3-4 munkanappal érdemes számolni."
+      a: "A legtöbb vászonképet 2–4 munkanapon belül elkészítjük és kiszállítjuk, így a rendelés rövid időn belül megérkezik hozzád. Egyedi gyártású vászonképek esetén az elkészítési és szállítási idő általában 3–5 munkanap"
     },
     {
       q: "Milyen felbontású kép szükséges a feltöltéshez?",
@@ -23,7 +23,7 @@ export default function KapcsolatPage() {
     },
     {
       q: "Hogyan tisztíthatom a vászonképet?",
-      a: "A vászonképeink speciális UV-álló réteget kapnak, így egy száraz vagy enyhén nedves mikroszálas törlőkendővel óvatosan portalaníthatók."
+      a: "Egy száraz vagy enyhén nedves mikroszálas törlőkendővel óvatosan portalaníthatók."
     }
   ];
 

@@ -230,7 +230,7 @@ export default function EgyediVaszonkepPage() {
               <div>
                 <h2 className="text-sm font-black uppercase mb-2">Prémium Minőség</h2>
                 <p className="text-xs leading-relaxed text-[#6b6661]">
-                  Minden egyedi vászonképünket 380g-os finom szövésű művészvászonra nyomtatjuk, melyet kézzel feszítünk tartós, osztrák fenyőből készült vakrámára.
+                  Minden egyedi vászonképünket 380g-os finom szövésű művészvászonra nyomtatjuk, melyet kézzel feszítünk tartós, fenyőből készült vakrámára.
                 </p>
               </div>
               <div>
@@ -300,6 +300,65 @@ export default function EgyediVaszonkepPage() {
                 Kosárba teszem
               </button>
             </div>
+            <div className="mt-6 rounded-2xl border border-[#e8e2dc] bg-[#faf9f7] p-4 space-y-4">
+
+  <div className="flex items-center gap-3">
+    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
+      🚀
+    </div>
+    <div>
+      <p className="text-xs font-bold uppercase tracking-wide">
+        Gyors szállítás
+      </p>
+      <p className="text-xs text-gray-500">
+        3–5 munkanapon belül
+      </p>
+    </div>
+  </div>
+
+  <div className="flex items-center gap-3">
+    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
+      💎
+    </div>
+    <div>
+      <p className="text-xs font-bold uppercase tracking-wide">
+        Prémium minőség
+      </p>
+      <p className="text-xs text-gray-500">
+        380 g-os művészvászon
+      </p>
+    </div>
+  </div>
+
+  <div className="flex items-center gap-3">
+    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
+      🛡️
+    </div>
+    <div>
+      <p className="text-xs font-bold uppercase tracking-wide">
+        100% elégedettség
+      </p>
+      <p className="text-xs text-gray-500">
+        Minőségi garancia
+      </p>
+    </div>
+  </div>
+
+  <div className="flex items-center gap-3">
+    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
+      🇭🇺
+    </div>
+    <div>
+      <p className="text-xs font-bold uppercase tracking-wide">
+        Magyar gyártás
+      </p>
+      <p className="text-xs text-gray-500">
+        Saját gyártás
+      </p>
+    </div>
+  </div>
+
+</div>
           </div>
         </div>
       </section>

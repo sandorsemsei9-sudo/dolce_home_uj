@@ -139,7 +139,7 @@ export default function Footer() {
               Prémium faldekorációk és egyedi vászonképek, amelyek életet és stílust visznek az otthonodba.
             </p>
             <div className="flex gap-4">
-              <Link href="https://www.facebook.com/profile.php?id=61578828933307" className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#efebe6] text-[#5e4d45] transition-all hover:border-[#d17d58] hover:text-[#d17d58]">
+              <Link href="https://www.facebook.com/dolce.home.vaszonkepek/" className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#efebe6] text-[#5e4d45] transition-all hover:border-[#d17d58] hover:text-[#d17d58]">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 10-11.5 9.9v-7H7v-3h3.5V9.5c0-3.4 2-5.3 5-5.3 1.4 0 2.8.2 2.8.2v3h-1.6c-1.6 0-2.1 1-2.1 2v2.4H18l-.6 3h-2.8v7A10 10 0 0022 12z" /></svg>
               </Link>
               <Link href="https://www.instagram.com/dolce.home.vaszonkepek/" className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#efebe6] text-[#5e4d45] transition-all hover:border-[#d17d58] hover:text-[#d17d58]">

@@ -30,14 +30,14 @@ export default function AdminProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 18;
 
-  const [newProduct, setNewProduct] = useState({
-    name: "",
-    category_id: "",
-    cover_image: "",
-    hover_image: "",
-    texture_image: "",
-    orientation: "portrait"
-  });
+const [newProduct, setNewProduct] = useState({
+  name: "",
+  category_ids: [] as number[],
+  cover_image: "",
+  hover_image: "",
+  texture_image: "",
+  orientation: "portrait"
+});
   const [variants, setVariants] = useState([{ size_name: "", price: "" }]);
 
   useEffect(() => {
@@ -49,11 +49,16 @@ export default function AdminProductsPage() {
     loadData();
   }, []);
 
-  async function fetchProducts() {
+async function fetchProducts() {
     setLoading(true);
-    const { data } = await supabase.from("products")
-      .select("*, categories(name)")
+    const { data, error } = await supabase.from("products")
+      .select("*")
       .order("created_at", { ascending: false });
+      
+    if (error) {
+      console.error("Hiba a termékek betöltésekor:", error.message);
+    }
+    
     if (data) setProducts(data);
     setLoading(false);
   }
@@ -146,18 +151,32 @@ export default function AdminProductsPage() {
         }
       }
 
-      const finalProduct = {
-        ...newProduct,
-        slug,
-        cover_image: finalImages.cover,
-        hover_image: finalImages.hover,
-        texture_image: finalImages.texture || finalImages.cover
-      };
+const finalProduct = {
+  name: newProduct.name,
+  slug,
+  cover_image: finalImages.cover,
+  hover_image: finalImages.hover,
+  texture_image: finalImages.texture || finalImages.cover,
+  orientation: newProduct.orientation
+};
 
       // Mentés az adatbázisba
       const { data: pData, error: pError } = await supabase.from("products").insert([finalProduct]).select().single();
 
       if (pError) throw pError;
+      // Kategóriák mentése a kapcsolótáblába
+if (pData && newProduct.category_ids.length > 0) {
+  const categoryRelations = newProduct.category_ids.map((categoryId) => ({
+    product_id: pData.id,
+    category_id: categoryId
+  }));
+
+  const { error: categoryError } = await supabase
+    .from("product_categories")
+    .insert(categoryRelations);
+
+  if (categoryError) throw categoryError;
+}
 
       // Variánsok mentése
       if (pData) {
@@ -170,8 +189,14 @@ export default function AdminProductsPage() {
       }
 
       // Állapotok visszaállítása
-      setNewProduct({ name: "", category_id: "", cover_image: "", hover_image: "", texture_image: "", orientation: "portrait" });
-      setTempFiles({ cover: null, hover: null, texture: null });
+setNewProduct({ 
+  name: "", 
+  category_ids: [], 
+  cover_image: "", 
+  hover_image: "", 
+  texture_image: "", 
+  orientation: "portrait" 
+});      setTempFiles({ cover: null, hover: null, texture: null });
       setPreviews({ cover: "", hover: "", texture: "" });
       setVariants([{ size_name: "", price: "" }]);
       setIsAdding(false);
@@ -203,10 +228,39 @@ export default function AdminProductsPage() {
           <div className="space-y-3">
             <p className="text-[10px] font-black uppercase text-gray-400 italic">1. Alapadatok</p>
             <input required placeholder="Név" className="w-full border-2 border-gray-100 p-3 rounded-xl text-sm font-bold outline-none focus:border-black" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
-            <select required className="w-full border-2 border-gray-100 p-3 rounded-xl text-sm font-bold outline-none focus:border-black" value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: e.target.value})}>
-              <option value="">Kategória...</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+<div className="grid grid-cols-2 gap-2 border-2 border-gray-100 p-3 rounded-xl">
+  {categories.map((c) => (
+    <label
+      key={c.id}
+      className="flex items-center gap-2 text-xs font-bold cursor-pointer"
+    >
+      <input
+        type="checkbox"
+        checked={newProduct.category_ids.includes(c.id)}
+        onChange={(e) => {
+          if (e.target.checked) {
+            setNewProduct({
+              ...newProduct,
+              category_ids: [
+                ...newProduct.category_ids,
+                c.id
+              ]
+            });
+          } else {
+            setNewProduct({
+              ...newProduct,
+              category_ids: newProduct.category_ids.filter(
+                (id) => id !== c.id
+              )
+            });
+          }
+        }}
+      />
+
+      {c.name}
+    </label>
+  ))}
+</div>
             <select className="w-full border-2 border-gray-100 p-3 rounded-xl text-sm font-bold outline-none focus:border-black bg-gray-50" value={newProduct.orientation} onChange={e => setNewProduct({...newProduct, orientation: e.target.value})}>
               <option value="portrait">📐 Álló</option>
               <option value="landscape">📏 FEKVŐ</option>

@@ -1,4 +1,3 @@
-// app/termek/[slug]/TermekAdatlapClient.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -19,7 +18,6 @@ function formatPrice(price: any) {
   return new Intl.NumberFormat("hu-HU").format(num) + ",- Ft";
 }
 
-// Definiáljuk, hogy milyen propokat vár be a komponens a szervertől
 interface TermekAdatlapClientProps {
   initialProduct: any;
   initialVariants: any[];
@@ -28,7 +26,6 @@ interface TermekAdatlapClientProps {
 export default function TermekAdatlapClient({ initialProduct, initialVariants }: TermekAdatlapClientProps) {
   const addItem = useCartStore((state) => state.addItem);
 
-  // Azonnal a szerverről kapott adatokkal indítjuk a state-eket, nincs várakozás!
   const [product] = useState<any>(initialProduct);
   const [variants] = useState<any[]>(initialVariants);
   const [selectedVariant, setSelectedVariant] = useState<any>(initialVariants[0] || null);
@@ -43,9 +40,6 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
     const checkIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     setIsIOS(checkIOS);
-    
-    // A getFullProductData() függvényt és a belső Supabase hívást teljesen töröltem,
-    // mert a page.tsx szerver oldala már mindent letöltött előre!
   }, []);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -73,7 +67,6 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
     setTimeout(() => setIsAdded(false), 2000);
   };
 
-  // Biztonsági ellenőrzés (bár a szerver miatt a product itt már 100%, hogy létezik)
   if (!product) return null;
 
   const iosUsdzPath = `/models/${product.slug}.usdz`;
@@ -241,42 +234,41 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
               {isAdded ? "✓ KOSÁRBAN" : "KOSÁRBA TESZEM"}
             </button>
 
+            {/* LEÍRÁS ÉS SPECIFIKÁCIÓ */}
+            <div className="mt-12 space-y-8">
+              <div>
+                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#1f1f1f] mb-4 border-l-2 border-[#e3936e] pl-3">
+                  A termékről
+                </h3>
+                <p className="text-[14px] leading-relaxed text-gray-600 whitespace-pre-line">
+                  {product.description && product.description.trim() !== "" 
+                    ? product.description 
+                    : `Dobja fel otthona hangulatát ezzel a prémium minőségű ${product.name}-el. Minden darabunkat nagy odafigyeléssel, vakráma technológiával készítjük.`
+                  }
+                </p>
+              </div>
 
-{/* LEÍRÁS ÉS SPECIFIKÁCIÓ */}
-<div className="mt-12 space-y-8">
-  <div>
-    <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#1f1f1f] mb-4 border-l-2 border-[#e3936e] pl-3">
-      A termékről
-    </h3>
-<p className="text-[14px] leading-relaxed text-gray-600 whitespace-pre-line">
-  {product.description && product.description.trim() !== "" 
-    ? product.description 
-    : `Dobja fel otthona hangulatát ezzel a prémium minőségű ${product.name}-el. Minden darabunkat nagy odafigyeléssel, vakráma technológiával készítjük.`
-  }
-</p>
-  </div>
+              <div className="bg-white/50 rounded-2xl p-5 border border-[#d9d5cf]">
+                <h4 className="text-[10px] font-black uppercase tracking-widest mb-4 text-gray-400">
+                  Technikai adatok
+                </h4>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3 text-[13px] text-gray-700">
+                    <span className="text-[#e3936e] mt-1 text-[10px]">●</span>
+                    <span>360g/m² súlyú, művészi texturált vászon alapanyag</span>
+                  </li>
+                  <li className="flex items-start gap-3 text-[13px] text-gray-700">
+                    <span className="text-[#e3936e] mt-1 text-[10px]">●</span>
+                    <span>2 cm vastag, szárított fenyőfa vakráma keret</span>
+                  </li>
+                  <li className="flex items-start gap-3 text-[13px] text-gray-700">
+                    <span className="text-[#e3936e] mt-1 text-[10px]">●</span>
+                    <span>UV-álló pigment alapú nyomtatás, fakulásmentes színek</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
 
-  {/* A TECHNIKAI ADATOK BLOKK VÁLTOZATLANUL ÉS FIXEN MARAD */}
-  <div className="bg-white/50 rounded-2xl p-5 border border-[#d9d5cf]">
-    <h4 className="text-[10px] font-black uppercase tracking-widest mb-4 text-gray-400">
-      Technikai adatok
-    </h4>
-    <ul className="space-y-3">
-      <li className="flex items-start gap-3 text-[13px] text-gray-700">
-        <span className="text-[#e3936e] mt-1 text-[10px]">●</span>
-        <span>360g/m² súlyú, művészi texturált vászon alapanyag</span>
-      </li>
-      <li className="flex items-start gap-3 text-[13px] text-gray-700">
-        <span className="text-[#e3936e] mt-1 text-[10px]">●</span>
-        <span>2 cm vastag, szárított fenyőfa vakráma keret</span>
-      </li>
-      <li className="flex items-start gap-3 text-[13px] text-gray-700">
-        <span className="text-[#e3936e] mt-1 text-[10px]">●</span>
-        <span>UV-álló pigment alapú nyomtatás, fakulásmentes színek</span>
-      </li>
-    </ul>
-  </div>
-</div>
           </div>
         </div>
       </div>

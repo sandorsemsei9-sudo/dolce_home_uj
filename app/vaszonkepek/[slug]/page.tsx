@@ -1,4 +1,3 @@
-// app/termek/[slug]/page.tsx
 import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server"; 
 import TermekAdatlapClient from "./TermekAdatlapClient";
@@ -8,69 +7,91 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-// 1. DINAMIKUS SEO ÉS META ADATOK (Szerver oldalon fut)
+// 1. DINAMIKUS SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const supabase = await createClient();
+  try {
+    const resolvedParams = await params;
+    const slug = resolvedParams?.slug;
+    if (!slug) return { title: "Termék nem található" };
 
-  const { data: product } = await supabase
-    .from("products")
-    .select("name, description, cover_image")
-    .eq("slug", slug)
-    .single();
+    const supabase = await createClient();
+    const { data: product } = await supabase
+      .from("products")
+      .select("name, description, cover_image")
+      .eq("slug", slug)
+      .maybeSingle();
 
-  if (!product) return { title: "Termék nem található" };
+    if (!product) return { title: "Termék nem található" };
 
-  const productDescription = product.description || `${product.name} prémium minőségű vászonkép, egyedi kivitelben.`;
+    const productDescription = product.description || `${product.name} prémium minőségű vászonkép, egyedi kivitelben.`;
 
-  return {
-    title: `${product.name} | Dolce Home`,
-    description: productDescription,
-    metadataBase: new URL("https://www.dolce-home.hu"),
-    openGraph: {
+    return {
       title: `${product.name} | Dolce Home`,
       description: productDescription,
-      url: `https://www.dolce-home.hu/vaszonkepek/${slug}`,
-      images: [
-        {
-          url: product.cover_image,
-          width: 1200,
-          height: 630,
-          alt: product.name,
-        },
-      ],
-    },
-  };
+      metadataBase: new URL("https://www.dolce-home.hu"),
+      openGraph: {
+        title: `${product.name} | Dolce Home`,
+        description: productDescription,
+        url: `https://www.dolce-home.hu/vaszonkepek/${slug}`,
+        images: [{ url: product.cover_image, width: 1200, height: 630, alt: product.name }],
+      },
+    };
+  } catch (error) {
+    console.error("Metadata hiba:", error);
+    return { title: "Dolce Home" };
+  }
 }
 
-// 2. OLDALBETÖLTÉS + JSON-LD STRUKTURÁLT ADAT + ADATÁTADÁS
+// 2. FŐ OLDAL
 export default async function Page({ params }: Props) {
-  const { slug } = await params;
+  const resolvedParams = await params;
+  const slug = resolvedParams?.slug;
+
+  if (!slug) {
+    notFound();
+  }
+
   const supabase = await createClient();
 
-  // Lekérjük a termék alapadatait szerver oldalon
-  // (Kiegészítve az esetleges értékelési mezőkkel, ha vannak ilyenek a tábládban - pl. rating_avg, review_count)
-  const { data: product } = await supabase
+  // Termék lekérdezése kategória-join NÉLKÜL (elkerülve a konfliktust)
+  const { data: product, error: productError } = await supabase
     .from("products")
-    .select("id, name, description, cover_image, orientation, texture_image, slug, hover_image, categories(name)")
+    .select("id, name, description, cover_image, orientation, texture_image, slug, hover_image")
     .eq("slug", slug)
-    .single();
+    .maybeSingle();
+
+  if (productError) {
+    console.error("Supabase termék lekérdezési hiba:", productError.message);
+  }
 
   if (!product) {
     notFound();
   }
 
-  // Lekérjük az ÖSSZES variánst szerver oldalon (a kosárhoz, méretválasztóhoz és az árhoz)
+  // Kategória lekérdezése külön a kapcsolótáblából
+  const { data: pcData } = await supabase
+    .from("product_categories")
+    .select("categories(name)")
+    .eq("product_id", product.id);
+
+  const categoryName = pcData && pcData.length > 0 && (pcData[0] as any).categories?.name 
+    ? (pcData[0] as any).categories.name 
+    : "Vászonkép";
+
+  // Hozzáadjuk a termék objektumhoz a kategória nevet
+  const productWithCategory = {
+    ...product,
+    categories: { name: categoryName }
+  };
+
   const { data: allVariants } = await supabase
     .from("product_variants")
     .select("*")
     .eq("product_id", product.id)
     .order("price", { ascending: true });
 
-  // Megkeressük a legolcsóbb árat a Google sémához
   const productPrice = allVariants && allVariants.length > 0 ? allVariants[0].price : "5990";
 
-  // Alap séma struktúra felépítése
   const jsonLd: any = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -81,7 +102,6 @@ export default async function Page({ params }: Props) {
       "@type": "Brand",
       "name": "Dolce Home"
     },
-    // Mivel egyedi vászonképekről van szó, jelezzük a Google-nek, hogy nincs globális vonalkód (GTIN)
     "identifierExists": "false", 
     "offers": {
       "@type": "Offer",
@@ -89,67 +109,18 @@ export default async function Page({ params }: Props) {
       "priceCurrency": "HUF",
       "availability": "https://schema.org/InStock",
       "url": `https://www.dolce-home.hu/vaszonkepek/${slug}`,
-      "priceValidUntil": "2027-12-31", // Ajánlott mező, hogy meddig érvényes az ár
-      
-      // KIEGÉSZÍTÉS: Szállítási információk (pl. 1990 Ft, 2-3 munkanap)
-      "shippingDetails": {
-        "@type": "OfferShippingDetails",
-        "shippingRate": {
-          "@type": "MonetaryAmount",
-          "value": "1990",
-          "currency": "HUF"
-        },
-        "deliveryTime": {
-          "@type": "ShippingDeliveryTime",
-          "handlingTime": {
-            "@type": "QuantitativeValue",
-            "minValue": "0",
-            "maxValue": "1",
-            "unitCode": "DAY"
-          },
-          "transitTime": {
-            "@type": "QuantitativeValue",
-            "minValue": "1",
-            "maxValue": "2",
-            "unitCode": "DAY"
-          }
-        }
-      },
-
-      // KIEGÉSZÍTÉS: 14 napos törvényes visszaküldési szabályzat
-      "hasMerchantReturnPolicy": {
-        "@type": "MerchantReturnPolicy",
-        "applicableCountry": "HU",
-        "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnPeriod",
-        "merchantReturnDays": "14",
-        "returnMethod": "https://schema.org/ReturnByMail",
-        "returnFees": "https://schema.org/ReturnFeesCustomerPaying"
-      }
+      "priceValidUntil": "2027-12-31"
     }
   };
 
-  // KIEGÉSZÍTÉS: Feltételes Értékelés kezelés
-  // Ha a jövőben a 'product' objektumod tartalmazni fog értékelési adatokat a Supabase-ből,
-  // ez a rész automatikusan beilleszti. Ha nincs értékelés (vagy 0), teljesen kihagyja, így nincs SC hiba!
-  if (product && (product as any).rating_avg && (product as any).review_count > 0) {
-    jsonLd.aggregateRating = {
-      "@type": "AggregateRating",
-      "ratingValue": (product as any).rating_avg,
-      "reviewCount": (product as any).review_count
-    };
-  }
-
   return (
     <>
-      {/* Strukturált adat injektálása a HTML-be a Google botok számára */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      
-      {/* A kliensoldali komponens hívása. */}
       <TermekAdatlapClient 
-        initialProduct={product} 
+        initialProduct={productWithCategory} 
         initialVariants={allVariants || []} 
       />
     </>

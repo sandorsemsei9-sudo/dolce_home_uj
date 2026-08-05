@@ -34,32 +34,50 @@ function TermekekContent() {
     async function fetchData() {
       setLoading(true);
       try {
-        const { data: pData } = await supabase
+        // 1. Termékek lekérdezése tisztán, a közvetlen kategória-join nélkül
+        const { data: pData, error: pError } = await supabase
           .from("products")
           .select(`
             *,
-            categories(name),
             product_variants(*)
           `)
-          .eq("is_active", true)
           .order("created_at", { ascending: false });
+
+        if (pError) {
+          console.error("Hiba a termékek lekérdezésekor:", pError.message);
+        }
+
+        // 2. Kategória kapcsolatok lekérdezése a product_categories táblából
+        const { data: pcData } = await supabase
+          .from("product_categories")
+          .select("product_id, category_id, categories(name)");
 
         if (pData) {
           const processed = pData.map((p) => {
             const variantPrices = p.product_variants?.map((v: any) => v.price) || [];
             const variantSizes = p.product_variants?.map((v: any) => v.size_name) || [];
 
+            // Megkeressük a termékhez tartozó kategóriákat a kapcsolótáblából
+            const productCats = pcData
+              ?.filter((pc: any) => pc.product_id === p.id)
+              .map((pc: any) => pc.categories?.name)
+              .filter(Boolean) || [];
+
+            const primaryCategory = productCats.length > 0 ? productCats[0] : "Vászonkép";
+
             return {
               ...p,
               display_price: variantPrices.length > 0 ? Math.min(...variantPrices) : 0,
               display_sizes: variantSizes,
-              display_category: p.categories?.name || "Vászonkép",
+              display_category: primaryCategory,
+              all_categories: productCats,
             };
           });
 
           setDbProducts(processed);
         }
 
+        // 3. Kategória lista betöltése a szűrőhöz
         const { data: cData } = await supabase.from("categories").select("name");
         if (cData) {
           setDbCategories(["Összes", ...cData.map((c) => c.name)]);
@@ -82,9 +100,9 @@ function TermekekContent() {
     if (cleanedSelectedCategory !== "összes") {
       filtered = filtered.filter((p) => {
         const displayCat = p.display_category ? p.display_category.toLowerCase().trim() : "";
-        const rawCat = p.categories?.name ? p.categories.name.toLowerCase().trim() : "";
+        const allCats = p.all_categories ? p.all_categories.map((c: string) => c.toLowerCase().trim()) : [];
 
-        return displayCat === cleanedSelectedCategory || rawCat === cleanedSelectedCategory;
+        return displayCat === cleanedSelectedCategory || allCats.includes(cleanedSelectedCategory);
       });
     }
 
@@ -356,12 +374,12 @@ function TermekekContent() {
         válogatott, előregyártott vászonképek közül választhatsz, amelyek
         modern megjelenésükkel tökéletesen illeszkednek különböző enteriőrökbe.            </p>
             <p>
-  Válogatott vászonkép kollekcióink között megtalálhatók a modern,
-  elegáns és időtálló faldekorációk. Kínálatunkban absztrakt minták,
-  természetes hangulatú képek, virágos dekorációk, állatos motívumok és
-  minimalista dizájnok egyaránt elérhetők. Minden vászonkép célja, hogy
-  stílusos kiegészítője legyen otthonodnak, és harmonikusan illeszkedjen
-  a választott tér hangulatához.           </p>
+ Válogatott vászonkép kollekcióink között megtalálhatók a modern,
+ elegáns és időtálló faldekorációk. Kínálatunkban absztrakt minták,
+ természetes hangulatú képek, virágos dekorációk, állatos motívumok és
+ minimalista dizájnok egyaránt elérhetők. Minden vászonkép célja, hogy
+ stílusos kiegészítője legyen otthonodnak, és harmonikusan illeszkedjen
+ a választott tér hangulatához.          </p>
             <p className="font-medium text-[#2a211d]">
         Vászonképeink kiváló minőségű művészvászonra készülnek, amelyet stabil
         fa vakrámára feszítünk. A részletgazdag nyomtatásnak köszönhetően a

@@ -1,4 +1,4 @@
-import type { Product } from "@/types/product";
+import type { Product } from "@/app/types/product";
 
 export const products: Product[] = [
   {
@@ -10,6 +10,8 @@ export const products: Product[] = [
     image: "/images/taj-mahal.webp",
     description: "Modern, elegáns kompozíció",
     mockupImage: "/images/taj-mahal-mockup.webp",
+    featured: true,
+    isNew: false,
   },
   {
     id: 2,
@@ -20,6 +22,9 @@ export const products: Product[] = [
     image: "/images/4-évszak.webp",
     description: "Lágy árnyalatok",
     mockupImage: "/images/4-évszak-mockup.webp",
+    featured: true,
+    isNew: false,
+    hero: true,
   },
   {
     id: 3,
@@ -30,6 +35,9 @@ export const products: Product[] = [
     image: "/images/arany-buddha.webp",
     description: "Lágy árnyalatok",
     mockupImage: "/images/arany-buddha-mockup.webp",
+    featured: true,
+    isNew: true,
+    hero: true,
   },
   {
     id: 4,
@@ -40,8 +48,10 @@ export const products: Product[] = [
     image: "/images/japan-stilus-2.webp",
     description: "Lágy árnyalatok",
     mockupImage: "/images/japan-stilus-2-mockup.webp",
+    featured: true,
+    isNew: true,
   },
-    {
+  {
     id: 5,
     name: "Milánói Dóm Aranyfényben - Vászonkép",
     slug: "milanoi-dom-aranyfenyben-vaszonkep",
@@ -50,8 +60,10 @@ export const products: Product[] = [
     image: "/images/milánó.png",
     description: "Lágy árnyalatok",
     mockupImage: "/images/milánó-mockup.webp",
+    featured: true,
+    isNew: false,
   },
-      {
+  {
     id: 6,
     name: "Tűz és Szenvedély - Prémium Vászonkép",
     slug: "tuz-es-szenvedely-premium-vaszonkep",
@@ -60,8 +72,10 @@ export const products: Product[] = [
     image: "/images/tűz.webp",
     description: "Lágy árnyalatok",
     mockupImage: "/images/tűz-mockup.webp",
+    featured: true,
+    isNew: false,
   },
-      {
+  {
     id: 7,
     name: "Kozmikus Türkiz Életfa - Prémium Vászonkép",
     slug: "kozmikus-turkiz-eletfa-premium-vaszonkep",
@@ -70,8 +84,10 @@ export const products: Product[] = [
     image: "/images/türkiz-fa.webp",
     description: "Lágy árnyalatok",
     mockupImage: "/images/türkiz-fa-mockup.webp",
+    featured: true,
+    isNew: false,
   },
-    {
+  {
     id: 8,
     name: "Hajók és Csónakok a Napsütötte Öbölben – Prémium Vászonkép",
     slug: "hajok-es-csonakok-a-napsutotte-obolben-premium-vaszonkep",
@@ -80,8 +96,10 @@ export const products: Product[] = [
     image: "/images/hajo.webp",
     description: "Lágy árnyalatok",
     mockupImage: "/images/1778162144683-hover-att.fbjvam9szpjp0ahkvmglvopzjlxnl9q3rey4ogxxsuc.png.jpeg",
+    featured: true,
+    isNew: false,
   },
-      {
+  {
     id: 9,
     name: "Duna-kanyari Hangulat - Művészi Vászonkép",
     slug: "dunakanyari-hangulat-muveszi-vaszonkep",
@@ -90,8 +108,10 @@ export const products: Product[] = [
     image: "/images/dunakanyar.webp",
     description: "Lágy árnyalatok",
     mockupImage: "/images/dunakanyar-mockup.webp",
+    featured: true,
+    isNew: false,
   },
-      {
+  {
     id: 10,
     name: "Geometrikus Metropolisz - Prémium Vászonkép",
     slug: "geometrikus-metropolisz-premium-vaszonkep",
@@ -100,5 +120,7 @@ export const products: Product[] = [
     image: "/images/híd.webp",
     description: "Modern, elegáns kompozíció",
     mockupImage: "/images/híd-mockup.webp",
-  }
+    featured: true,
+    isNew: false,
+  },
 ];

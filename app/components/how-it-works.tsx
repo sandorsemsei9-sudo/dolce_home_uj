@@ -8,7 +8,7 @@ const steps = [
   {
     number: "01",
     icon: "📷",
-    title: "Válassz fotót",
+    title: "Töltsd fel a saját fotódat",
     description: "Töltsd fel saját képed, vagy válassz a galériánkból.",
     bg: "/select.webp"
   },
@@ -22,7 +22,7 @@ const steps = [
   {
     number: "03",
     icon: "🛒",
-    title: "Rendeld meg",
+    title: "Rendeld meg vászonképed",
     description: "Add hozzá a kosárhoz, és pár napon belül megérkezik hozzád.",
     bg: "/order.webp",
   },
@@ -40,10 +40,10 @@ export default function HowItWorks() {
             Egyszerű folyamat
           </p>
           <h2 className="text-4xl font-bold tracking-tight text-[#2a211d] md:text-5xl italic leading-tight">
-            Vászonkép rendelése
+            Hogyan történik az egyedi vászonkép rendelése?
           </h2>
           <p className="mt-5 text-base leading-relaxed text-[#7a665c] opacity-80">
-            Néhány egyszerű lépésben elkészítheted a saját, személyre szabott vászonképedet.
+            Töltsd fel kedvenc fotódat, válaszd ki a kívánt méretet és formátumot, majd rendeld meg néhány kattintással. Az egyedi vászonképet prémium minőségű vászonra nyomtatjuk, és rövid határidővel házhoz szállítjuk.
           </p>
         </div>
 

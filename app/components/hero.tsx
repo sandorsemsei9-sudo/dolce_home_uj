@@ -5,21 +5,13 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay, EffectFade } from "swiper/modules";
 import Link from "next/link";
 import Image from "next/image";
+import type { Product } from "@/app/types/product";
 
 // Swiper stílusok
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/effect-fade";
 
-type Product = {
-  id: number;
-  name: string;
-  slug: string;
-  price: number;
-  category: string;
-  image: string;
-  description: string;
-};
 
 type HeroProps = {
   products: Product[];
@@ -127,15 +119,38 @@ export default function Hero({ products, formatPrice }: HeroProps) {
       <div className="relative z-20 mx-auto flex flex-col md:grid max-w-7xl gap-10 px-6 py-8 md:grid-cols-[1.05fr_0.95fr] md:items-center md:py-16">
         
         {/* Szöveges oldal */}
-        <div className="max-w-xl mb-10 md:mb-0">
-          <p className="animate-hero-text mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-[#d17d58]"> Örökítsd meg a legszebb pillanataidat </p>
-          <h1 className="animate-hero-text delay-1 text-4xl font-semibold leading-[1.1] tracking-tight text-[#2a211d] md:text-6xl"> Tedd különlegessé <br /> az otthonod <br /> vászonképekkel </h1>
-          <p className="animate-hero-text delay-2 mt-5 max-w-lg text-base leading-relaxed text-[#5e4d45] md:text-lg"> Válogass modern kollekcióinkból, vagy készíts egyedi vászonképet a saját fotódból. </p>
-          <div className="animate-hero-text delay-3 mt-8 flex flex-wrap gap-4">
-            <Link href="/egyedi-vaszonkep" className="rounded-2xl bg-[#d17d58] px-7 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-[#b06a4a] hover:-translate-y-0.5"> Feltöltöm a képem </Link>
-            <Link href="/vaszonkepek" className="rounded-2xl border border-[#dccfc5] bg-white/90 px-7 py-3.5 text-base font-semibold text-[#463732] shadow-sm transition hover:bg-white"> Kollekció megtekintése </Link>
-          </div>
-        </div>
+<div className="max-w-xl mb-10 md:mb-0">
+  <p className="animate-hero-text mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-[#d17d58]">
+    🔥 VÁSZONKÉP AKCIÓ – 20% kedvezmény a NYAR2026 kuponkóddal.
+  </p>
+
+  <h1 className="animate-hero-text delay-1 text-4xl font-semibold leading-[1.1] tracking-tight text-[#2a211d] md:text-6xl">
+    Vászonképek és egyedi vászonkép készítés<br />
+    saját fotóból
+  </h1>
+
+  <p className="animate-hero-text delay-2 mt-5 max-w-lg text-base leading-relaxed text-[#5e4d45] md:text-lg">
+    Készíts prémium minőségű vászonképet saját fotódból, vagy válogass
+    akciós vászonképeink közül. Élénk színek, több méret, gyors gyártás
+    és kedvező árak.
+  </p>
+
+  <div className="animate-hero-text delay-3 mt-8 flex flex-wrap gap-4">
+    <Link
+      href="/egyedi-vaszonkep"
+      className="rounded-2xl bg-[#d17d58] px-7 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-[#b06a4a] hover:-translate-y-0.5"
+    >
+      Feltöltöm a képem
+    </Link>
+
+    <Link
+      href="/vaszonkepek"
+      className="rounded-2xl border border-[#dccfc5] bg-white/90 px-7 py-3.5 text-base font-semibold text-[#463732] shadow-sm transition hover:bg-white"
+    >
+      Akciós vászonképek
+    </Link>
+  </div>
+</div>
 
         {/* Swiper oldal */}
         <div className="relative w-full overflow-visible">

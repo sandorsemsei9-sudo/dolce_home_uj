@@ -10,6 +10,7 @@ import Newsletter from "./components/newsletter";
 import Footer from "./components/footer";
 import PopularProducts from "./components/popularproducts";
 import Navbar from "./components/navbar";
+import NewProducts from "./components/newproducts";
 import { products } from "@/data/products";
 
 const allura = Allura({
@@ -31,9 +32,18 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-[#fcf7f2] text-[#2d221e]">
       <Navbar />
-      <Hero products={products} formatPrice={formatPrice} />
+<Hero 
+  products={products.filter((product) => product.hero)}
+  formatPrice={formatPrice}
+/>
       <HowItWorks />
-      <PopularProducts products={products} />
+<PopularProducts 
+  products={products.filter((product) => product.featured)}
+/>
+
+<NewProducts 
+  products={products.filter((product) => product.isNew)}
+/>
       <Newsletter />
       <Categories />
       <Features />

@@ -17,7 +17,6 @@ export default function EditProductPage() {
   const [product, setProduct] = useState({
     name: "",
     slug: "",
-    category_id: "" as string | number,
     description: "",
     cover_image: "",
     hover_image: "",
@@ -25,6 +24,7 @@ export default function EditProductPage() {
     orientation: "portrait",
   });
 
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingHover, setUploadingHover] = useState(false);
@@ -33,15 +33,19 @@ export default function EditProductPage() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
+      
+      // 1. Kategóriák betöltése
       const { data: catData } = await supabase.from("categories").select("*");
-      if (catData) setCategories(catData);
+      if (catData) {
+        setCategories(catData.map(c => ({ ...c, id: Number(c.id) })));
+      }
 
+      // 2. Termék adatok betöltése
       const { data: pData } = await supabase.from("products").select("*").eq("id", id).single();
       if (pData) {
         setProduct({
           name: pData.name || "",
           slug: pData.slug || "",
-          category_id: pData.category_id || "",
           description: pData.description || "",
           cover_image: pData.cover_image || "",
           hover_image: pData.hover_image || "",
@@ -50,6 +54,19 @@ export default function EditProductPage() {
         });
       }
 
+      // 3. Kapcsolt kategóriák betöltése duplikáció-szűréssel
+      const { data: pcData } = await supabase.from("product_categories").select("category_id").eq("product_id", id);
+      
+      let initialSelected: number[] = [];
+      if (pcData && pcData.length > 0) {
+        initialSelected = Array.from(new Set(pcData.map(item => Number(item.category_id))));
+      } else if (pData && pData.category_id) {
+        initialSelected = [Number(pData.category_id)];
+      }
+      
+      setSelectedCategories(initialSelected);
+
+      // 4. Variánsok betöltése
       const { data: vData } = await supabase.from("product_variants").select("*").eq("product_id", id);
       if (vData) {
         setVariants(vData.map(v => ({
@@ -57,6 +74,7 @@ export default function EditProductPage() {
           price: v.price.toString()
         })));
       }
+      
       setLoading(false);
     }
     if (id) loadData();
@@ -88,10 +106,13 @@ export default function EditProductPage() {
     e.preventDefault();
     setSaving(true);
 
+    const primaryCategoryId = selectedCategories.length > 0 ? selectedCategories[0] : null;
+
+    // 1. Termék alapadatok mentése
     const { error: pError } = await supabase.from("products").update({
       name: product.name,
       slug: product.slug,
-      category_id: parseInt(product.category_id.toString()), 
+      category_id: primaryCategoryId, 
       description: product.description,
       cover_image: product.cover_image,
       hover_image: product.hover_image,
@@ -105,12 +126,34 @@ export default function EditProductPage() {
       return;
     }
 
+    // 2. ÖSSZES kiválasztott kategória kapcsolat törlése ehhez a termékhez
+    const { error: deleteError } = await supabase.from("product_categories").delete().eq("product_id", id);
+    if (deleteError) {
+      alert("Hiba a régi kategóriák törlésekor: " + deleteError.message);
+    }
+
+    // 3. ÖSSZES kiválasztott kategória beszúrása a product_categories táblába
+    if (selectedCategories.length > 0) {
+      const uniqueCategoryIds = Array.from(new Set(selectedCategories));
+
+      const categoriesToInsert = uniqueCategoryIds.map(catId => ({
+        product_id: Number(id),
+        category_id: Number(catId),
+      }));
+
+      const { error: catRelError } = await supabase.from("product_categories").insert(categoriesToInsert);
+      if (catRelError) {
+        alert("Hiba a kategóriák mentésekor: " + catRelError.message);
+      }
+    }
+
+    // 4. Variánsok frissítése
     await supabase.from("product_variants").delete().eq("product_id", id);
     
     const variantsToInsert = variants
       .filter(v => v.size_name.trim() !== "" && v.price !== "" && !isNaN(parseInt(v.price)))
       .map(v => ({
-        product_id: id,
+        product_id: Number(id),
         size_name: v.size_name,
         price: parseInt(v.price.toString()), 
       }));
@@ -190,11 +233,27 @@ export default function EditProductPage() {
             
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[9px] font-bold text-gray-400 uppercase ml-2">Kategória</label>
-                <select required className="w-full h-14 bg-gray-50 border-none rounded-2xl px-4 text-[11px] font-black uppercase outline-none" value={product.category_id} onChange={(e) => setProduct({...product, category_id: e.target.value})}>
-                  <option value="">Válassz...</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <label className="text-[9px] font-bold text-gray-400 uppercase ml-2">Kategóriák</label>
+                <div className="max-h-36 overflow-y-auto bg-gray-50 p-3 rounded-2xl space-y-2 border border-gray-100">
+                  {categories.map(c => (
+                    <label key={c.id} className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedCategories.includes(Number(c.id))}
+                        onChange={(e) => {
+                          const catIdNum = Number(c.id);
+                          if (e.target.checked) {
+                            setSelectedCategories([...selectedCategories, catIdNum]);
+                          } else {
+                            setSelectedCategories(selectedCategories.filter(id => id !== catIdNum));
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-100"
+                      />
+                      {c.name}
+                    </label>
+                  ))}
+                </div>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-gray-400 uppercase ml-2">3D Tájolás</label>
@@ -202,7 +261,7 @@ export default function EditProductPage() {
                   <option value="portrait">📐 Álló</option>
                   <option value="landscape">📏 Fekvő</option>
                   <option value="square">🔲 Négyzet</option>
-                  <option value="panorama">🎞️ Panoráma</option> {/* ÚJ OPCIÓ */}
+                  <option value="panorama">🎞️ Panoráma</option>
                 </select>
               </div>
             </div>

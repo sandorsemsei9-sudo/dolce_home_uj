@@ -29,7 +29,7 @@ export default function Categories() {
     },
     {
       title: "Gyerekszoba",
-      subtitle: "Vidám, mesés dekorációk",
+      subtitle: "Álomszerű képek a gyerekszoba egyedi hangulatához",
       image: "/images/macska-textúra.webp",
       href: "/vaszonkepek?category=Gyerekszoba&page=1",
       gridClass: "md:col-span-2 h-[350px]",

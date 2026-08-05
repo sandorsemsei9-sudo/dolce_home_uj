@@ -126,22 +126,19 @@ export default function EditProductPage() {
       return;
     }
 
-    // 2. ÖSSZES kiválasztott kategória kapcsolat törlése ehhez a termékhez
-    const { error: deleteError } = await supabase.from("product_categories").delete().eq("product_id", id);
-    if (deleteError) {
-      alert("Hiba a régi kategóriák törlésekor: " + deleteError.message);
-    }
-
-    // 3. ÖSSZES kiválasztott kategória beszúrása a product_categories táblába
+// 3. ÖSSZES kiválasztott kategória beszúrása UPSERT-tel (elkerüli a pkey ütközést)
     if (selectedCategories.length > 0) {
-      const uniqueCategoryIds = Array.from(new Set(selectedCategories));
+      const uniqueCategoryIds = Array.from(new Set(selectedCategories.map(Number)));
 
       const categoriesToInsert = uniqueCategoryIds.map(catId => ({
         product_id: Number(id),
-        category_id: Number(catId),
+        category_id: catId,
       }));
 
-      const { error: catRelError } = await supabase.from("product_categories").insert(categoriesToInsert);
+      const { error: catRelError } = await supabase
+        .from("product_categories")
+        .upsert(categoriesToInsert, { onConflict: 'product_id, category_id' });
+
       if (catRelError) {
         alert("Hiba a kategóriák mentésekor: " + catRelError.message);
       }

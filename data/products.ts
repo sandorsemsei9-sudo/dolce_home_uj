@@ -10,6 +10,7 @@ export const products: Product[] = [
     image: "/images/taj-mahal.webp",
     description: "Modern, elegáns kompozíció",
     mockupImage: "/images/taj-mahal-mockup.webp",
+    hero: true,
     featured: true,
     isNew: false,
   },
@@ -35,9 +36,9 @@ export const products: Product[] = [
     image: "/images/arany-buddha.webp",
     description: "Lágy árnyalatok",
     mockupImage: "/images/arany-buddha-mockup.webp",
-    featured: true,
+    featured: false,
     isNew: true,
-    hero: true,
+    hero: false,
   },
   {
     id: 4,
@@ -49,7 +50,8 @@ export const products: Product[] = [
     description: "Lágy árnyalatok",
     mockupImage: "/images/japan-stilus-2-mockup.webp",
     featured: true,
-    isNew: true,
+    isNew: false,
+    hero: true,
   },
   {
     id: 5,
@@ -60,8 +62,9 @@ export const products: Product[] = [
     image: "/images/milánó.png",
     description: "Lágy árnyalatok",
     mockupImage: "/images/milánó-mockup.webp",
-    featured: true,
-    isNew: false,
+    featured: false,
+    isNew: true,
+    hero: true,
   },
   {
     id: 6,
@@ -74,6 +77,7 @@ export const products: Product[] = [
     mockupImage: "/images/tűz-mockup.webp",
     featured: true,
     isNew: false,
+    hero: true,
   },
   {
     id: 7,
@@ -84,8 +88,8 @@ export const products: Product[] = [
     image: "/images/türkiz-fa.webp",
     description: "Lágy árnyalatok",
     mockupImage: "/images/türkiz-fa-mockup.webp",
-    featured: true,
-    isNew: false,
+    featured: false,
+    isNew: true,
   },
   {
     id: 8,
@@ -98,6 +102,7 @@ export const products: Product[] = [
     mockupImage: "/images/1778162144683-hover-att.fbjvam9szpjp0ahkvmglvopzjlxnl9q3rey4ogxxsuc.png.jpeg",
     featured: true,
     isNew: false,
+    hero: true,
   },
   {
     id: 9,
@@ -110,6 +115,7 @@ export const products: Product[] = [
     mockupImage: "/images/dunakanyar-mockup.webp",
     featured: true,
     isNew: false,
+    hero: true,
   },
   {
     id: 10,
@@ -120,7 +126,7 @@ export const products: Product[] = [
     image: "/images/híd.webp",
     description: "Modern, elegáns kompozíció",
     mockupImage: "/images/híd-mockup.webp",
-    featured: true,
-    isNew: false,
+    featured: false,
+    isNew: true,
   },
 ];

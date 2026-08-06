@@ -63,15 +63,15 @@ export default function Hero({ products, formatPrice }: HeroProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Háttérkép - Google elől elrejtve (aria-hidden), nincs priority */}
-<div className="absolute inset-0 z-0">
+{/* Háttérkép - dekoratív elem, elrejtve a Google és a képernyőolvasók elől */}
+<div className="absolute inset-0 z-0" aria-hidden="true">
   <Image
     src="/hero-bg.webp"
-    alt="Dolce Home vászonkép háttér" 
+    alt="" 
     fill
     className="object-cover opacity-60"
-    priority // Ez javítja ki a hibaüzenetet és gyorsítja az LCP-t
-    sizes="100vw" // Segít a Next.js-nek a megfelelő méret kiválasztásában
+    priority
+    sizes="100vw"
   />
 </div>
 
@@ -120,19 +120,18 @@ export default function Hero({ products, formatPrice }: HeroProps) {
         
         {/* Szöveges oldal */}
 <div className="max-w-xl mb-10 md:mb-0">
-  <p className="animate-hero-text mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-[#d17d58]">
-    🔥 VÁSZONKÉP AKCIÓ – 20% kedvezmény a NYAR2026 kuponkóddal.
-  </p>
+  {/* SEO-barát felső akció sáv */}
+  <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full bg-[#faedec] text-[#d17d58] text-xs font-bold uppercase tracking-wider">
+    🔥 20% kedvezmény a NYAR2026 kuponkóddal <br /> Augusztus 31.-ig!
+  </div>
 
   <h1 className="animate-hero-text delay-1 text-4xl font-semibold leading-[1.1] tracking-tight text-[#2a211d] md:text-6xl">
-    Vászonképek és egyedi vászonkép készítés<br />
-    saját fotóból
+Egyedi vászonképek saját fotóból és <br /> akciós vászonképek készletről
   </h1>
 
   <p className="animate-hero-text delay-2 mt-5 max-w-lg text-base leading-relaxed text-[#5e4d45] md:text-lg">
-    Készíts prémium minőségű vászonképet saját fotódból, vagy válogass
-    akciós vászonképeink közül. Élénk színek, több méret, gyors gyártás
-    és kedvező árak.
+    Örökítsd meg a legszebb pillanataidat! Készíts prémium vászonképet saját fotódból, 
+    vagy válogass lenyűgöző, akciós design vászonképeink közül.
   </p>
 
   <div className="animate-hero-text delay-3 mt-8 flex flex-wrap gap-4">
@@ -149,6 +148,15 @@ export default function Hero({ products, formatPrice }: HeroProps) {
     >
       Akciós vászonképek
     </Link>
+  </div>
+
+  {/* Bizalmi elemek a konverzióért és a UX-ért */}
+  <div className="mt-8 flex flex-wrap items-center gap-4 text-xs font-semibold text-[#7a675d]">
+    <span className="flex items-center gap-1">⭐ Biztonságos fizetés</span>
+    <span>•</span>
+    <span>⚡ Gyors szállítás</span>
+    <span>•</span>
+    <span>🛡️ Prémium minőség</span>
   </div>
 </div>
 

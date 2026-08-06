@@ -7,7 +7,6 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import type { Product } from "@/app/types/product";
 
-
 // Swiper alapstílusok
 import "swiper/css";
 import "swiper/css/navigation";
@@ -18,6 +17,19 @@ type PopularProductsProps = {
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat("hu-HU").format(price);
+}
+
+// Kedvezményes / eredeti ár párkereső a megadott szabályok alapján ("helyett" nélkül)
+function getOriginalPrice(currentPrice: number): number | null {
+  switch (currentPrice) {
+    case 4990: return 5990;
+    case 5990: return 7490;
+    case 7490: return 8990;
+    case 7890: return 9990;
+    case 9990: return 11990;
+    case 11990: return 14990;
+    default: return null;
+  }
 }
 
 export default function PopularProducts({
@@ -42,30 +54,29 @@ export default function PopularProducts({
       <div className="relative mx-auto max-w-7xl px-6">
         
         {/* HEADER */}
-<div className="mb-14 flex items-end justify-between gap-6">
-  <div>
-    <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-[#d17d58]">
-      Vászonkép kollekció
-    </p>
+        <div className="mb-14 flex items-end justify-between gap-6">
+          <div>
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.3em] text-[#d17d58]">
+              Vászonkép kollekció
+            </p>
 
-    <h2 className="text-4xl font-bold tracking-tight text-[#2a211d] italic leading-tight md:text-5xl">
-      Legnépszerűbb vászonképeink
-    </h2>
+            <h2 className="text-4xl font-bold tracking-tight text-[#2a211d] italic leading-tight md:text-5xl">
+              Legnépszerűbb vászonképeink
+            </h2>
 
-    <p className="mt-5 max-w-2xl text-base leading-relaxed text-[#7a665c]">
-Fedezd fel vásárlóink kedvenc vászonképeit, amelyek prémium minőségben, több méretben készülnek, hogy otthonod minden helyiségébe megtaláld a tökéletes faldekorációt.
-    </p>
-  </div>
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-[#7a665c]">
+              Fedezd fel vásárlóink kedvenc vászonképeit, amelyek prémium minőségben, több méretben készülnek, hogy otthonod minden helyiségébe megtaláld a tökéletes faldekorációt.
+            </p>
+          </div>
 
-  <Link
-    href="/vaszonkepek"
-    className="group hidden md:flex items-center gap-2 text-sm font-bold text-[#7a665c] transition-colors hover:text-[#d17d58]"
-  >
-    Összes vászonkép
-    <span className="transition-transform group-hover:translate-x-1.5">→</span>
-  </Link>
-</div>
-
+          <Link
+            href="/vaszonkepek"
+            className="group hidden md:flex items-center gap-2 text-sm font-bold text-[#7a665c] transition-colors hover:text-[#d17d58]"
+          >
+            Összes vászonkép
+            <span className="transition-transform group-hover:translate-x-1.5">→</span>
+          </Link>
+        </div>
 
         <div className="relative group/swiper">
           
@@ -98,83 +109,96 @@ Fedezd fel vásárlóink kedvenc vászonképeit, amelyek prémium minőségben, 
             }}
             className="!pb-12"
           >
-            {products.map((product) => (
-              <SwiperSlide key={product.id}>
-                <article className="group flex flex-col">
-                  
-                  {/* KÉP KONTÉNER */}
-                  <div className="relative mb-6 block aspect-[4/5] overflow-hidden rounded-[48px] border border-[#efebe6] bg-white transition-all duration-500 hover:shadow-[0_20px_50px_rgba(42,33,29,0.06)]">
+            {products.map((product) => {
+              const originalPrice = getOriginalPrice(product.price);
+
+              return (
+                <SwiperSlide key={product.id}>
+                  <article className="group flex flex-col">
                     
-                    {/* STATIKUS 3D IKON (Animáció nélkül) */}
-                    <div className="absolute left-7 top-7 z-20 flex flex-col items-center gap-2 pointer-events-none">
-                      <div className="glass-3d-badge relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-500 group-hover:scale-110">
-                        {/* NYILAK - Statikus */}
-                        <svg className="absolute inset-0 h-full w-full opacity-60" viewBox="0 0 100 100">
-                          <path 
-                            d="M25 35 C 35 20, 65 20, 75 35 M 75 35 L 75 22 M 75 35 L 62 35" 
-                            stroke="#2a211d" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" 
+                    {/* KÉP KONTÉNER */}
+                    <div className="relative mb-6 block aspect-[4/5] overflow-hidden rounded-[48px] border border-[#efebe6] bg-white transition-all duration-500 hover:shadow-[0_20px_50px_rgba(42,33,29,0.06)]">
+
+
+                      {/* STATIKUS 3D IKON (Animáció nélkül) */}
+                      <div className="absolute right-7 top-7 z-20 flex flex-col items-center gap-2 pointer-events-none">
+                        <div className="glass-3d-badge relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-500 group-hover:scale-110">
+                          {/* NYILAK - Statikus */}
+                          <svg className="absolute inset-0 h-full w-full opacity-60" viewBox="0 0 100 100">
+                            <path 
+                              d="M25 35 C 35 20, 65 20, 75 35 M 75 35 L 75 22 M 75 35 L 62 35" 
+                              stroke="#2a211d" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" 
+                            />
+                            <path 
+                              d="M75 65 C 65 80, 35 80, 25 65 M 25 65 L 25 78 M 25 65 L 38 65" 
+                              stroke="#2a211d" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" 
+                            />
+                          </svg>
+                          <span className="text-sm font-black tracking-tighter text-[#2a211d]">3D</span>
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#2a211d] opacity-0 transition-opacity duration-300 group-hover:opacity-40">
+                          Interaktív
+                        </span>
+                      </div>
+
+                      <Link href={`/vaszonkepek/${product.slug}`} className="block h-full w-full">
+                        <div className="relative h-full w-full p-10 transition-all duration-700 ease-in-out group-hover:scale-110 group-hover:opacity-0 group-hover:blur-md">
+                          <Image
+                            src={product.image}
+                            alt={product.name}
+                            fill
+                            sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
+                            className="object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.1)]"
+                            priority={product.id <= 4}
                           />
-                          <path 
-                            d="M75 65 C 65 80, 35 80, 25 65 M 25 65 L 25 78 M 25 65 L 38 65" 
-                            stroke="#2a211d" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" 
+                        </div>
+
+                        <div className="absolute inset-0 h-full w-full opacity-0 transition-all duration-700 ease-in-out scale-105 group-hover:opacity-100 group-hover:scale-100">
+                          <Image
+                            src={product.mockupImage || "/images/mockup.webp"}
+                            alt={`${product.name} mockup`}
+                            fill
+                            sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
+                            className="object-cover"
                           />
-                        </svg>
-                        <span className="text-sm font-black tracking-tighter text-[#2a211d]">3D</span>
-                      </div>
-                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#2a211d] opacity-0 transition-opacity duration-300 group-hover:opacity-40">
-                        Interaktív
-                      </span>
-                    </div>
-
-                    <Link href={`/vaszonkepek/${product.slug}`} className="block h-full w-full">
-                      <div className="relative h-full w-full p-10 transition-all duration-700 ease-in-out group-hover:scale-110 group-hover:opacity-0 group-hover:blur-md">
-                        <Image
-                          src={product.image}
-                          alt={product.name}
-                          fill
-                          sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
-                          className="object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.1)]"
-                          priority={product.id <= 4}
-                        />
-                      </div>
-
-                      <div className="absolute inset-0 h-full w-full opacity-0 transition-all duration-700 ease-in-out scale-105 group-hover:opacity-100 group-hover:scale-100">
-                        <Image
-                          src={product.mockupImage || "/images/mockup.webp"}
-                          alt={`${product.name} mockup`}
-                          fill
-                          sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, (max-width: 1280px) 30vw, 22vw"
-                          className="object-cover"
-                        />
-                      </div>
-                    </Link>
-                  </div>
-
-                  {/* ADATOK */}
-                  <div className="px-4">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#d17d58]">
-                      {product.category}
-                    </p>
-                    <h3 className="mt-2 text-xl font-bold text-[#2a211d]">
-                      {product.name}
-                    </h3>
-                    <div className="mt-6 flex items-center justify-between border-t border-[#efebe6] pt-6">
-                      <p className="text-xl font-black text-[#2a211d]">
-                        {formatPrice(product.price)} Ft -tól
-                      </p>
-                      <Link 
-                        href={`/vaszonkepek/${product.slug}`}
-                        className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f8f3ef] text-[#2a211d] transition-all hover:bg-[#d17d58] hover:text-white"
-                      >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
+                        </div>
                       </Link>
                     </div>
-                  </div>
-                </article>
-              </SwiperSlide>
-            ))}
+
+                    {/* ADATOK */}
+                    <div className="px-4">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#d17d58]">
+                        {product.category}
+                      </p>
+                      <h3 className="mt-2 text-xl font-bold text-[#2a211d]">
+                        {product.name}
+                      </h3>
+                      <div className="mt-6 flex items-center justify-between border-t border-[#efebe6] pt-6">
+                        <div className="flex flex-col">
+                          {originalPrice && (
+                            <span className="text-xs font-bold text-[#d17d58] line-through mb-0.5">
+                              {formatPrice(originalPrice)} Ft
+                            </span>
+                          )}
+                          <p className="text-xl font-black text-[#2a211d]">
+                            {formatPrice(product.price)} Ft <span className="text-[10px] font-bold text-[#8a7f76] uppercase tracking-tighter">-tól</span>
+                          </p>
+                        </div>
+
+                        <Link 
+                          href={`/vaszonkepek/${product.slug}`}
+                          className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f8f3ef] text-[#2a211d] transition-all hover:bg-[#d17d58] hover:text-white"
+                        >
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                          </svg>
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                </SwiperSlide>
+              );
+            })}
           </Swiper>
         </div>
       </div>

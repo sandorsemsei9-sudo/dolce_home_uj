@@ -13,7 +13,7 @@ import dynamic from 'next/dynamic';
 
 const CustomCanvasViewer = dynamic<any>(() => import("../components/3d/CumstomCanvasPoster"), { 
   ssr: false,
-  loading: () => <div className="flex items-center justify-center h-full italic text-gray-400">3D Modell betöltése...</div>
+  loading: () => <div className="flex items-center justify-center h-full italic text-[#8a7f76]">3D Modell betöltése...</div>
 });
 
 const TEMPLATE_IMAGE = "/images/mockup.webp"; 
@@ -27,25 +27,50 @@ const ratios: Record<Ratio, number> = {
 };
 
 const ratioLabels: Record<Ratio, string> = { 
-  square: "négyzet", 
-  portrait: "álló", 
-  landscape: "fekvő", 
-  panorama: "panoráma" 
+  square: "Négyzet", 
+  portrait: "Álló", 
+  landscape: "Fekvő", 
+  panorama: "Panoráma" 
 };
 
 const sizes: Record<Ratio, string[]> = {
   square: ["30x30", "40x40", "50x50"],
-  portrait: ["30x40", "40x60","50x80"],
-  landscape: ["50x30", "70x40", "90x50"],
+  portrait: ["30x40", "40x60", "30x60", "40x80", "50x80", "50x100"],
+  landscape: ["50x30", "70x40", "90x50", "60x30", "80x40", "100x50"],
   panorama: ["90x30", "120x40", "150x50"],
 };
 
+const faqItems = [
+  {
+    question: "Milyen felbontású képet érdemes feltölteni?",
+    answer: "A tökéletes minőség érdekében érdemes legalább 1-2 MB méretű, éles és jó felbontású fotót választani. Rendszerünk figyelmeztet, ha a kép minősége esetleg alacsonyabb a kívánt mérethez."
+  },
+  {
+    question: "Mennyi idő alatt készül el az egyedi vászonkép?",
+    answer: "A rendelést követően a gyártás és a kiszállítás általában 3–5 munkanapot vesz igénybe. Saját magyarországi műhelyünkben nagy gondossággal készítjük el minden darabot."
+  },
+  {
+    question: "Milyen anyagokat használtok a készítés során?",
+    answer: "380g/m² súlyú, prémium minőségű, finom textúrájú művészvászonra nyomtatunk UV-álló festékekkel, amit kézzel feszítünk rá a masszív, szárított fenyőfa vakrámára."
+  },
+  {
+    question: "Hogyan tudom megnézni a képet a saját falamon?",
+    answer: "Mobil eszközön (telefonon vagy tableten) a 3D nézeten belül a kiterjesztett valóság (AR) funkció segítségével közvetlenül a saját szobád falára vetítheted a kiválasztott méretet."
+  }
+];
+
 function calculatePrice(size: string): number {
   const prices: { [key: string]: number } = {
-    "30x40": 7190, "40x60": 9590, "50x80": 11990,
-    "90x30": 14490, "120x40": 20490, "150x50": 24990,
+    // Négyzet
     "30x30": 5990, "40x40": 7890, "50x50": 9590,
-    "50x30": 9480, "70x40": 13890, "90x50": 17890
+    // Álló
+    "30x40": 7490, "40x60": 9490, "50x80": 11990,
+    "30x60": 9990, "40x80": 11990, "50x100": 17990,
+    // Fekvő
+    "50x30": 9480, "70x40": 11990, "90x50": 16990,
+    "60x30": 9990, "80x40": 11990, "100x50": 17990,
+    // Panoráma
+    "90x30": 14490, "120x40": 20490, "150x50": 24990
   };
   return prices[size] || 11990;
 }
@@ -72,6 +97,7 @@ export default function EgyediVaszonkepPage() {
   const [savedConfig, setSavedConfig] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   useEffect(() => { 
     setMounted(true); 
@@ -158,25 +184,25 @@ export default function EgyediVaszonkepPage() {
   const activeRatio = savedConfig?.ratio || ratio;
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] text-[#1f1f1f]">
+    <main className="min-h-screen bg-[#f8f3ef] text-[#2a211d]">
       <style jsx global>{`
         .glass-3d-button {
-          background: rgba(255, 255, 255, 0.45);
+          background: rgba(255, 255, 255, 0.65);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.6);
-          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          box-shadow: 0 8px 32px 0 rgba(42, 33, 29, 0.08);
         }
       `}</style>
       <Script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js" strategy="afterInteractive" />
       <Navbar />
       
-      <section className="mx-auto max-w-7xl px-4 md:px-6 py-10">
-        <div className="flex flex-col lg:grid lg:grid-cols-[1.45fr_0.85fr] gap-10">
+      <section className="mx-auto max-w-7xl px-4 md:px-6 py-12">
+        <div className="flex flex-col lg:grid lg:grid-cols-[1.45fr_0.85fr] gap-10 items-start">
           
           {/* MOCKUP SZEKCIÓ */}
-          <div className="flex flex-col gap-5 order-2 lg:order-1">
-            <div className="group relative aspect-[1.1/1] overflow-hidden rounded-[40px] border border-[#d9d5cf] bg-white shadow-2xl">
+          <div className="flex flex-col gap-6 order-2 lg:order-1 w-full">
+            <div className="group relative aspect-[1.1/1] overflow-hidden rounded-[40px] border border-[#dccfc5] bg-white shadow-xl">
               <img 
                 src={TEMPLATE_IMAGE} 
                 alt="Egyedi vászonkép tervező előnézet nappali környezetben" 
@@ -184,26 +210,26 @@ export default function EgyediVaszonkepPage() {
               />
               
               {savedConfig && (
-                <div className="absolute top-6 right-6 md:top-8 md:right-8 z-20 flex flex-col items-end gap-3">
+                <div className="absolute top-6 right-6 md:top-8 md:right-8 z-20 flex flex-col items-end gap-2">
                   <button 
                     onClick={() => setIsARModalOpen(true)} 
-                    className="flex flex-col items-center gap-2 outline-none"
+                    className="flex flex-col items-center gap-2 outline-none group/btn"
                     aria-label="3D és AR nézet megnyitása"
                   >
-                    <div className="glass-3d-button relative flex h-16 w-16 items-center justify-center rounded-2xl transition-all duration-500 hover:scale-110 active:scale-95">
+                    <div className="glass-3d-button relative flex h-16 w-16 items-center justify-center rounded-2xl transition-all duration-300 group-hover/btn:scale-105 active:scale-95">
                       <svg className="absolute inset-0 h-full w-full opacity-60" viewBox="0 0 100 100">
-                        <path d="M25 35 C 35 20, 65 20, 75 35 M 75 35 L 75 22 M 75 35 L 62 35" stroke="#000" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M75 65 C 65 80, 35 80, 25 65 M 25 65 L 25 78 M 25 65 L 38 65" stroke="#000" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M25 35 C 35 20, 65 20, 75 35 M 75 35 L 75 22 M 75 35 L 62 35" stroke="#2a211d" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M75 65 C 65 80, 35 80, 25 65 M 25 65 L 25 78 M 25 65 L 38 65" stroke="#2a211d" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                      <span className="text-base font-black tracking-tighter text-black">3D</span>
+                      <span className="text-base font-black tracking-tighter text-[#2a211d]">3D</span>
                     </div>
                   </button>
                   
                   <div className="text-right pointer-events-none">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-black leading-tight drop-shadow-sm">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#2a211d] leading-tight">
                       Kattints a 3D nézethez!
                     </p>
-                    <p className="hidden md:block text-[8px] font-bold text-black/50 uppercase mt-1">
+                    <p className="hidden md:block text-[8px] font-medium text-[#7a675d] uppercase mt-0.5">
                       Mobilon helyezd el a faladon (AR)
                     </p>
                   </div>
@@ -216,7 +242,7 @@ export default function EgyediVaszonkepPage() {
                   activeRatio === "portrait" ? "aspect-[2/3] w-[42%]" : 
                   activeRatio === "landscape" ? "aspect-[3/2] w-[72%]" : "aspect-[3/1] w-[80%]"
                 }`}>
-                  <div className="relative h-full w-full bg-white shadow-[0_35px_80px_rgba(0,0,0,0.45)] overflow-hidden">
+                  <div className="relative h-full w-full bg-white shadow-[0_25px_60px_rgba(42,33,29,0.3)] overflow-hidden">
                     {savedConfig?.previewUrl && (
                       <img src={savedConfig.previewUrl} alt="Saját fotó előnézete vásznon" className="h-full w-full object-cover relative z-10" />
                     )}
@@ -225,152 +251,193 @@ export default function EgyediVaszonkepPage() {
               </div>
             </div>
 
-            {/* SEO STATIKUS SZÖVEG - Segít a Google-nek érteni az oldal tartalmát */}
-            <div className="mt-4 px-4 grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h2 className="text-sm font-black uppercase mb-2">Prémium Minőség</h2>
-                <p className="text-xs leading-relaxed text-[#6b6661]">
-                  Minden egyedi vászonképünket 380g-os finom szövésű művészvászonra nyomtatjuk, melyet kézzel feszítünk tartós, fenyőből készült vakrámára.
+            {/* SEO & TÁJÉKOZTATÓ SÁV */}
+            <div className="px-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white/60 p-5 rounded-3xl border border-[#dccfc5]/60">
+                <h2 className="text-xs font-black uppercase tracking-widest text-[#d17d58] mb-2">Prémium Minőség</h2>
+                <p className="text-xs leading-relaxed text-[#5e4d45]">
+                  380g-os finom szövésű művészvászonra nyomtatjuk, melyet kézzel feszítünk tartós, szárított fenyőfa vakrámára.
                 </p>
               </div>
-              <div>
-                <h2 className="text-sm font-black uppercase mb-2">3D Tervezés és AR</h2>
-                <p className="text-xs leading-relaxed text-[#6b6661]">
-                  Használd online tervezőnket: töltsd fel a fotód, vágd méretre, és nézd meg 3D-ben vagy kiterjesztett valóságban (AR) közvetlenül a saját faladon.
+              <div className="bg-white/60 p-5 rounded-3xl border border-[#dccfc5]/60">
+                <h2 className="text-xs font-black uppercase tracking-widest text-[#d17d58] mb-2">3D Tervezés & AR</h2>
+                <p className="text-xs leading-relaxed text-[#5e4d45]">
+                  Töltsd fel a fotód, vágd tökéletes méretre, és nézd meg 3D-ben vagy kiterjesztett valóságban (AR) a saját faladon.
                 </p>
               </div>
             </div>
 
-            <div className="px-4 mt-4">
-              <p className="text-[10px] leading-relaxed text-[#8a7f76] font-medium italic opacity-70">
+            <div className="px-2">
+              <p className="text-[10px] leading-relaxed text-[#8a7f76] font-medium italic">
                 * A megjelenített kép csak illusztráció. A kész termék színei és arányai minimálisan eltérhetnek a kijelzőn látottaktól a monitor egyedi beállításai és a gyártási folyamat sajátosságai miatt.
               </p>
             </div>
           </div>
 
           {/* VEZÉRLŐK */}
-          <div className="order-1 lg:order-2 rounded-[35px] border border-[#d9d5cf] bg-white p-6 md:p-8 shadow-xl">
-            <h1 className="text-3xl font-black italic uppercase mb-8">Egyedi Vászonkép Tervező</h1>
+          <div className="order-1 lg:order-2 rounded-[35px] border border-[#dccfc5] bg-white p-6 md:p-8 shadow-xl w-full">
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#2a211d] mb-8 leading-tight">
+              Készíts egyedi vászonképet <span className="text-[#d17d58] italic font-normal">saját fotódból</span>
+            </h1>
             
-            <div className="space-y-6">
-              <div className={savedConfig ? "opacity-40 pointer-events-none" : ""}>
-                <h3 className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">1. Formátum kiválasztása</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="space-y-7">
+              {/* 1. FORMÁTUM */}
+              <div className={savedConfig ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7a675d] mb-3">1. Formátum kiválasztása</h3>
+                <div className="grid grid-cols-2 gap-2">
                   {(Object.keys(ratios) as Ratio[]).map(r => (
-                    <button key={r} onClick={() => { setRatio(r); setSize(sizes[r][0]); }} className={`py-3 border-2 rounded-xl text-[10px] font-black uppercase transition-all ${ratio === r ? 'border-black bg-black text-white' : 'border-gray-100 text-gray-400'}`}>{ratioLabels[r]}</button>
+                    <button 
+                      key={r} 
+                      onClick={() => { setRatio(r); setSize(sizes[r][0]); }} 
+                      className={`py-3 px-2 border rounded-2xl text-xs font-bold uppercase tracking-wider transition-all ${
+                        ratio === r 
+                          ? 'border-[#d17d58] bg-[#d17d58] text-white shadow-md' 
+                          : 'border-[#dccfc5]/60 bg-[#fdfbf9] text-[#5e4d45] hover:border-[#d17d58]'
+                      }`}
+                    >
+                      {ratioLabels[r]}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              <div className={savedConfig ? "opacity-40 pointer-events-none" : ""}>
-                <h3 className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">2. Méret kiválasztása (cm)</h3>
-                <div className="flex flex-wrap gap-2">
+              {/* 2. MÉRET */}
+              <div className={savedConfig ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7a675d] mb-3">2. Méret kiválasztása (cm)</h3>
+                <div className="grid grid-cols-3 gap-2">
                   {sizes[ratio].map(s => (
-                    <button key={s} onClick={() => setSize(s)} className={`px-4 py-2 border-2 rounded-lg text-xs font-black transition-all ${size === s ? 'border-black bg-black text-white' : 'border-gray-100 text-gray-500'}`}>{s}</button>
+                    <button 
+                      key={s} 
+                      onClick={() => setSize(s)} 
+                      className={`py-2.5 px-2 border rounded-xl text-xs font-bold transition-all ${
+                        size === s 
+                          ? 'border-[#d17d58] bg-[#d17d58] text-white shadow-md' 
+                          : 'border-[#dccfc5]/60 bg-[#fdfbf9] text-[#5e4d45] hover:border-[#d17d58]'
+                      }`}
+                    >
+                      {s}
+                    </button>
                   ))}
                 </div>
               </div>
 
+              {/* 3. FOTÓ FELTÖLTÉSE */}
               <div>
-                <h3 className="text-[10px] font-black uppercase text-gray-400 mb-3 italic">3. Saját fotó feltöltése</h3>
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7a675d] mb-3">3. Saját fotó feltöltése</h3>
                 {!image ? (
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-200 rounded-[25px] cursor-pointer hover:bg-orange-50 transition-all">
-                    <span className="text-[10px] font-black uppercase text-orange-600">Kép kiválasztása a gépedről</span>
+                  <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-[#dccfc5] rounded-[24px] cursor-pointer bg-[#fdfbf9] hover:bg-[#faedec]/30 hover:border-[#d17d58] transition-all group">
+                    <span className="text-xl mb-1">📷</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#d17d58] group-hover:scale-105 transition-transform">Kép kiválasztása a gépedről</span>
+                    <span className="text-[10px] text-[#7a675d] mt-1">JPG, PNG (max. jó minőség)</span>
                     <input type="file" accept="image/*" onChange={onFileChange} className="hidden" />
                   </label>
                 ) : (
-                  <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border">
-                    <span className="text-[10px] font-bold uppercase truncate max-w-[150px]">{fileName}</span>
-                    <button onClick={() => {setImage(null); setSavedConfig(null);}} className="text-red-500 text-[10px] font-black">Törlés</button>
+                  <div className="flex justify-between items-center p-4 bg-[#fdfbf9] rounded-2xl border border-[#dccfc5]">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <span className="text-sm">🖼️</span>
+                      <span className="text-xs font-semibold uppercase truncate text-[#2a211d]">{fileName}</span>
+                    </div>
+                    <button onClick={() => {setImage(null); setSavedConfig(null);}} className="text-red-500 hover:text-red-700 text-xs font-bold tracking-wide uppercase px-2 py-1">Törlés</button>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="mt-12 pt-8 border-t border-dashed flex justify-between items-center">
+            {/* ÁR ÉS KOSÁRBA GOMB */}
+            <div className="mt-10 pt-6 border-t border-[#dccfc5]/60 flex items-center justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase text-gray-400 italic">Várható ár:</p>
-                <p className="text-3xl font-black italic">{formatPrice(price)}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#7a675d]">Várható ár</p>
+                <p className="text-2xl md:text-3xl font-extrabold text-[#2a211d]">{formatPrice(price)}</p>
               </div>
               <button 
                 onClick={handleAddToCart} 
                 disabled={!savedConfig} 
-                className="bg-[#e3936e] text-white px-8 py-4 rounded-2xl font-black uppercase text-xs shadow-xl disabled:opacity-20 transition-all active:scale-95"
+                className="bg-[#d17d58] text-white px-6 md:px-8 py-4 rounded-2xl font-bold uppercase text-xs tracking-wider shadow-lg disabled:opacity-30 disabled:pointer-events-none transition-all hover:bg-[#b06a4a] active:scale-95"
               >
                 Kosárba teszem
               </button>
             </div>
-            <div className="mt-6 rounded-2xl border border-[#e8e2dc] bg-[#faf9f7] p-4 space-y-4">
 
-  <div className="flex items-center gap-3">
-    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
-      🚀
-    </div>
-    <div>
-      <p className="text-xs font-bold uppercase tracking-wide">
-        Gyors szállítás
-      </p>
-      <p className="text-xs text-gray-500">
-        3–5 munkanapon belül
-      </p>
-    </div>
-  </div>
+            {/* BIZALMI ELEMEK */}
+            <div className="mt-6 rounded-2xl border border-[#dccfc5]/60 bg-[#fdfbf9] p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm text-xs">🚀</div>
+                <div>
+                  <p className="text-xs font-bold text-[#2a211d]">Gyors szállítás</p>
+                  <p className="text-[11px] text-[#7a675d]">3–5 munkanapon belül</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm text-xs">💎</div>
+                <div>
+                  <p className="text-xs font-bold text-[#2a211d]">Prémium minőség</p>
+                  <p className="text-[11px] text-[#7a675d]">380 g-os művészvászon</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm text-xs">🛡️</div>
+                <div>
+                  <p className="text-xs font-bold text-[#2a211d]">100% elégedettség</p>
+                  <p className="text-[11px] text-[#7a675d]">Minőségi garancia</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm text-xs">🇭🇺</div>
+                <div>
+                  <p className="text-xs font-bold text-[#2a211d]">Hazai termék</p>
+                  <p className="text-[11px] text-[#7a675d]">Saját magyar gyártás</p>
+                </div>
+              </div>
+            </div>
 
-  <div className="flex items-center gap-3">
-    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
-      💎
-    </div>
-    <div>
-      <p className="text-xs font-bold uppercase tracking-wide">
-        Prémium minőség
-      </p>
-      <p className="text-xs text-gray-500">
-        380 g-os művészvászon
-      </p>
-    </div>
-  </div>
-
-  <div className="flex items-center gap-3">
-    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
-      🛡️
-    </div>
-    <div>
-      <p className="text-xs font-bold uppercase tracking-wide">
-        100% elégedettség
-      </p>
-      <p className="text-xs text-gray-500">
-        Minőségi garancia
-      </p>
-    </div>
-  </div>
-
-  <div className="flex items-center gap-3">
-    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
-      🇭🇺
-    </div>
-    <div>
-      <p className="text-xs font-bold uppercase tracking-wide">
-        Magyar gyártás
-      </p>
-      <p className="text-xs text-gray-500">
-        Saját gyártás
-      </p>
-    </div>
-  </div>
-
-</div>
           </div>
         </div>
+
+        {/* GYAKRAN ISMÉTELT KÉRDÉSEK SZEKCIÓ */}
+        <div className="mt-20 pt-12 border-t border-[#dccfc5]/60 max-w-4xl mx-auto">
+          <h3 className="text-2xl md:text-3xl font-extrabold text-[#2a211d] mb-8 text-center md:text-left tracking-tight">
+            Gyakran ismételt kérdések
+          </h3>
+          
+          <div className="space-y-4">
+            {faqItems.map((item, index) => {
+              const isOpen = openFaqIndex === index;
+              return (
+                <div 
+                  key={index} 
+                  className="bg-white border border-[#dccfc5] rounded-2xl overflow-hidden transition-all duration-300 shadow-sm"
+                >
+                  <button
+                    onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                    className="w-full flex items-center justify-between p-6 text-left font-bold text-[#2a211d] hover:text-[#d17d58] transition-colors"
+                  >
+                    <span>{item.question}</span>
+                    <span className={`transform transition-transform duration-300 text-xl font-normal text-[#d17d58] ${isOpen ? "rotate-45" : ""}`}>
+                      +
+                    </span>
+                  </button>
+                  
+                  {isOpen && (
+                    <div className="px-6 pb-6 text-sm text-[#7a665c] leading-relaxed border-t border-[#f8f3ef] pt-4">
+                      {item.answer}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
       </section>
 
       {/* AR/3D MODAL */}
       {isARModalOpen && mounted && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setIsARModalOpen(false)} />
-          <div className="relative w-full h-full max-w-5xl bg-[#f8f8f6] md:rounded-[40px] overflow-hidden flex flex-col">
-            <div className="p-5 border-b flex justify-between items-center bg-white z-10">
-                <h3 className="font-black uppercase italic text-sm text-black">3D Modell Előnézet</h3>
-                <button onClick={() => setIsARModalOpen(false)} className="bg-black text-white w-10 h-10 rounded-xl font-bold transition-transform active:scale-90">✕</button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsARModalOpen(false)} />
+          <div className="relative w-full h-[85vh] max-w-5xl bg-[#f8f3ef] rounded-[32px] overflow-hidden flex flex-col shadow-2xl">
+            <div className="p-5 border-b border-[#dccfc5] flex justify-between items-center bg-white z-10">
+                <h3 className="font-bold text-sm text-[#2a211d] uppercase tracking-wide">3D Modell Előnézet</h3>
+                <button onClick={() => setIsARModalOpen(false)} className="bg-[#2a211d] text-white w-9 h-9 rounded-xl font-bold transition-transform active:scale-90">✕</button>
             </div>
             <div className="flex-1 relative bg-[#efebe6]">
               <CustomCanvasViewer 
@@ -385,8 +452,8 @@ export default function EgyediVaszonkepPage() {
 
       {/* CROPPER MODAL */}
       {isCropModalOpen && image && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 md:p-4">
-          <div className="w-full h-full md:h-auto md:max-w-2xl bg-white md:rounded-[40px] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/90 md:p-4">
+          <div className="w-full h-full md:h-auto md:max-w-2xl bg-white md:rounded-[32px] overflow-hidden flex flex-col shadow-2xl">
             <div className="relative flex-1 min-h-[400px] bg-black">
               <Cropper 
                 image={image} 
@@ -399,8 +466,8 @@ export default function EgyediVaszonkepPage() {
                 style={{ containerStyle: { width: '100%', height: '100%', position: 'absolute' } }}
               />
             </div>
-            <div className="p-8 bg-white">
-              <button onClick={handleSaveConfig} disabled={isSaving} className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase text-xs transition-all active:scale-95 disabled:opacity-50">
+            <div className="p-6 bg-white border-t border-gray-100">
+              <button onClick={handleSaveConfig} disabled={isSaving} className="w-full bg-[#d17d58] text-white py-4 rounded-2xl font-bold uppercase text-xs tracking-wider transition-all hover:bg-[#b06a4a] active:scale-95 disabled:opacity-50 shadow-md">
                 {isSaving ? "Feldolgozás..." : "Kép rögzítése és mentése"}
               </button>
             </div>

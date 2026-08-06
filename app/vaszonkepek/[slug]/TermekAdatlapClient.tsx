@@ -18,6 +18,27 @@ function formatPrice(price: any) {
   return new Intl.NumberFormat("hu-HU").format(num) + ",- Ft";
 }
 
+// Kedvezményes / eredeti ár párkereső a megadott szabályok alapján ("helyett" nélkül)
+function getOriginalPrice(currentPrice: number): number | null {
+  switch (currentPrice) {
+    case 4990: return 5990;
+    case 5990: return 7490;
+    case 6990: return 7990;
+    case 7490: return 8990;
+    case 7890: return 9990;
+    case 7990: return 8990;
+    case 8990: return 9990;
+    case 9990: return 11990;
+    case 11490: return 13990;
+    case 11990: return 14990;
+    case 12990: return 14990;
+    case 14990: return 16990;
+    case 16990: return 19990;
+    case 21990: return 24990;
+    default: return null;
+  }
+}
+
 interface TermekAdatlapClientProps {
   initialProduct: any;
   initialVariants: any[];
@@ -82,6 +103,7 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
   };
 
   const masterGlbPath = getModelPath();
+  const originalPrice = selectedVariant ? getOriginalPrice(selectedVariant.price) : null;
 
   return (
     <main className="min-h-screen bg-[#f7f7f5] text-[#1f1f1f]">
@@ -116,6 +138,7 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
           <div className="lg:w-1/2 flex flex-col gap-5">
             <div className="relative aspect-square w-full overflow-hidden rounded-[40px] bg-white shadow-sm border border-[#d9d5cf] flex items-center justify-center p-4 group">
               
+
               {/* INTERAKTÍV 3D GOMB + SEGÉDSZÖVEG */}
               <div className="absolute top-6 right-6 z-20 flex flex-col items-end gap-3" style={{ perspective: '1000px' }}>
                 <div
@@ -176,7 +199,12 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#9a8f84]">{product.categories?.name}</p>
             <h1 className="mt-2 text-3xl font-semibold text-[#1f1f1f] tracking-tight">{product.name}</h1>
             
-            <div className="mt-6 border-b border-[#d9d5cf] pb-6">
+            <div className="mt-6 border-b border-[#d9d5cf] pb-6 flex flex-col">
+              {originalPrice && (
+                <span className="text-sm font-bold text-[#e3936e] line-through mb-1">
+                  {formatPrice(originalPrice)}
+                </span>
+              )}
               <span className="text-3xl font-bold">{formatPrice(selectedVariant?.price)}</span>
             </div>
 
@@ -233,6 +261,14 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
             <button onClick={handleAddToCart} className="mt-8 w-full rounded-2xl py-4 text-sm font-bold text-white shadow-lg bg-[#e3936e] active:scale-95 transition-all hover:bg-[#d17d5a]">
               {isAdded ? "✓ KOSÁRBAN" : "KOSÁRBA TESZEM"}
             </button>
+
+            {/* INGYENES SZÁLLÍTÁS KIEMELÉS */}
+            <div className="mt-3 flex items-center justify-center gap-2 py-2.5 px-4 bg-orange-50/60 border border-orange-100 rounded-xl text-center">
+              <span className="text-sm">📦</span>
+              <p className="text-[11px] font-bold text-[#8a5d43] uppercase tracking-wide">
+                Ingyenes szállítás <span className="font-black">25 000 Ft</span> felett!
+              </p>
+            </div>
 
             {/* LEÍRÁS ÉS SPECIFIKÁCIÓ */}
             <div className="mt-12 space-y-8">

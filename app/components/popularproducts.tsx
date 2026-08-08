@@ -24,10 +24,19 @@ function getOriginalPrice(currentPrice: number): number | null {
   switch (currentPrice) {
     case 4990: return 5990;
     case 5990: return 7490;
+    case 6990: return 7990;
     case 7490: return 8990;
     case 7890: return 9990;
+    case 7990: return 8990;
+    case 8990: return 9990;
     case 9990: return 11990;
+    case 11490: return 13990;
     case 11990: return 14990;
+    case 12990: return 14990;
+    case 14990: return 16990;
+    case 16990: return 19990;
+    case 21990: return 24990;
+    case 26990: return 29990;
     default: return null;
   }
 }

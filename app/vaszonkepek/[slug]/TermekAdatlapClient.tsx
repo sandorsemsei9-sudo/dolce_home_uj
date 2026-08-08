@@ -34,6 +34,7 @@ function getOriginalPrice(currentPrice: number): number | null {
     case 14990: return 16990;
     case 16990: return 19990;
     case 21990: return 24990;
+    case 26990: return 29990;
     default: return null;
   }
 }

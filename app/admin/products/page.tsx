@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
-export default function AdminProductsPage() {
+function AdminProductsContent() {
   const supabase = createClient();
   const router = useRouter();
   const pathname = usePathname();
@@ -488,5 +488,13 @@ export default function AdminProductsPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function AdminProductsPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-20 font-black text-gray-200 uppercase tracking-[0.5em] animate-pulse">Betöltés...</div>}>
+      <AdminProductsContent />
+    </Suspense>
   );
 }

@@ -4,9 +4,13 @@ import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 export default function AdminProductsPage() {
   const supabase = createClient();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -14,45 +18,70 @@ export default function AdminProductsPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- ÚJ ÁLLAPOTOK A KÉPKEZELÉSHEZ ---
+  // --- ÉRTÉKEK KIOLVASÁSA AZ URL-BŐL ---
+  const currentPage = Number(searchParams.get("page")) || 1;
+  const selectedCategoryFilter = searchParams.get("category") || "all";
+  const selectedOrientationFilter = searchParams.get("orientation") || "all";
+
+  const itemsPerPage = 18;
+
+  // --- MÉDIA ÁLLAPOTOK ---
   const [tempFiles, setTempFiles] = useState<{
     cover: File | null;
     hover: File | null;
     texture: File | null;
-  }>({ cover: null, hover: null, texture: null });
+    texture2: File | null;
+    texture3: File | null;
+  }>({ cover: null, hover: null, texture: null, texture2: null, texture3: null });
 
   const [previews, setPreviews] = useState({
     cover: "",
     hover: "",
-    texture: ""
+    texture: "",
+    texture2: "",
+    texture3: ""
   });
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 18;
-
-const [newProduct, setNewProduct] = useState({
-  name: "",
-  category_ids: [] as number[],
-  cover_image: "",
-  hover_image: "",
-  texture_image: "",
-  orientation: "portrait"
-});
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    category_ids: [] as number[],
+    cover_image: "",
+    hover_image: "",
+    texture_image: "",
+    texture_image_2: "",
+    texture_image_3: "",
+    orientation: "portrait"
+  });
   const [variants, setVariants] = useState([{ size_name: "", price: "" }]);
+
+  // --- SEGÉDFÜGGVÉNY AZ URL PARAMÉTEREK FRISSÍTÉSÉHEZ ---
+  const updateQueryParam = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value && value !== "all") {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    // Ha szűrőt váltunk, visszaugrunk az 1. oldalra
+    if (key !== "page") {
+      params.delete("page");
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   useEffect(() => {
     async function loadData() {
       const { data: cats } = await supabase.from("categories").select("*");
       if (cats) setCategories(cats);
-      fetchProducts();
+      await fetchProducts();
     }
     loadData();
   }, []);
 
-async function fetchProducts() {
+  async function fetchProducts() {
     setLoading(true);
     const { data, error } = await supabase.from("products")
-      .select("*")
+      .select("*, product_categories(category_id)")
       .order("created_at", { ascending: false });
       
     if (error) {
@@ -63,45 +92,58 @@ async function fetchProducts() {
     setLoading(false);
   }
 
+  // --- SZŰRÉSI LOGIKA ---
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      const matchesOrientation = selectedOrientationFilter === "all" || p.orientation === selectedOrientationFilter;
+      
+      let matchesCategory = true;
+      if (selectedCategoryFilter !== "all") {
+        const catIdNum = Number(selectedCategoryFilter);
+        const hasCategory = p.product_categories?.some((pc: any) => Number(pc.category_id) === catIdNum);
+        matchesCategory = hasCategory;
+      }
+
+      return matchesOrientation && matchesCategory;
+    });
+  }, [products, selectedOrientationFilter, selectedCategoryFilter]);
+
   // --- LAPOZÁSI LOGIKA ---
-  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
+
   const currentProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return products.slice(startIndex, startIndex + itemsPerPage);
-  }, [products, currentPage]);
+    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredProducts, currentPage]);
 
   const paginate = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
+    updateQueryParam("page", pageNumber.toString());
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // --- FÁJL KIVÁLASZTÁSA (Csak kliens oldali előnézet) ---
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'hover' | 'texture') => {
+  // --- FÁJL KIVÁLASZTÁSA ---
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'hover' | 'texture' | 'texture2' | 'texture3') => {
     if (!e.target.files?.[0]) return;
     const file = e.target.files[0];
     
-    // Előnézet generálása a böngészőben
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreviews(prev => ({ ...prev, [type]: reader.result as string }));
     };
     reader.readAsDataURL(file);
 
-    // Eltároljuk a fájlt a végső mentésig
     setTempFiles(prev => ({ ...prev, [type]: file }));
   };
 
-  // --- TÖRLÉS (Storage-al együtt) ---
+  // --- TÖRLÉS ---
   const handleDelete = async (id: string, name: string, slug: string) => {
     if (!confirm(`Biztosan törölni akarod a "${name}" terméket és az összes hozzá tartozó képet?`)) return;
     
-    // 1. Adatbázis törlés
     const { error } = await supabase.from("products").delete().eq("id", id);
     
     if (error) {
         alert("Hiba: " + error.message);
     } else {
-      // 2. Storage mappa ürítése (ha van slug)
       if (slug) {
         const { data: files } = await supabase.storage.from("products").list(slug);
         if (files && files.length > 0) {
@@ -111,7 +153,9 @@ async function fetchProducts() {
       }
       
       setProducts(products.filter(p => p.id !== id));
-      if (currentProducts.length === 1 && currentPage > 1) setCurrentPage(currentPage - 1);
+      if (currentProducts.length === 1 && currentPage > 1) {
+        updateQueryParam("page", (currentPage - 1).toString());
+      }
     }
   };
 
@@ -122,22 +166,24 @@ async function fetchProducts() {
     
     setIsSaving(true);
     
-    // Slug generálása a mappanévhez
     const slug = newProduct.name.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w ]+/g, "").replace(/\s+/g, "-");
     
     try {
       let finalImages = { 
         cover: newProduct.cover_image, 
         hover: newProduct.hover_image, 
-        texture: newProduct.texture_image 
+        texture: newProduct.texture_image,
+        texture2: newProduct.texture_image_2,
+        texture3: newProduct.texture_image_3
       };
 
-      // Képek feltöltése ciklussal
-      for (const type of ['cover', 'hover', 'texture'] as const) {
+      const fileTypes = ['cover', 'hover', 'texture', 'texture2', 'texture3'] as const;
+
+      for (const type of fileTypes) {
         const file = tempFiles[type];
         if (file) {
           const fileExt = file.name.split('.').pop();
-          const fileName = `${type}-${Date.now()}.${fileExt}`; // Időbélyeg a cache elkerülésére
+          const fileName = `${type}-${Date.now()}.${fileExt}`;
           const filePath = `${slug}/${fileName}`; 
 
           const { error: uploadError } = await supabase.storage
@@ -147,38 +193,44 @@ async function fetchProducts() {
           if (uploadError) throw uploadError;
 
           const { data: urlData } = supabase.storage.from("products").getPublicUrl(filePath);
-          finalImages[type] = urlData.publicUrl;
+          
+          if (type === 'texture2') finalImages.texture2 = urlData.publicUrl;
+          else if (type === 'texture3') finalImages.texture3 = urlData.publicUrl;
+          else finalImages[type] = urlData.publicUrl;
         }
       }
 
-const finalProduct = {
-  name: newProduct.name,
-  slug,
-  cover_image: finalImages.cover,
-  hover_image: finalImages.hover,
-  texture_image: finalImages.texture || finalImages.cover,
-  orientation: newProduct.orientation
-};
+      const isThreePiece = newProduct.orientation === "three-piece";
 
-      // Mentés az adatbázisba
+      const finalProduct = {
+        name: newProduct.name,
+        slug,
+        cover_image: finalImages.cover,
+        hover_image: finalImages.hover,
+        texture_image: finalImages.texture || finalImages.cover,
+        texture_image_2: isThreePiece ? finalImages.texture2 : null,
+        texture_image_3: isThreePiece ? finalImages.texture3 : null,
+        orientation: newProduct.orientation,
+        parts_count: isThreePiece ? 3 : 1
+      };
+
       const { data: pData, error: pError } = await supabase.from("products").insert([finalProduct]).select().single();
 
       if (pError) throw pError;
-      // Kategóriák mentése a kapcsolótáblába
-if (pData && newProduct.category_ids.length > 0) {
-  const categoryRelations = newProduct.category_ids.map((categoryId) => ({
-    product_id: pData.id,
-    category_id: categoryId
-  }));
 
-  const { error: categoryError } = await supabase
-    .from("product_categories")
-    .insert(categoryRelations);
+      if (pData && newProduct.category_ids.length > 0) {
+        const categoryRelations = newProduct.category_ids.map((categoryId) => ({
+          product_id: pData.id,
+          category_id: categoryId
+        }));
 
-  if (categoryError) throw categoryError;
-}
+        const { error: categoryError } = await supabase
+          .from("product_categories")
+          .insert(categoryRelations);
 
-      // Variánsok mentése
+        if (categoryError) throw categoryError;
+      }
+
       if (pData) {
         const vToInsert = variants.filter(v => v.size_name).map(v => ({
           product_id: pData.id,
@@ -188,16 +240,18 @@ if (pData && newProduct.category_ids.length > 0) {
         if (vToInsert.length > 0) await supabase.from("product_variants").insert(vToInsert);
       }
 
-      // Állapotok visszaállítása
-setNewProduct({ 
-  name: "", 
-  category_ids: [], 
-  cover_image: "", 
-  hover_image: "", 
-  texture_image: "", 
-  orientation: "portrait" 
-});      setTempFiles({ cover: null, hover: null, texture: null });
-      setPreviews({ cover: "", hover: "", texture: "" });
+      setNewProduct({ 
+        name: "", 
+        category_ids: [], 
+        cover_image: "", 
+        hover_image: "", 
+        texture_image: "", 
+        texture_image_2: "",
+        texture_image_3: "",
+        orientation: "portrait" 
+      });      
+      setTempFiles({ cover: null, hover: null, texture: null, texture2: null, texture3: null });
+      setPreviews({ cover: "", hover: "", texture: "", texture2: "", texture3: "" });
       setVariants([{ size_name: "", price: "" }]);
       setIsAdding(false);
       fetchProducts();
@@ -228,44 +282,38 @@ setNewProduct({
           <div className="space-y-3">
             <p className="text-[10px] font-black uppercase text-gray-400 italic">1. Alapadatok</p>
             <input required placeholder="Név" className="w-full border-2 border-gray-100 p-3 rounded-xl text-sm font-bold outline-none focus:border-black" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
-<div className="grid grid-cols-2 gap-2 border-2 border-gray-100 p-3 rounded-xl">
-  {categories.map((c) => (
-    <label
-      key={c.id}
-      className="flex items-center gap-2 text-xs font-bold cursor-pointer"
-    >
-      <input
-        type="checkbox"
-        checked={newProduct.category_ids.includes(c.id)}
-        onChange={(e) => {
-          if (e.target.checked) {
-            setNewProduct({
-              ...newProduct,
-              category_ids: [
-                ...newProduct.category_ids,
-                c.id
-              ]
-            });
-          } else {
-            setNewProduct({
-              ...newProduct,
-              category_ids: newProduct.category_ids.filter(
-                (id) => id !== c.id
-              )
-            });
-          }
-        }}
-      />
+            
+            <div className="grid grid-cols-2 gap-2 border-2 border-gray-100 p-3 rounded-xl max-h-[140px] overflow-y-auto">
+              {categories.map((c) => (
+                <label key={c.id} className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newProduct.category_ids.includes(c.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setNewProduct({
+                          ...newProduct,
+                          category_ids: [...newProduct.category_ids, c.id]
+                        });
+                      } else {
+                        setNewProduct({
+                          ...newProduct,
+                          category_ids: newProduct.category_ids.filter((id) => id !== c.id)
+                        });
+                      }
+                    }}
+                  />
+                  {c.name}
+                </label>
+              ))}
+            </div>
 
-      {c.name}
-    </label>
-  ))}
-</div>
             <select className="w-full border-2 border-gray-100 p-3 rounded-xl text-sm font-bold outline-none focus:border-black bg-gray-50" value={newProduct.orientation} onChange={e => setNewProduct({...newProduct, orientation: e.target.value})}>
               <option value="portrait">📐 Álló</option>
               <option value="landscape">📏 FEKVŐ</option>
               <option value="square">🔲 NÉGYZET</option>
               <option value="panorama">🎞️ PANORÁMA</option>
+              <option value="three-piece">🖼️🖼️🖼️ HÁROMRÉSZES</option>
             </select>
           </div>
 
@@ -288,6 +336,7 @@ setNewProduct({
 
           <div className="space-y-4">
              <p className="text-[10px] font-black uppercase text-gray-400 italic">3. Média (Mappa alapú)</p>
+             
              <div className="grid grid-cols-3 gap-2">
                 <div className="relative aspect-square bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-gray-100 transition-colors">
                     {previews.cover ? <Image src={previews.cover} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-gray-400 text-center px-1">FŐ KÉP</span>}
@@ -298,53 +347,109 @@ setNewProduct({
                     <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileSelect(e, 'hover')} />
                 </div>
                 <div className="relative aspect-square bg-blue-50 rounded-xl border-2 border-dashed border-blue-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-blue-100 transition-colors">
-                    {previews.texture ? <Image src={previews.texture} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-blue-400 text-center px-1">3D KÉP</span>}
+                    {previews.texture ? <Image src={previews.texture} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-blue-400 text-center px-1">3D KÉP 1</span>}
                     <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileSelect(e, 'texture')} />
                 </div>
              </div>
+
+             {newProduct.orientation === "three-piece" && (
+               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-gray-200">
+                  <div className="relative aspect-square bg-blue-50 rounded-xl border-2 border-dashed border-blue-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-blue-100 transition-colors">
+                      {previews.texture2 ? <Image src={previews.texture2} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-blue-400 text-center px-1">3D KÉP 2</span>}
+                      <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileSelect(e, 'texture2')} />
+                  </div>
+                  <div className="relative aspect-square bg-blue-50 rounded-xl border-2 border-dashed border-blue-200 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-blue-100 transition-colors">
+                      {previews.texture3 ? <Image src={previews.texture3} fill className="object-cover" alt="" /> : <span className="text-[7px] font-black text-blue-400 text-center px-1">3D KÉP 3</span>}
+                      <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleFileSelect(e, 'texture3')} />
+                  </div>
+               </div>
+             )}
+
              <button disabled={isSaving} className="w-full bg-black text-white p-4 rounded-xl font-black uppercase text-[10px] hover:bg-blue-600 transition-colors shadow-md disabled:opacity-50">
               {isSaving ? "Feltöltés folyamatban..." : "Termék rögzítése"}
-            </button>
+             </button>
           </div>
         </form>
       )}
+
+      {/* --- SZŰRŐSÁV --- */}
+      <div className="bg-white p-4 rounded-2xl border-2 border-gray-100 mb-6 flex flex-wrap gap-4 items-center justify-between shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Szűrés:</span>
+          
+          {/* Kategória szűrő */}
+          <select 
+            value={selectedCategoryFilter} 
+            onChange={(e) => updateQueryParam("category", e.target.value)}
+            className="bg-gray-50 border-2 border-gray-100 px-4 py-2 rounded-xl text-xs font-bold outline-none focus:border-black cursor-pointer"
+          >
+            <option value="all">Minden kategória</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+
+          {/* Tájolás szűrő */}
+          <select 
+            value={selectedOrientationFilter} 
+            onChange={(e) => updateQueryParam("orientation", e.target.value)}
+            className="bg-gray-50 border-2 border-gray-100 px-4 py-2 rounded-xl text-xs font-bold outline-none focus:border-black cursor-pointer"
+          >
+            <option value="all">Minden tájolás</option>
+            <option value="portrait">📐 Álló</option>
+            <option value="landscape">📏 Fekvő</option>
+            <option value="square">🔲 Négyzet</option>
+            <option value="panorama">🎞️ Panoráma</option>
+            <option value="three-piece">🖼️ Háromrészes</option>
+          </select>
+        </div>
+
+        <div className="text-xs font-bold text-gray-400">
+          Összesen: <span className="text-black font-black">{filteredProducts.length}</span> termék
+        </div>
+      </div>
 
       {loading ? (
         <div className="text-center py-20 font-black text-gray-200 uppercase tracking-[0.5em] animate-pulse">Adatok betöltése...</div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-            {currentProducts.map((p) => (
-              <div key={p.id} className="bg-white border-2 border-gray-50 rounded-2xl p-2 hover:border-black transition-all group flex flex-col relative">
-                <div className={`relative ${p.orientation === 'panorama' ? 'aspect-square sm:aspect-video' : 'aspect-[3/4]'} rounded-xl overflow-hidden mb-2 bg-gray-100`}>
-                  <Image src={p.cover_image || "/placeholder.jpg"} fill className="object-cover transition-transform group-hover:scale-105 duration-500" alt="" />
-                  
-                  <div className="absolute top-1.5 left-1.5 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-[7px] font-black uppercase flex items-center gap-1">
-                    {p.orientation === 'portrait' && <span>📐 ÁLLÓ</span>}
-                    {p.orientation === 'landscape' && <span>📏 FEKVŐ</span>}
-                    {p.orientation === 'square' && <span>🔲 NÉGYZET</span>}
-                    {p.orientation === 'panorama' && <span>🎞️ PANORÁMA</span>}
+          {filteredProducts.length === 0 ? (
+            <div className="text-center py-20 font-bold text-gray-400 text-sm uppercase">Nincs találat a megadott szűrők alapján.</div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+              {currentProducts.map((p) => (
+                <div key={p.id} className="bg-white border-2 border-gray-50 rounded-2xl p-2 hover:border-black transition-all group flex flex-col relative">
+                  <div className={`relative ${p.orientation === 'panorama' ? 'aspect-square sm:aspect-video' : 'aspect-[3/4]'} rounded-xl overflow-hidden mb-2 bg-gray-100`}>
+                    <Image src={p.cover_image || "/placeholder.jpg"} fill className="object-cover transition-transform group-hover:scale-105 duration-500" alt="" />
+                    
+                    <div className="absolute top-1.5 left-1.5 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-[7px] font-black uppercase flex items-center gap-1">
+                      {p.orientation === 'portrait' && <span>📐 ÁLLÓ</span>}
+                      {p.orientation === 'landscape' && <span>📏 FEKVŐ</span>}
+                      {p.orientation === 'square' && <span>🔲 NÉGYZET</span>}
+                      {p.orientation === 'panorama' && <span>🎞️ PANORÁMA</span>}
+                      {p.orientation === 'three-piece' && <span>🖼️ HÁROMRÉSZES</span>}
+                    </div>
+
+                    <button 
+                      onClick={() => handleDelete(p.id, p.name, p.slug)}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-white/90 hover:bg-red-500 hover:text-white text-red-500 rounded-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <span className="text-xs font-bold">✕</span>
+                    </button>
                   </div>
 
-                  <button 
-                    onClick={() => handleDelete(p.id, p.name, p.slug)}
-                    className="absolute top-1.5 right-1.5 w-6 h-6 bg-white/90 hover:bg-red-500 hover:text-white text-red-500 rounded-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                  <h3 className="text-[9px] font-black uppercase truncate mb-2 px-1">{p.name}</h3>
+                  
+                  <Link 
+                    href={`/admin/products/edit/${p.id}`} 
+                    className="mt-auto block w-full py-2 bg-gray-50 text-[8px] font-black text-center uppercase rounded-md hover:bg-blue-600 hover:text-white transition-all"
                   >
-                    <span className="text-xs font-bold">✕</span>
-                  </button>
+                    Szerkesztés
+                  </Link>
                 </div>
-
-                <h3 className="text-[9px] font-black uppercase truncate mb-2 px-1">{p.name}</h3>
-                
-                <Link 
-                  href={`/admin/products/edit/${p.id}`} 
-                  className="mt-auto block w-full py-2 bg-gray-50 text-[8px] font-black text-center uppercase rounded-md hover:bg-blue-600 hover:text-white transition-all"
-                >
-                  Szerkesztés
-                </Link>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* LAPOZÓ */}
           {totalPages > 1 && (

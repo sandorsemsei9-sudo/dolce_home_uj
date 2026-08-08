@@ -18,7 +18,6 @@ function formatPrice(price: any) {
   return new Intl.NumberFormat("hu-HU").format(num) + ",- Ft";
 }
 
-// Kedvezményes / eredeti ár párkereső a megadott szabályok alapján ("helyett" nélkül)
 function getOriginalPrice(currentPrice: number): number | null {
   switch (currentPrice) {
     case 4990: return 5990;
@@ -90,10 +89,12 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
 
   if (!product) return null;
 
+  // iOS-re a terméknév alapján generált USDZ útvonal
   const iosUsdzPath = `/models/${product.slug}.usdz`;
   
   const getModelPath = () => {
     switch (product.orientation) {
+      case 'three-piece': return "/models/canvas-three-piece.glb";
       case 'portrait': return "/models/canvas-portrait.glb";
       case 'square': return "/models/canvas-square.glb";
       case 'panorama': return "/models/canvas-panorama.glb";
@@ -138,7 +139,6 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
           <div className="lg:w-1/2 flex flex-col gap-5">
             <div className="relative aspect-square w-full overflow-hidden rounded-[40px] bg-white shadow-sm border border-[#d9d5cf] flex items-center justify-center p-4 group">
               
-
               {/* INTERAKTÍV 3D GOMB + SEGÉDSZÖVEG */}
               <div className="absolute top-6 right-6 z-20 flex flex-col items-end gap-3" style={{ perspective: '1000px' }}>
                 <div
@@ -326,6 +326,9 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
                 modelUrl={masterGlbPath} 
                 iosModelUrl={isIOS ? iosUsdzPath : ""} 
                 textureUrl={product.texture_image || product.cover_image}
+                textureUrl2={product.texture_image_2}
+                textureUrl3={product.texture_image_3}
+                partsCount={product.parts_count || 1}
               />
             </div>
           </div>

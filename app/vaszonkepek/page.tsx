@@ -331,7 +331,7 @@ function TermekekContent() {
                       
                       <Link 
                         href={`/vaszonkepek/${product.slug}`} 
-                        className="relative mb-8 block aspect-[4/5] overflow-hidden rounded-[48px] border border-[#efebe6] bg-white transition-all duration-500 hover:shadow-[0_30px_60px_rgba(42,33,29,0.08)]"
+                        className="relative mb-8 block aspect-[4/5] overflow-hidden rounded-[15px] border border-[#efebe6] bg-white transition-all duration-500 hover:shadow-[0_30px_60px_rgba(42,33,29,0.08)]"
                       >
 
                         <div className="absolute right-7 top-7 z-20 flex flex-col items-center gap-2 pointer-events-none">

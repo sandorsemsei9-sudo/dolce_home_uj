@@ -2,18 +2,26 @@
 
 import React, { useEffect, useRef } from "react";
 
-// Kibővítjük a propok listáját: jöhet az iosUrl és a textureUrl is
 interface CanvasViewerProps {
   modelUrl: string;
   iosModelUrl?: string;
   textureUrl?: string;
+  textureUrl2?: string;
+  textureUrl3?: string;
+  partsCount?: number;
 }
 
-export default function CanvasViewer({ modelUrl, iosModelUrl, textureUrl }: CanvasViewerProps) {
+export default function CanvasViewer({ 
+  modelUrl, 
+  iosModelUrl, 
+  textureUrl, 
+  textureUrl2, 
+  textureUrl3,
+  partsCount = 1 
+}: CanvasViewerProps) {
   const viewerRef = useRef<any>(null);
 
   useEffect(() => {
-    // Script betöltése ha még nincs ott
     if (!customElements.get("model-viewer")) {
       const script = document.createElement("script");
       script.type = "module";
@@ -22,32 +30,48 @@ export default function CanvasViewer({ modelUrl, iosModelUrl, textureUrl }: Canv
     }
   }, []);
 
-  // Ez a rész felel azért, hogy Androidon/Weben ráfeszítse a képet a modellre
   useEffect(() => {
-    const applyTexture = async () => {
+    const applyTextures = async () => {
       const viewer = viewerRef.current;
-      if (viewer && textureUrl && viewer.model) {
-        // Létrehozunk egy textúrát a képből
-        const texture = await viewer.createTexture(textureUrl);
-        // Megkeressük a modell anyagát (általában az első)
-        const material = viewer.model.materials[0];
-        
-        if (material && material.pbrMetallicRoughness.baseColorTexture) {
-          material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
+      if (viewer && viewer.model) {
+        const materials = viewer.model.materials;
+
+        console.log("Modell anyagok:", materials.map((m: any) => m.name));
+
+        if (materials && materials.length > 0) {
+          if (partsCount === 3) {
+            const mapping = [
+              { index: 2, url: textureUrl3 }, // Bal oldali kép (felcserélve)
+              { index: 3, url: textureUrl },  // Középső kép
+              { index: 0, url: textureUrl2 }  // Jobb oldali kép (felcserélve)
+            ];
+
+            for (const item of mapping) {
+              if (item.url && materials[item.index]?.pbrMetallicRoughness?.baseColorTexture) {
+                const texture = await viewer.createTexture(item.url);
+                materials[item.index].pbrMetallicRoughness.baseColorTexture.setTexture(texture);
+              }
+            }
+          } else {
+            // Egyrészes modell
+            if (textureUrl && materials[0]?.pbrMetallicRoughness?.baseColorTexture) {
+              const texture = await viewer.createTexture(textureUrl);
+              materials[0].pbrMetallicRoughness.baseColorTexture.setTexture(texture);
+            }
+          }
         }
       }
     };
 
-    // Megvárjuk, amíg a modell betöltődik, mielőtt rátesszük a képet
     const viewer = viewerRef.current;
     if (viewer) {
-      viewer.addEventListener("load", applyTexture);
+      viewer.addEventListener("load", applyTextures);
     }
 
     return () => {
-      if (viewer) viewer.removeEventListener("load", applyTexture);
+      if (viewer) viewer.removeEventListener("load", applyTextures);
     };
-  }, [textureUrl]);
+  }, [textureUrl, textureUrl2, textureUrl3, partsCount]);
 
   return (
     <div className="w-full h-full relative bg-[#f8f8f6]">
@@ -56,29 +80,24 @@ export default function CanvasViewer({ modelUrl, iosModelUrl, textureUrl }: Canv
         {
           ref: viewerRef,
           src: modelUrl,
-          // Ha küldtünk egyedi iosModelUrl-t, azt használja, ha nem, akkor a régit
           "ios-src": iosModelUrl || modelUrl.replace(".glb", ".usdz"),
 
-          // --- AR BEÁLLÍTÁSOK ---
           ar: true,
           "ar-modes": "webxr scene-viewer quick-look",
           "ar-placement": "wall",
           "ar-scale": "auto",
 
-          // --- KAMERA ÉS MEGJELENÍTÉS ---
           "camera-controls": true,
           "auto-rotate": true,
           "rotation-per-second": "30deg",
           "camera-orbit": "0deg 75deg 2.2m",
           "field-of-view": "30deg",
           
-          // --- VIZUÁLIS FINOMÍTÁS ---
           "shadow-intensity": "1.5",
           "shadow-softness": "1",
           exposure: "1.2",
           "environment-image": "neutral",
           
-          // --- INTERAKCIÓ ---
           "touch-action": "pan-y",
 
           style: {
@@ -86,8 +105,6 @@ export default function CanvasViewer({ modelUrl, iosModelUrl, textureUrl }: Canv
             height: "100%",
           },
         },
-
-        // --- EGYEDI AR GOMB ---
         React.createElement(
           "button",
           {
@@ -95,9 +112,12 @@ export default function CanvasViewer({ modelUrl, iosModelUrl, textureUrl }: Canv
             className:
               "absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#2a211d] text-white px-8 py-4 rounded-2xl font-bold text-sm shadow-2xl flex items-center gap-2 transition-transform active:scale-95",
           },
-          <React.Fragment>
-            <span>✨</span> Próbáld ki a faladon!
-          </React.Fragment>
+          React.createElement(
+            React.Fragment,
+            null,
+            React.createElement("span", null, "✨"),
+            " Próbáld ki a faladon!"
+          )
         )
       )}
     </div>

@@ -21,14 +21,20 @@ export default function EditProductPage() {
     cover_image: "",
     hover_image: "",
     texture_image: "",
+    texture_image_2: "",
+    texture_image_3: "",
     orientation: "portrait",
+    parts_count: 1,
   });
 
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
+  
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingHover, setUploadingHover] = useState(false);
   const [uploadingTexture, setUploadingTexture] = useState(false);
+  const [uploadingTexture2, setUploadingTexture2] = useState(false);
+  const [uploadingTexture3, setUploadingTexture3] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -50,7 +56,10 @@ export default function EditProductPage() {
           cover_image: pData.cover_image || "",
           hover_image: pData.hover_image || "",
           texture_image: pData.texture_image || "",
+          texture_image_2: pData.texture_image_2 || "",
+          texture_image_3: pData.texture_image_3 || "",
           orientation: pData.orientation || "portrait",
+          parts_count: pData.parts_count || 1,
         });
       }
 
@@ -80,19 +89,31 @@ export default function EditProductPage() {
     if (id) loadData();
   }, [id, supabase]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'hover' | 'texture', setUploadingFn: (b: boolean) => void) => {
+const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>, 
+    type: 'cover' | 'hover' | 'texture' | 'texture2' | 'texture3', 
+    setUploadingFn: (b: boolean) => void
+  ) => {
     try {
       setUploadingFn(true);
       if (!e.target.files || e.target.files.length === 0) return;
       const file = e.target.files[0];
-      const fileName = `${Date.now()}-${type}-${file.name.replace(/\s+/g, '-').toLowerCase()}`;
+      
+      // Használjuk a termék slug-ját mappaként, vagy fallback-ként az id-t, ha még üres a slug
+      const folderName = product.slug.trim() !== "" ? product.slug : id;
+      const fileName = `${folderName}/${Date.now()}-${type}-${file.name.replace(/\s+/g, '-').toLowerCase()}`;
       
       const { error: uploadError } = await supabase.storage.from("products").upload(fileName, file);
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from("products").getPublicUrl(fileName);
       
-      const field = type === 'cover' ? 'cover_image' : type === 'hover' ? 'hover_image' : 'texture_image';
+      let field = 'cover_image';
+      if (type === 'hover') field = 'hover_image';
+      else if (type === 'texture') field = 'texture_image';
+      else if (type === 'texture2') field = 'texture_image_2';
+      else if (type === 'texture3') field = 'texture_image_3';
+
       setProduct(prev => ({ ...prev, [field]: data.publicUrl }));
 
     } catch (error: any) {
@@ -107,6 +128,7 @@ export default function EditProductPage() {
     setSaving(true);
 
     const primaryCategoryId = selectedCategories.length > 0 ? selectedCategories[0] : null;
+    const isThreePiece = product.orientation === "three-piece";
 
     // 1. Termék alapadatok mentése
     const { error: pError } = await supabase.from("products").update({
@@ -117,7 +139,10 @@ export default function EditProductPage() {
       cover_image: product.cover_image,
       hover_image: product.hover_image,
       texture_image: product.texture_image || product.cover_image,
+      texture_image_2: isThreePiece ? product.texture_image_2 : null,
+      texture_image_3: isThreePiece ? product.texture_image_3 : null,
       orientation: product.orientation,
+      parts_count: isThreePiece ? 3 : 1,
     }).eq("id", id);
 
     if (pError) {
@@ -126,7 +151,7 @@ export default function EditProductPage() {
       return;
     }
 
-// 3. ÖSSZES kiválasztott kategória beszúrása UPSERT-tel (elkerüli a pkey ütközést)
+    // 2. Kategóriák frissítése UPSERT-tel
     if (selectedCategories.length > 0) {
       const uniqueCategoryIds = Array.from(new Set(selectedCategories.map(Number)));
 
@@ -144,7 +169,7 @@ export default function EditProductPage() {
       }
     }
 
-    // 4. Variánsok frissítése
+    // 3. Variánsok frissítése
     await supabase.from("product_variants").delete().eq("product_id", id);
     
     const variantsToInsert = variants
@@ -186,9 +211,9 @@ export default function EditProductPage() {
               {[
                 { type: 'cover', label: 'Borító (Webshop)', url: product.cover_image, status: uploadingCover, setter: setUploadingCover },
                 { type: 'hover', label: 'Másodlagos kép', url: product.hover_image, status: uploadingHover, setter: setUploadingHover },
-                { type: 'texture', label: '3D Textúra (Alap)', url: product.texture_image, status: uploadingTexture, setter: setUploadingTexture }
+                { type: 'texture', label: '3D Textúra (Alap / 1)', url: product.texture_image, status: uploadingTexture, setter: setUploadingTexture }
               ].map((img) => (
-                <div key={img.type} className={`group relative border-2 border-dashed rounded-[30px] p-2 text-center aspect-square flex items-center justify-center overflow-hidden transition-all ${img.type === 'texture' ? 'bg-blue-50/30 border-blue-100' : 'bg-gray-50 border-gray-100'}`}>
+                <div key={img.type} className={`group relative border-2 border-dashed rounded-[30px] p-2 text-center aspect-square flex items-center justify-center overflow-hidden transition-all ${img.type.startsWith('texture') ? 'bg-blue-50/30 border-blue-100' : 'bg-gray-50 border-gray-100'}`}>
                   
                   {img.url ? (
                     <Image 
@@ -217,6 +242,29 @@ export default function EditProductPage() {
                   )}
                 </div>
               ))}
+
+              {/* Ha háromrészes a termék, megjelennek a további 3D képek is */}
+              {product.orientation === "three-piece" && (
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-dashed border-gray-200">
+                  {[
+                    { type: 'texture2', label: '3D Kép 2', url: product.texture_image_2, status: uploadingTexture2, setter: setUploadingTexture2 },
+                    { type: 'texture3', label: '3D Kép 3', url: product.texture_image_3, status: uploadingTexture3, setter: setUploadingTexture3 }
+                  ].map((img) => (
+                    <div key={img.type} className="group relative border-2 border-dashed border-blue-100 rounded-[25px] p-2 text-center aspect-square flex items-center justify-center overflow-hidden bg-blue-50/30 transition-all">
+                      {img.url ? (
+                        <Image src={img.url} fill className="object-cover rounded-[20px]" alt={img.label} unoptimized />
+                      ) : (
+                        <div className="text-[9px] font-bold text-blue-300 uppercase">{img.label} helye</div>
+                      )}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center rounded-[20px] backdrop-blur-sm">
+                        <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, img.type as any, img.setter)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                        <span className="text-white text-[9px] font-black uppercase tracking-widest">Csere</span>
+                      </div>
+                      {img.status && <div className="absolute inset-0 bg-white/90 flex items-center justify-center font-black text-[9px] animate-pulse rounded-[20px]">Feltöltés...</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -259,6 +307,7 @@ export default function EditProductPage() {
                   <option value="landscape">📏 Fekvő</option>
                   <option value="square">🔲 Négyzet</option>
                   <option value="panorama">🎞️ Panoráma</option>
+                  <option value="three-piece">🖼️ Háromrészes</option>
                 </select>
               </div>
             </div>

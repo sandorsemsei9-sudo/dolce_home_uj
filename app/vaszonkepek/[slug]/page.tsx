@@ -53,10 +53,10 @@ export default async function Page({ params }: Props) {
 
   const supabase = await createClient();
 
-  // Termék lekérdezése kategória-join NÉLKÜL (elkerülve a konfliktust)
+  // ITT PÓTOLTUK A HIÁNYZÓ MEZŐKET (texture_image_2, texture_image_3, parts_count)
   const { data: product, error: productError } = await supabase
     .from("products")
-    .select("id, name, description, cover_image, orientation, texture_image, slug, hover_image")
+    .select("id, name, description, cover_image, orientation, texture_image, texture_image_2, texture_image_3, parts_count, slug, hover_image")
     .eq("slug", slug)
     .maybeSingle();
 

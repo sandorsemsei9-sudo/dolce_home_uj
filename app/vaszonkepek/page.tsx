@@ -270,11 +270,10 @@ function TermekekContent() {
                 <span className="text-[10px] font-bold uppercase tracking-widest text-[#8a7f76] mr-1">Formátum:</span>
                 {[
                   { label: "Összes", value: "all" },
-                  { label: "Négyzet", value: "square" },
                   { label: "Álló", value: "portrait" },
                   { label: "Fekvő", value: "landscape" },
                   { label: "Panoráma", value: "panorama" },
-                  { label: "Többrészes", value: "tobbrészes" },
+                  { label: "Többrészes", value: "three-piece" },
                 ].map((orient) => (
                   <button
                     key={orient.value}

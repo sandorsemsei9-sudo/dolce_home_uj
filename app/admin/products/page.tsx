@@ -311,7 +311,6 @@ function AdminProductsContent() {
             <select className="w-full border-2 border-gray-100 p-3 rounded-xl text-sm font-bold outline-none focus:border-black bg-gray-50" value={newProduct.orientation} onChange={e => setNewProduct({...newProduct, orientation: e.target.value})}>
               <option value="portrait">📐 Álló</option>
               <option value="landscape">📏 FEKVŐ</option>
-              <option value="square">🔲 NÉGYZET</option>
               <option value="panorama">🎞️ PANORÁMA</option>
               <option value="three-piece">🖼️🖼️🖼️ HÁROMRÉSZES</option>
             </select>
@@ -398,7 +397,6 @@ function AdminProductsContent() {
             <option value="all">Minden tájolás</option>
             <option value="portrait">📐 Álló</option>
             <option value="landscape">📏 Fekvő</option>
-            <option value="square">🔲 Négyzet</option>
             <option value="panorama">🎞️ Panoráma</option>
             <option value="three-piece">🖼️ Háromrészes</option>
           </select>

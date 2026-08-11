@@ -305,7 +305,6 @@ const handleFileUpload = async (
                 <select required className="w-full h-14 bg-gray-100 border-none rounded-2xl px-4 text-[11px] font-black uppercase outline-none focus:ring-2 ring-emerald-100" value={product.orientation} onChange={(e) => setProduct({...product, orientation: e.target.value})}>
                   <option value="portrait">📐 Álló</option>
                   <option value="landscape">📏 Fekvő</option>
-                  <option value="square">🔲 Négyzet</option>
                   <option value="panorama">🎞️ Panoráma</option>
                   <option value="three-piece">🖼️ Háromrészes</option>
                 </select>

@@ -77,7 +77,7 @@ export const products: Product[] = [
     mockupImage: "/images/oroszlan-mockup.webp",
     featured: false,
     isNew: true,
-    hero: true,
+    hero: false,
   },
       {
     id: 7,

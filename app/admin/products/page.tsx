@@ -62,7 +62,6 @@ function AdminProductsContent() {
     } else {
       params.delete(key);
     }
-    // Ha szűrőt váltunk, visszaugrunk az 1. oldalra
     if (key !== "page") {
       params.delete("page");
     }
@@ -80,9 +79,10 @@ function AdminProductsContent() {
 
   async function fetchProducts() {
     setLoading(true);
+    // Beállítás: Mozgatás szerinti sorrend (position ascending)
     const { data, error } = await supabase.from("products")
       .select("*, product_categories(category_id)")
-      .order("created_at", { ascending: false });
+      .order("position", { ascending: true });
       
     if (error) {
       console.error("Hiba a termékek betöltésekor:", error.message);
@@ -91,6 +91,41 @@ function AdminProductsContent() {
     if (data) setProducts(data);
     setLoading(false);
   }
+// --- POZÍCIÓ MOZGATÁSA (MANUÁLIS SORRENDEZÉS) ---
+  const handleMove = async (productId: string, direction: "prev" | "next") => {
+    const currentIndex = products.findIndex((p) => p.id === productId);
+    if (currentIndex === -1) return;
+
+    const targetIndex = direction === "prev" ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= products.length) return;
+
+    const newProducts = [...products];
+    const currentProd = newProducts[currentIndex];
+    const targetProd = newProducts[targetIndex];
+
+    const currentPos = currentProd.position ?? currentIndex;
+    const targetPos = targetProd.position ?? targetIndex;
+
+    currentProd.position = targetPos;
+    targetProd.position = currentPos;
+
+    newProducts[currentIndex] = targetProd;
+    newProducts[targetIndex] = currentProd;
+
+    setProducts(newProducts);
+
+    // MENTÉS SUPABASE-BE (.update használata .upsert helyett)
+    const [res1, res2] = await Promise.all([
+      supabase.from("products").update({ position: currentProd.position }).eq("id", currentProd.id),
+      supabase.from("products").update({ position: targetProd.position }).eq("id", targetProd.id)
+    ]);
+
+    if (res1.error || res2.error) {
+      const err = res1.error || res2.error;
+      console.error("Hiba a sorrend mentésekor:", err?.message);
+      fetchProducts(); // Hiba esetén eredeti állapot visszaállítása
+    }
+  };
 
   // --- SZŰRÉSI LOGIKA ---
   const filteredProducts = useMemo(() => {
@@ -201,6 +236,8 @@ function AdminProductsContent() {
       }
 
       const isThreePiece = newProduct.orientation === "three-piece";
+      // Új terméket a lista legelejére tesszük
+      const minPosition = products.length > 0 ? Math.min(...products.map(p => p.position ?? 0)) - 1 : 0;
 
       const finalProduct = {
         name: newProduct.name,
@@ -211,7 +248,8 @@ function AdminProductsContent() {
         texture_image_2: isThreePiece ? finalImages.texture2 : null,
         texture_image_3: isThreePiece ? finalImages.texture3 : null,
         orientation: newProduct.orientation,
-        parts_count: isThreePiece ? 3 : 1
+        parts_count: isThreePiece ? 3 : 1,
+        position: minPosition
       };
 
       const { data: pData, error: pError } = await supabase.from("products").insert([finalProduct]).select().single();
@@ -376,7 +414,6 @@ function AdminProductsContent() {
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Szűrés:</span>
           
-          {/* Kategória szűrő */}
           <select 
             value={selectedCategoryFilter} 
             onChange={(e) => updateQueryParam("category", e.target.value)}
@@ -388,7 +425,6 @@ function AdminProductsContent() {
             ))}
           </select>
 
-          {/* Tájolás szűrő */}
           <select 
             value={selectedOrientationFilter} 
             onChange={(e) => updateQueryParam("orientation", e.target.value)}
@@ -415,37 +451,65 @@ function AdminProductsContent() {
             <div className="text-center py-20 font-bold text-gray-400 text-sm uppercase">Nincs találat a megadott szűrők alapján.</div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-              {currentProducts.map((p) => (
-                <div key={p.id} className="bg-white border-2 border-gray-50 rounded-2xl p-2 hover:border-black transition-all group flex flex-col relative">
-                  <div className={`relative ${p.orientation === 'panorama' ? 'aspect-square sm:aspect-video' : 'aspect-[3/4]'} rounded-xl overflow-hidden mb-2 bg-gray-100`}>
-                    <Image src={p.cover_image || "/placeholder.jpg"} fill className="object-cover transition-transform group-hover:scale-105 duration-500" alt="" />
-                    
-                    <div className="absolute top-1.5 left-1.5 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-[7px] font-black uppercase flex items-center gap-1">
-                      {p.orientation === 'portrait' && <span>📐 ÁLLÓ</span>}
-                      {p.orientation === 'landscape' && <span>📏 FEKVŐ</span>}
-                      {p.orientation === 'square' && <span>🔲 NÉGYZET</span>}
-                      {p.orientation === 'panorama' && <span>🎞️ PANORÁMA</span>}
-                      {p.orientation === 'three-piece' && <span>🖼️ HÁROMRÉSZES</span>}
+              {currentProducts.map((p) => {
+                const globalIndex = products.findIndex(item => item.id === p.id);
+                const isFirst = globalIndex === 0;
+                const isLast = globalIndex === products.length - 1;
+
+                return (
+                  <div key={p.id} className="bg-white border-2 border-gray-50 rounded-2xl p-2 hover:border-black transition-all group flex flex-col relative">
+                    <div className={`relative ${p.orientation === 'panorama' ? 'aspect-square sm:aspect-video' : 'aspect-[3/4]'} rounded-xl overflow-hidden mb-2 bg-gray-100`}>
+                      <Image src={p.cover_image || "/placeholder.jpg"} fill className="object-cover transition-transform group-hover:scale-105 duration-500" alt="" />
+                      
+                      <div className="absolute top-1.5 left-1.5 bg-black/80 backdrop-blur-sm text-white px-2 py-1 rounded-md text-[7px] font-black uppercase flex items-center gap-1">
+                        {p.orientation === 'portrait' && <span>📐 ÁLLÓ</span>}
+                        {p.orientation === 'landscape' && <span>📏 FEKVŐ</span>}
+                        {p.orientation === 'square' && <span>🔲 NÉGYZET</span>}
+                        {p.orientation === 'panorama' && <span>🎞️ PANORÁMA</span>}
+                        {p.orientation === 'three-piece' && <span>🖼️ HÁROMRÉSZES</span>}
+                      </div>
+
+                      <button 
+                        onClick={() => handleDelete(p.id, p.name, p.slug)}
+                        className="absolute top-1.5 right-1.5 w-6 h-6 bg-white/90 hover:bg-red-500 hover:text-white text-red-500 rounded-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        <span className="text-xs font-bold">✕</span>
+                      </button>
                     </div>
 
-                    <button 
-                      onClick={() => handleDelete(p.id, p.name, p.slug)}
-                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-white/90 hover:bg-red-500 hover:text-white text-red-500 rounded-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <span className="text-xs font-bold">✕</span>
-                    </button>
-                  </div>
+                    <h3 className="text-[9px] font-black uppercase truncate mb-2 px-1">{p.name}</h3>
+                    
+                    {/* MANUÁLIS MOZGATÓ GOMBOK */}
+                    <div className="flex gap-1 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => handleMove(p.id, "prev")}
+                        disabled={isFirst}
+                        title="Előrébb sorolás"
+                        className="flex-1 py-1 bg-gray-100 hover:bg-black hover:text-white disabled:opacity-30 disabled:hover:bg-gray-100 disabled:hover:text-black rounded text-[10px] font-black transition-all"
+                      >
+                        ←
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMove(p.id, "next")}
+                        disabled={isLast}
+                        title="Hátrébb sorolás"
+                        className="flex-1 py-1 bg-gray-100 hover:bg-black hover:text-white disabled:opacity-30 disabled:hover:bg-gray-100 disabled:hover:text-black rounded text-[10px] font-black transition-all"
+                      >
+                        →
+                      </button>
+                    </div>
 
-                  <h3 className="text-[9px] font-black uppercase truncate mb-2 px-1">{p.name}</h3>
-                  
-                  <Link 
-                    href={`/admin/products/edit/${p.id}`} 
-                    className="mt-auto block w-full py-2 bg-gray-50 text-[8px] font-black text-center uppercase rounded-md hover:bg-blue-600 hover:text-white transition-all"
-                  >
-                    Szerkesztés
-                  </Link>
-                </div>
-              ))}
+                    <Link 
+                      href={`/admin/products/edit/${p.id}`} 
+                      className="mt-auto block w-full py-2 bg-gray-50 text-[8px] font-black text-center uppercase rounded-md hover:bg-blue-600 hover:text-white transition-all"
+                    >
+                      Szerkesztés
+                    </Link>
+                  </div>
+                );
+              })}
             </div>
           )}
 

@@ -57,14 +57,14 @@ function TermekekContent() {
     async function fetchData() {
       setLoading(true);
       try {
-        // 1. Termékek lekérdezése tisztán, a közvetlen kategória-join nélkül
+        // 1. Termékek lekérdezése pozíció (position) szerint növekvő sorrendben
         const { data: pData, error: pError } = await supabase
           .from("products")
           .select(`
             *,
             product_variants(*)
           `)
-          .order("created_at", { ascending: false });
+          .order("position", { ascending: true });
 
         if (pError) {
           console.error("Hiba a termékek lekérdezésekor:", pError.message);
@@ -137,13 +137,16 @@ function TermekekContent() {
       });
     }
 
-    // 3. Rendezés
+    // 3. Rendezés (az alapértelmezett rendezés a position mező szerint történik)
     if (sortBy === "price-asc") {
       filtered.sort((a, b) => a.display_price - b.display_price);
     } else if (sortBy === "price-desc") {
       filtered.sort((a, b) => b.display_price - a.display_price);
     } else if (sortBy === "name-asc") {
       filtered.sort((a, b) => a.name.localeCompare(b.name, "hu"));
+    } else {
+      // "default" esetén pozíció szerint soroljuk be őket
+      filtered.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     }
 
     return filtered;
@@ -199,10 +202,10 @@ function TermekekContent() {
       question: "Van lehetőség utánvétes fizetésre?",
       answer: "Természetesen! A futárnál készpénzzel és bankkártyával is fizethetsz a csomag átvételekor. Emellett biztonságos online bankkártyás fizetést is biztosítunk.",
     },
-  {
-    question: "Hogyan tudom megnézni a képet a saját falamon?",
-    answer: "Mobil eszközön (telefonon vagy tableten) a 3D nézeten belül a kiterjesztett valóság (AR) funkció segítségével közvetlenül a saját szobád falára vetítheted a kiválasztott méretet."
-  }
+    {
+      question: "Hogyan tudom megnézni a képet a saját falamon?",
+      answer: "Mobil eszközön (telefonon vagy tableten) a 3D nézeten belül a kiterjesztett valóság (AR) funkció segítségével közvetlenül a saját szobád falára vetítheted a kiválasztott méretet."
+    }
   ];
 
   return (
@@ -298,7 +301,7 @@ function TermekekContent() {
                     onChange={(e) => updateParams({ sort: e.target.value }, true)}
                     className="bg-transparent text-xs font-bold text-[#2a211d] outline-none cursor-pointer hover:text-[#d17d58]"
                   >
-                    <option value="default">Legújabbak</option>
+                    <option value="default">Alapértelmezett</option>
                     <option value="price-asc">Ár: növekvő</option>
                     <option value="price-desc">Ár: csökkenő</option>
                     <option value="name-asc">Név: A-Z</option>

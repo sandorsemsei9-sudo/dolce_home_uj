@@ -17,20 +17,22 @@ const CustomCanvasViewer = dynamic<any>(() => import("../components/3d/CumstomCa
 });
 
 const TEMPLATE_IMAGE = "/images/mockup.webp"; 
-type Ratio = "square" | "portrait" | "landscape" | "panorama"; 
+type Ratio = "square" | "portrait" | "landscape" | "panorama" | "triptych"; 
 
 const ratios: Record<Ratio, number> = { 
   square: 1/1, 
   portrait: 2/3, 
   landscape: 3/2, 
-  panorama: 3/1 
+  panorama: 3/1,
+  triptych: 3/2
 };
 
 const ratioLabels: Record<Ratio, string> = { 
   square: "Négyzet", 
   portrait: "Álló", 
   landscape: "Fekvő", 
-  panorama: "Panoráma" 
+  panorama: "Panoráma",
+  triptych: "3 részes"
 };
 
 const sizes: Record<Ratio, string[]> = {
@@ -38,6 +40,7 @@ const sizes: Record<Ratio, string[]> = {
   portrait: ["30x40", "40x60", "30x60", "40x80", "50x80", "50x100"],
   landscape: ["50x30", "70x40", "90x50", "60x30", "80x40", "100x50"],
   panorama: ["90x30", "120x40", "150x50"],
+  triptych: ["3*30x40", "3*40x60", "3*50x80", "3*30x60", "3*40x80", "3*50x100"],
 };
 
 const faqItems = [
@@ -59,20 +62,35 @@ const faqItems = [
   }
 ];
 
+function getDimensions(sizeStr: string): [number, number] {
+  if (!sizeStr) return [30, 40];
+  if (sizeStr.startsWith("3*")) {
+    const clean = sizeStr.replace("3*", "");
+    const parts = clean.split("x").map((n) => parseInt(n, 10));
+    const singleWidth = parts[0] || 30;
+    const height = parts[1] || 60;
+    return [singleWidth * 3, height];
+  }
+  const parts = sizeStr.split("x").map((n) => parseInt(n, 10));
+  return [parts[0] || 30, parts[1] || 40];
+}
+
 function calculatePrice(size: string): number {
   const prices: { [key: string]: number } = {
-    // Négyzet
     "30x30": 5990, "40x40": 7890, "50x50": 9590,
-    // Álló
-    "30x40": 7490, "40x60": 9490, "50x80": 11990,
-    "30x60": 9990, "40x80": 11990, "50x100": 17990,
-    // Fekvő
+    "30x40": 7490, "40x60": 9490, "50x80": 12490,
+    "30x60": 8990, "40x80": 11990, "50x100": 17990,
     "50x30": 9480, "70x40": 11990, "90x50": 16990,
-    "60x30": 9990, "80x40": 11990, "100x50": 17990,
-    // Panoráma
-    "90x30": 14490, "120x40": 20490, "150x50": 24990
+    "60x30": 9990, "80x40": 12490, "100x50": 17990,
+    "90x30": 14490, "120x40": 20490, "150x50": 24990,
+    "3*30x40": 17990,
+    "3*40x60": 23990,
+    "3*50x80": 29990,
+    "3*30x60": 22490,
+    "3*40x80": 29990,
+    "3*50x100": 42990
   };
-  return prices[size] || 11990;
+  return prices[size] || 22990;
 }
 
 function formatPrice(price: number) { return new Intl.NumberFormat("hu-HU").format(price) + " Ft"; }
@@ -107,6 +125,35 @@ export default function EgyediVaszonkepPage() {
   }, []);
 
   const price = useMemo(() => calculatePrice(size), [size]);
+  const [sizeWidth, sizeHeight] = useMemo(() => getDimensions(size), [size]);
+
+  const currentCropAspect = useMemo(() => {
+    return sizeWidth / sizeHeight;
+  }, [sizeWidth, sizeHeight]);
+
+  const previewWidthPercent = useMemo(() => {
+    return sizeWidth * 0.8;
+  }, [sizeWidth]);
+
+  // Változás kezelése ha a felhasználó megváltoztatja a formátumot
+  const handleRatioChange = (newRatio: Ratio) => {
+    setRatio(newRatio);
+    const defaultSize = sizes[newRatio][0];
+    setSize(defaultSize);
+    setSavedConfig(null);
+    if (image) {
+      setIsCropModalOpen(true);
+    }
+  };
+
+  // Változás kezelése ha a felhasználó megváltoztatja a méretet
+  const handleSizeChange = (newSize: string) => {
+    setSize(newSize);
+    setSavedConfig(null);
+    if (image) {
+      setIsCropModalOpen(true);
+    }
+  };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -141,15 +188,41 @@ export default function EgyediVaszonkepPage() {
       
       const previewPath = `${today}/previews/${uniqueId}.jpg`;
       await supabase.storage.from("custom-canvas").upload(previewPath, blob);
+      const { data: { publicUrl } } = supabase.storage.from("custom-canvas").getPublicUrl(previewPath);
+
+      let triptychUrls: string[] = [];
+      if (ratio === "triptych") {
+        const panelWidth = Math.floor(croppedAreaPixels.width / 3);
+        const panelHeight = croppedAreaPixels.height;
+
+        for (let i = 0; i < 3; i++) {
+          const sliceCanvas = document.createElement("canvas");
+          sliceCanvas.width = panelWidth;
+          sliceCanvas.height = panelHeight;
+          const sliceCtx = sliceCanvas.getContext("2d");
+
+          sliceCtx?.drawImage(
+            canvas,
+            i * panelWidth, 0, panelWidth, panelHeight,
+            0, 0, panelWidth, panelHeight
+          );
+
+          const sliceBlob = await new Promise<Blob>(r => sliceCanvas.toBlob(b => r(b!), "image/jpeg", 0.95));
+          const slicePath = `${today}/previews/${uniqueId}-part${i + 1}.jpg`;
+          await supabase.storage.from("custom-canvas").upload(slicePath, sliceBlob);
+
+          const { data: { publicUrl: sliceUrl } } = supabase.storage.from("custom-canvas").getPublicUrl(slicePath);
+          triptychUrls.push(sliceUrl);
+        }
+      }
       
       const originalPath = `${today}/originals/${safeOriginalName}`;
       await supabase.storage.from("custom-canvas").upload(originalPath, originalFile);
 
-      const { data: { publicUrl } } = supabase.storage.from("custom-canvas").getPublicUrl(previewPath);
-
       setSavedConfig({ 
         ratio, size, price, 
         previewUrl: publicUrl, 
+        triptychUrls: triptychUrls,
         originalPath: originalPath 
       });
       setIsCropModalOpen(false);
@@ -236,19 +309,51 @@ export default function EgyediVaszonkepPage() {
                 </div>
               )}
               
+              {/* DINAMIKUS, VALÓS MÉRETARÁNYOS FAL-ELŐNÉZET */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8">
-                <div className={`transition-all duration-700 ${
-                  activeRatio === "square" ? "aspect-square w-[62%]" : 
-                  activeRatio === "portrait" ? "aspect-[2/3] w-[42%]" : 
-                  activeRatio === "landscape" ? "aspect-[3/2] w-[72%]" : "aspect-[3/1] w-[80%]"
-                }`}>
-                  <div className="relative h-full w-full bg-white shadow-[0_25px_60px_rgba(42,33,29,0.3)] overflow-hidden">
-                    {savedConfig?.previewUrl && (
-                      <img src={savedConfig.previewUrl} alt="Saját fotó előnézete vásznon" className="h-full w-full object-cover relative z-10" />
-                    )}
-                  </div>
+                <div 
+                  className="transition-all duration-500 ease-out flex items-center justify-center"
+                  style={{
+                    aspectRatio: `${sizeWidth} / ${sizeHeight}`,
+                    width: `${previewWidthPercent}%`,
+                  }}
+                >
+                  {activeRatio === "triptych" ? (
+                    <div className="grid grid-cols-3 gap-1.5 md:gap-2 h-full w-full">
+                      {[0, 1, 2].map((panelIndex) => (
+                        <div 
+                          key={panelIndex} 
+                          className="relative h-full w-full bg-white shadow-[0_15px_35px_rgba(42,33,29,0.35)] overflow-hidden rounded-sm"
+                        >
+                          {savedConfig?.previewUrl && (
+                            <img 
+                              src={savedConfig.previewUrl} 
+                              alt={`Triptichon panel ${panelIndex + 1}`} 
+                              className="h-full max-w-none relative z-10"
+                              style={{
+                                width: '300%',
+                                marginLeft: `-${panelIndex * 100}%`,
+                                objectFit: 'cover'
+                              }} 
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="relative h-full w-full bg-white shadow-[0_25px_60px_rgba(42,33,29,0.3)] overflow-hidden rounded-sm">
+                      {savedConfig?.previewUrl && (
+                        <img 
+                          src={savedConfig.previewUrl} 
+                          alt="Saját fotó előnézete vásznon" 
+                          className="h-full w-full object-cover relative z-10" 
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
+
             </div>
 
             {/* SEO & TÁJÉKOZTATÓ SÁV */}
@@ -281,19 +386,19 @@ export default function EgyediVaszonkepPage() {
             </h1>
             
             <div className="space-y-7">
-              {/* 1. FORMÁTUM */}
-              <div className={savedConfig ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
+              {/* 1. FORMÁTUM (Mindig aktív) */}
+              <div>
                 <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7a675d] mb-3">1. Formátum kiválasztása</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {(Object.keys(ratios) as Ratio[]).map(r => (
                     <button 
                       key={r} 
-                      onClick={() => { setRatio(r); setSize(sizes[r][0]); }} 
+                      onClick={() => handleRatioChange(r)} 
                       className={`py-3 px-2 border rounded-2xl text-xs font-bold uppercase tracking-wider transition-all ${
                         ratio === r 
                           ? 'border-[#d17d58] bg-[#d17d58] text-white shadow-md' 
                           : 'border-[#dccfc5]/60 bg-[#fdfbf9] text-[#5e4d45] hover:border-[#d17d58]'
-                      }`}
+                      } ${r === 'triptych' ? 'col-span-2' : ''}`}
                     >
                       {ratioLabels[r]}
                     </button>
@@ -301,14 +406,19 @@ export default function EgyediVaszonkepPage() {
                 </div>
               </div>
 
-              {/* 2. MÉRET */}
-              <div className={savedConfig ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
-                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7a675d] mb-3">2. Méret kiválasztása (cm)</h3>
-                <div className="grid grid-cols-3 gap-2">
+              {/* 2. MÉRET (Mindig aktív) */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7a675d]">2. Méret kiválasztása</h3>
+                  {ratio === 'triptych' && (
+                    <span className="text-[10px] text-[#d17d58] font-bold uppercase">3 db azonos elem</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {sizes[ratio].map(s => (
                     <button 
                       key={s} 
-                      onClick={() => setSize(s)} 
+                      onClick={() => handleSizeChange(s)} 
                       className={`py-2.5 px-2 border rounded-xl text-xs font-bold transition-all ${
                         size === s 
                           ? 'border-[#d17d58] bg-[#d17d58] text-white shadow-md' 
@@ -321,7 +431,7 @@ export default function EgyediVaszonkepPage() {
                 </div>
               </div>
 
-              {/* 3. FOTÓ FELTÖLTÉSE */}
+              {/* 3. FOTÓ FELTÖLTÉSE ÉS MODOSÍTÁSA */}
               <div>
                 <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7a675d] mb-3">3. Saját fotó feltöltése</h3>
                 {!image ? (
@@ -335,9 +445,22 @@ export default function EgyediVaszonkepPage() {
                   <div className="flex justify-between items-center p-4 bg-[#fdfbf9] rounded-2xl border border-[#dccfc5]">
                     <div className="flex items-center gap-2 overflow-hidden">
                       <span className="text-sm">🖼️</span>
-                      <span className="text-xs font-semibold uppercase truncate text-[#2a211d]">{fileName}</span>
+                      <span className="text-xs font-semibold uppercase truncate text-[#2a211d] max-w-[120px] sm:max-w-[180px]">{fileName}</span>
                     </div>
-                    <button onClick={() => {setImage(null); setSavedConfig(null);}} className="text-red-500 hover:text-red-700 text-xs font-bold tracking-wide uppercase px-2 py-1">Törlés</button>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => setIsCropModalOpen(true)} 
+                        className="text-[#d17d58] hover:text-[#b06a4a] text-xs font-bold tracking-wide uppercase px-2 py-1 transition-colors"
+                      >
+                        Vágás
+                      </button>
+                      <button 
+                        onClick={() => {setImage(null); setSavedConfig(null);}} 
+                        className="text-red-500 hover:text-red-700 text-xs font-bold tracking-wide uppercase px-2 py-1"
+                      >
+                        Törlés
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -441,9 +564,10 @@ export default function EgyediVaszonkepPage() {
             </div>
             <div className="flex-1 relative bg-[#efebe6]">
               <CustomCanvasViewer 
-                modelUrl={`/models/canvas-${activeRatio}.glb`}
-                iosModelUrl={isIOS ? "" : `/models/canvas-${activeRatio}.usdz`} 
+                modelUrl={activeRatio === "triptych" ? "/models/canvas-three-piece.glb" : `/models/canvas-${activeRatio}.glb`}
+                iosModelUrl={isIOS ? "" : (activeRatio === "triptych" ? "/models/canvas-three-piece.usdz" : `/models/canvas-${activeRatio}.usdz`)} 
                 textureUrl={savedConfig?.previewUrl}
+                triptychTextures={savedConfig?.triptychUrls}
               />
             </div>
           </div>
@@ -459,7 +583,7 @@ export default function EgyediVaszonkepPage() {
                 image={image} 
                 crop={crop} 
                 zoom={zoom} 
-                aspect={ratios[ratio]} 
+                aspect={currentCropAspect} 
                 onCropChange={setCrop} 
                 onCropComplete={(_, p) => setCroppedAreaPixels(p)} 
                 onZoomChange={setZoom} 

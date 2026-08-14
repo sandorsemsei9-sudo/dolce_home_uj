@@ -92,24 +92,68 @@ export default async function Page({ params }: Props) {
 
   const productPrice = allVariants && allVariants.length > 0 ? allVariants[0].price : "5990";
 
+// Árak és szállítási díj kiszámítása (25.000 Ft felett ingyenes)
+  const numericPrice = Number(productPrice) || 0;
+  const shippingFee = numericPrice >= 25000 ? "0" : "1490"; // <- Írd át a normál szállítási díjadra, ha nem 1490
+
   const jsonLd: any = {
     "@context": "https://schema.org",
     "@type": "Product",
     "name": product.name,
     "image": [product.cover_image],
     "description": product.description || `${product.name} prémium minőségű vászonkép.`,
+    "sku": product.slug || `DH-${product.id}`, // <- ORVOSOLJA A GLOBÁLIS AZONOSÍTÓ HIBÁT
     "brand": {
       "@type": "Brand",
       "name": "Dolce Home"
     },
-    "identifierExists": "false", 
     "offers": {
       "@type": "Offer",
       "price": productPrice,
       "priceCurrency": "HUF",
       "availability": "https://schema.org/InStock",
       "url": `https://www.dolce-home.hu/vaszonkepek/${slug}`,
-      "priceValidUntil": "2027-12-31"
+      "validFrom": "2026-01-01T00:00:00+01:00", // <- ORVOSOLJA A validFrom HIBÁT
+      "priceValidUntil": "2027-12-31",
+
+      // SZÁLLÍTÁSI FELTÉTELEK (shippingDetails & shippingDestination)
+      "shippingDetails": {
+        "@type": "OfferShippingDetails",
+        "shippingRate": {
+          "@type": "MonetaryAmount",
+          "value": shippingFee,
+          "currency": "HUF"
+        },
+        "shippingDestination": { // <- ORVOSOLJA A shippingDestination HIBÁT
+          "@type": "DefinedRegion",
+          "addressCountry": "HU"
+        },
+        "deliveryTime": {
+          "@type": "ShippingDeliveryTime",
+          "handlingTime": {
+            "@type": "QuantitativeValue",
+            "minValue": 1,
+            "maxValue": 2,
+            "unitCode": "DAY"
+          },
+          "transitTime": {
+            "@type": "QuantitativeValue",
+            "minValue": 1,
+            "maxValue": 2,
+            "unitCode": "DAY"
+          }
+        }
+      },
+
+      // VISSZAKÜLDÉSI SZABÁLYZAT (hasMerchantReturnPolicy & returnPolicyCategory)
+      "hasMerchantReturnPolicy": {
+        "@type": "MerchantReturnPolicy",
+        "applicableCountry": "HU",
+        "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow", // <- HELYES ENUM ÉRTÉK
+        "merchantReturnDays": 14,
+        "returnMethod": "https://schema.org/ReturnByMail",
+        "returnFees": "https://schema.org/ReturnShippingFees"
+      }
     }
   };
 

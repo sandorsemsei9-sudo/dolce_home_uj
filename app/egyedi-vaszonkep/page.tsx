@@ -57,8 +57,8 @@ const faqItems = [
     answer: "380g/m² súlyú, prémium minőségű, finom textúrájú művészvászonra nyomtatunk UV-álló festékekkel, amit kézzel feszítünk rá a masszív, szárított fenyőfa vakrámára."
   },
   {
-    question: "Hogyan tudom megnézni a képet a saját falamon?",
-    answer: "Mobil eszközön (telefonon vagy tableten) a 3D nézeten belül a kiterjesztett valóság (AR) funkció segítségével közvetlenül a saját szobád falára vetítheted a kiválasztott méretet."
+    question: "Hogyan tudom megnézni a képet 3D-ben?",
+    answer: "A kép feltöltése és megvágása után a 3D gombra kattintva interaktív modellként forgathatod a képedet, így pontosan látod a keret vastagságát és a választott méretarányokat."
   }
 ];
 
@@ -135,7 +135,6 @@ export default function EgyediVaszonkepPage() {
     return sizeWidth * 0.8;
   }, [sizeWidth]);
 
-  // Változás kezelése ha a felhasználó megváltoztatja a formátumot
   const handleRatioChange = (newRatio: Ratio) => {
     setRatio(newRatio);
     const defaultSize = sizes[newRatio][0];
@@ -146,7 +145,6 @@ export default function EgyediVaszonkepPage() {
     }
   };
 
-  // Változás kezelése ha a felhasználó megváltoztatja a méretet
   const handleSizeChange = (newSize: string) => {
     setSize(newSize);
     setSavedConfig(null);
@@ -287,7 +285,7 @@ export default function EgyediVaszonkepPage() {
                   <button 
                     onClick={() => setIsARModalOpen(true)} 
                     className="flex flex-col items-center gap-2 outline-none group/btn"
-                    aria-label="3D és AR nézet megnyitása"
+                    aria-label="3D nézet megnyitása"
                   >
                     <div className="glass-3d-button relative flex h-16 w-16 items-center justify-center rounded-2xl transition-all duration-300 group-hover/btn:scale-105 active:scale-95">
                       <svg className="absolute inset-0 h-full w-full opacity-60" viewBox="0 0 100 100">
@@ -302,9 +300,11 @@ export default function EgyediVaszonkepPage() {
                     <p className="text-[10px] font-bold uppercase tracking-wider text-[#2a211d] leading-tight">
                       Kattints a 3D nézethez!
                     </p>
-                    <p className="hidden md:block text-[8px] font-medium text-[#7a675d] uppercase mt-0.5">
-                      Mobilon helyezd el a faladon (AR)
-                    </p>
+                    {!isIOS && (
+                      <p className="hidden md:block text-[8px] font-medium text-[#7a675d] uppercase mt-0.5">
+                        Térbeli modell előnézet
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -365,9 +365,9 @@ export default function EgyediVaszonkepPage() {
                 </p>
               </div>
               <div className="bg-white/60 p-5 rounded-3xl border border-[#dccfc5]/60">
-                <h2 className="text-xs font-black uppercase tracking-widest text-[#d17d58] mb-2">3D Tervezés & AR</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest text-[#d17d58] mb-2">3D Tervezés & Előnézet</h2>
                 <p className="text-xs leading-relaxed text-[#5e4d45]">
-                  Töltsd fel a fotód, vágd tökéletes méretre, és nézd meg 3D-ben vagy kiterjesztett valóságban (AR) a saját faladon.
+                  Töltsd fel a fotód, vágd tökéletes méretre, és nézd meg interaktív 3D modellként.
                 </p>
               </div>
             </div>
@@ -386,7 +386,7 @@ export default function EgyediVaszonkepPage() {
             </h1>
             
             <div className="space-y-7">
-              {/* 1. FORMÁTUM (Mindig aktív) */}
+              {/* 1. FORMÁTUM */}
               <div>
                 <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7a675d] mb-3">1. Formátum kiválasztása</h3>
                 <div className="grid grid-cols-2 gap-2">
@@ -406,7 +406,7 @@ export default function EgyediVaszonkepPage() {
                 </div>
               </div>
 
-              {/* 2. MÉRET (Mindig aktív) */}
+              {/* 2. MÉRET */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7a675d]">2. Méret kiválasztása</h3>
@@ -431,7 +431,7 @@ export default function EgyediVaszonkepPage() {
                 </div>
               </div>
 
-              {/* 3. FOTÓ FELTÖLTÉSE ÉS MODOSÍTÁSA */}
+              {/* 3. FOTÓ FELTÖLTÉSE */}
               <div>
                 <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#7a675d] mb-3">3. Saját fotó feltöltése</h3>
                 {!image ? (
@@ -565,7 +565,8 @@ export default function EgyediVaszonkepPage() {
             <div className="flex-1 relative bg-[#efebe6]">
               <CustomCanvasViewer 
                 modelUrl={activeRatio === "triptych" ? "/models/canvas-three-piece.glb" : `/models/canvas-${activeRatio}.glb`}
-                iosModelUrl={isIOS ? "" : (activeRatio === "triptych" ? "/models/canvas-three-piece.usdz" : `/models/canvas-${activeRatio}.usdz`)} 
+                iosModelUrl="" 
+                disableAr={isIOS}
                 textureUrl={savedConfig?.previewUrl}
                 triptychTextures={savedConfig?.triptychUrls}
               />

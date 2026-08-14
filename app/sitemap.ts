@@ -1,22 +1,25 @@
-// app/sitemap.ts
 import { MetadataRoute } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
-// 🚀 FONTOS: Ez mondja meg a Next.js-nek, hogy ne statikusan mentse el a sitemap-et,
-// hanem óránként (3600 mp) futtassa le újra a Supabase lekérdezést!
-export const revalidate = 3600; 
+// 🚀 Óránként frissüljön a sitemap
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const supabase = await createClient()
   const baseUrl = 'https://www.dolce-home.hu'
 
-  // 1. TERMÉKEK LEKÉRDEZÉSE (lekerjük a dátumokat is a pontos lastModified-hoz)
+  // Sima, sütiktől független Supabase kliens a publikus adatokhoz
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  // 1. TERMÉKEK LEKÉRDEZÉSE
   const { data: products, error: productError } = await supabase
-    .from('products') 
+    .from('products')
     .select('slug, updated_at, created_at')
 
   if (productError) {
-    console.error('Sitemap termék lekérdezési hiba:', productError.message)
+    console.error('Sitemap termék hiba:', productError.message)
   }
 
   const productUrls = (products || []).map((product) => ({
@@ -35,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .eq('published', true)
 
   if (blogError) {
-    console.error('Sitemap blog lekérdezési hiba:', blogError.message)
+    console.error('Sitemap blog hiba:', blogError.message)
   }
 
   const blogUrls = (blogs || []).map((post) => ({

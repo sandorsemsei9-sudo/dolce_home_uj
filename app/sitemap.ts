@@ -1,54 +1,34 @@
+// app/sitemap.ts
 import { MetadataRoute } from 'next'
-import { createClient } from '@supabase/supabase-js'
-
-// 🚀 FONTOS: Ez garantálja, hogy a Next.js minden egyes kérésre élőben lekérdezze a Supabase-t
-export const dynamic = 'force-dynamic';
+import { createClient } from '@/lib/supabase/server' // Szerver klienst használunk!
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://www.dolce-home.hu'
+  const supabase = await createClient()
+  const baseUrl = 'https://www.dolce-home.hu' // A next.config.ts-ed miatt a WWW-s verziót használjuk fő verziónak
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseKey) {
-    console.error('Hiányzó Supabase környezeti változók a sitemap generálásnál!')
-  }
-
-  const supabase = createClient(supabaseUrl || '', supabaseKey || '')
-
-  // 1. TERMÉKEK LEKÉRDEZÉSE
-  const { data: products, error: productError } = await supabase
-    .from('products')
-    .select('slug, updated_at, created_at')
-
-  if (productError) {
-    console.error('Sitemap termék lekérdezési hiba:', productError.message)
-  }
+  // 1. TERMÉKEK LEKÉRDEZÉSE (A terméktáblád neve alapján, ha az is 'products')
+  const { data: products } = await supabase
+    .from('products') 
+    .select('slug')
 
   const productUrls = (products || []).map((product) => ({
     url: `${baseUrl}/vaszonkepek/${product.slug}`,
-    lastModified: product.updated_at 
-      ? new Date(product.updated_at) 
-      : (product.created_at ? new Date(product.created_at) : new Date()),
+    lastModified: new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))
 
-  // 2. BLOGBEJEGYZÉSEK LEKÉRDEZÉSE
-  const { data: blogs, error: blogError } = await supabase
+  // 2. BLOGBEJEGYZÉSEK LEKÉRDEZÉSE (Most már biztosan 'posts'!)
+  const { data: blogs } = await supabase
     .from('posts')
-    .select('slug, created_at, updated_at')
-    .eq('published', true)
-
-  if (blogError) {
-    console.error('Sitemap blog lekérdezési hiba:', blogError.message)
-  }
+    .select('slug, created_at')
+    // Csak a publikált cikkek menjenek a térképbe, pontosan úgy, mint a blog oldalon
+    .eq('published', true) 
 
   const blogUrls = (blogs || []).map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: post.updated_at 
-      ? new Date(post.updated_at) 
-      : (post.created_at ? new Date(post.created_at) : new Date()),
+    // Ha a táblában a dátum stringként van, átalakítjuk Date objektummá
+    lastModified: post.created_at ? new Date(post.created_at) : new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.6,
   }))
@@ -74,5 +54,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '' || route === '/egyedi-vaszonkep' ? 1.0 : 0.7,
   }))
 
+  // Összefűzzük: Statikus oldalak + 62 Termék + Összes Blog cikk
   return [...staticUrls, ...productUrls, ...blogUrls]
 }

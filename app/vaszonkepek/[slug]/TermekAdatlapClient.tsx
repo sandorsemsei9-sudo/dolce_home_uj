@@ -171,7 +171,7 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
               </div>
 
               <div className="relative w-full h-full">
-                <Image src={mainImage || "/placeholder.jpg"} alt={product.name} fill className="object-cover" priority sizes="(max-width: 768px) 100vw, 50vw" />
+                <Image src={mainImage || "/placeholder.jpg"} alt={product.name} fill className="object-contain" priority sizes="(max-width: 768px) 100vw, 50vw" />
               </div>
             </div>
 

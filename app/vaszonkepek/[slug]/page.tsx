@@ -107,7 +107,7 @@ export default async function Page({ params }: Props) {
 
   // Árak és szállítási díj kiszámítása (25.000 Ft felett ingyenes)
   const numericPrice = Number(productPrice) || 0;
-  const shippingFee = numericPrice >= 25000 ? "0" : "1490";
+  const shippingFee = numericPrice >= 25000 ? "0" : "1990";
 
   // Dinamikus érvényességi dátum a Schema.org számára
   const currentYear = new Date().getFullYear();

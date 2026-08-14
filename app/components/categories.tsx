@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 
@@ -17,56 +15,56 @@ export default function Categories() {
       title: "Állatvilág",
       subtitle: "Vad, különleges és lenyűgöző állatok",
       image: "/images/oroszlanok-textúra.webp",
-      href: "/vaszonkepek?category=%C3%81llatvil%C3%A1g&page=1",
+      href: "/vaszonkepek/kategoria/allatvilag",
       gridClass: "md:col-span-2 h-[350px]",
     },
     {
       title: "Természet",
       subtitle: "Nyugodt tájak és természet ihlette képek",
       image: "/images/falu.webp",
-      href: "/vaszonkepek?category=Term%C3%A9szet&page=1",
+      href: "/vaszonkepek/kategoria/termeszet",
       gridClass: "md:col-span-2 h-[350px]",
     },
     {
       title: "Gyerekszoba",
       subtitle: "Álomszerű képek a gyerekszoba egyedi hangulatához",
       image: "/images/macska-textúra.webp",
-      href: "/vaszonkepek?category=Gyerekszoba&page=1",
+      href: "/vaszonkepek/kategoria/gyerekszoba",
       gridClass: "md:col-span-2 h-[350px]",
     },
     {
       title: "Városok",
       subtitle: "Ikonikus helyek és lenyűgöző épületek",
       image: "/images/parizs.webp",
-      href: "/vaszonkepek?category=V%C3%A1rosok&page=1",
+      href: "/vaszonkepek/kategoria/varosok",
       gridClass: "md:col-span-3 h-[350px]",
     },
     {
       title: "Absztrakt",
       subtitle: "Modern, karakteres kompozíciók",
       image: "/images/tűz-textúra.webp",
-      href: "/vaszonkepek?category=Absztrakt&page=1",
+      href: "/vaszonkepek/kategoria/absztrakt",
       gridClass: "md:col-span-3 h-[350px]",
     },
     {
       title: "Japán tájkép",
       subtitle: "Keleti harmónia és lenyűgöző tájak",
       image: "/images/japan-textúra.png",
-      href: "/vaszonkepek?category=Jap%C3%A1n%20t%C3%A1jk%C3%A9p&page=1",
+      href: "/vaszonkepek/kategoria/japan-tajkep",
       gridClass: "md:col-span-2 h-[350px]",
     },
     {
       title: "Spirituális képek",
       subtitle: "Belső harmónia és inspiráló motívumok",
       image: "/images/joga-textúra.png",
-      href: "/vaszonkepek?category=Spiritu%C3%A1lis%20k%C3%A9pek&page=1",
+      href: "/vaszonkepek/kategoria/spiritualis-kepek",
       gridClass: "md:col-span-2 h-[350px]",
     },
     {
       title: "Minimalista",
       subtitle: "Letisztult formák és időtálló elegancia",
       image: "/images/minimalista-textúra.jpeg",
-      href: "/vaszonkepek?category=Minimalista&page=1",
+      href: "/vaszonkepek/kategoria/minimalista",
       gridClass: "md:col-span-2 h-[350px]",
     },
   ];
@@ -80,27 +78,27 @@ export default function Categories() {
             Kategóriák
           </span>
 
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-[#2a211d] md:text-4xl italic">
+          <h2 className="mt-3 text-3xl font-bold italic tracking-tight text-[#2a211d] md:text-4xl">
             Válogass stílus szerint
           </h2>
         </div>
 
-        {/* Dinamikus Grid rendszer */}
+        {/* Kategória grid */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-6">
-          {items.map((item, index) => (
+          {items.map((item) => (
             <Link
-              key={index}
+              key={item.href}
               href={item.href}
               className={`group relative flex flex-col overflow-hidden rounded-[40px] bg-[#2a211d] transition-all duration-500 ease-in-out hover:shadow-2xl ${item.gridClass}`}
             >
-              {/* Kép réteg */}
+              {/* Kép */}
               <img
                 src={item.image}
-                alt={item.title}
+                alt={`${item.title} vászonképek`}
                 className="absolute inset-0 h-full w-full object-cover opacity-95 brightness-[0.8] saturate-[0.8] transition duration-700 ease-out group-hover:scale-110 group-hover:opacity-100 group-hover:brightness-100 group-hover:saturate-100"
               />
 
-              {/* Overlay gradiens */}
+              {/* Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 transition-opacity duration-500 group-hover:opacity-50" />
 
               {/* Tartalom */}

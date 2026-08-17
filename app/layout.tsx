@@ -55,7 +55,7 @@ export default function RootLayout({
         <link 
           rel="preload" 
           as="image" 
-          href="/hero-bg.webp" 
+          href="/dolce-home-vaszonkepek-modern-nappali.webp.webp" 
           type="image/webp"
           fetchPriority="high"
         />

@@ -87,7 +87,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
       {/* Háttérkép - dekoratív elem, elrejtve a Google és a képernyőolvasók elől */}
       <div className="absolute inset-0 z-0" aria-hidden="true">
         <Image
-          src="/hero-bg.webp"
+          src="/dolce-home-vaszonkepek-modern-nappali.webp"
           alt="" 
           fill
           className="object-cover opacity-60"

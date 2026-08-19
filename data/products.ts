@@ -195,4 +195,17 @@ export const products: Product[] = [
     featured: false,
     isNew: true,
   },
+    {
+    id: 16,
+    name: "Szarvas – Fekete-Fehér Vászonkép",
+    slug: "szarvas-feketefeher-vaszonkep",
+    price: 5990,
+    category: "Állatvilág",
+    image: "/images/szarvas.webp",
+    description: "Modern, elegáns kompozíció",
+    mockupImage: "/images/szarvas-mockup.webp",
+     hero: false,
+    featured: false,
+    isNew: true,
+  },
 ];

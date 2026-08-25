@@ -38,7 +38,7 @@ const ratioLabels: Record<Ratio, string> = {
 const sizes: Record<Ratio, string[]> = {
   square: ["30x30", "40x40", "50x50"],
   portrait: ["30x40", "40x60", "30x60", "40x80", "50x80", "50x100"],
-  landscape: ["50x30", "70x40", "90x50", "60x30", "80x40", "100x50"],
+  landscape: ["40x30", "50x30", "60x40", "70x40", "80x50", "90x50", "60x30", "80x40", "100x50"],
   panorama: ["90x30", "120x40", "150x50"],
   triptych: ["3*30x40", "3*40x60", "3*50x80", "3*30x60", "3*40x80", "3*50x100"],
 };
@@ -77,18 +77,42 @@ function getDimensions(sizeStr: string): [number, number] {
 
 function calculatePrice(size: string): number {
   const prices: { [key: string]: number } = {
-    "30x30": 5990, "40x40": 7890, "50x50": 9590,
-    "30x40": 7490, "40x60": 9490, "50x80": 12490,
-    "30x60": 8990, "40x80": 11990, "50x100": 17990,
-    "50x30": 9480, "70x40": 11990, "90x50": 16990,
-    "60x30": 9990, "80x40": 12490, "100x50": 17990,
-    "90x30": 14490, "120x40": 20490, "150x50": 24990,
-    "3*30x40": 17990,
-    "3*40x60": 23990,
-    "3*50x80": 29990,
-    "3*30x60": 22490,
-    "3*40x80": 29990,
-    "3*50x100": 42990
+    // Négyzet méretek
+    "30x30": 5990, 
+    "40x40": 7890, 
+    "50x50": 9990,
+
+    // Álló méretek
+    "30x40": 7490, 
+    "40x60": 9990, 
+    "30x60": 10490, 
+    "40x80": 13990, 
+    "50x80": 15990, 
+    "50x100": 19990,
+
+    // Fekvő méretek (azonos területek az állókkal, logikusan igazítva)
+    "40x30": 7490, 
+    "50x30": 9490, 
+    "60x40": 9990, 
+    "60x30": 10490, 
+    "70x40": 12990, 
+    "80x40": 13990, 
+    "80x50": 15990, 
+    "90x50": 17990, 
+    "100x50": 19990,
+
+    // Panoráma méretek
+    "90x30": 14990, 
+    "120x40": 21990, 
+    "150x50": 26990,
+
+    // 3 részes (triptych) méretek (3 darab vakráma + illesztési pontosság)
+    "3*30x40": 18990,
+    "3*30x60": 24990,
+    "3*40x60": 27990,
+    "3*40x80": 34990,
+    "3*50x80": 39990,
+    "3*50x100": 49990
   };
   return prices[size] || 22990;
 }
@@ -101,8 +125,7 @@ export default function EgyediVaszonkepPage() {
   const addItem = useCartStore((state) => state.addItem);
 
   const [mounted, setMounted] = useState(false);
-  const [isARModalOpen, setIsARModalOpen] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [is3DModalOpen, setIs3DModalOpen] = useState(false);
   
   const [image, setImage] = useState<string | null>(null);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
@@ -119,9 +142,6 @@ export default function EgyediVaszonkepPage() {
 
   useEffect(() => { 
     setMounted(true); 
-    const checkIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    setIsIOS(checkIOS);
   }, []);
 
   const price = useMemo(() => calculatePrice(size), [size]);
@@ -283,7 +303,7 @@ export default function EgyediVaszonkepPage() {
               {savedConfig && (
                 <div className="absolute top-6 right-6 md:top-8 md:right-8 z-20 flex flex-col items-end gap-2">
                   <button 
-                    onClick={() => setIsARModalOpen(true)} 
+                    onClick={() => setIs3DModalOpen(true)} 
                     className="flex flex-col items-center gap-2 outline-none group/btn"
                     aria-label="3D nézet megnyitása"
                   >
@@ -300,11 +320,6 @@ export default function EgyediVaszonkepPage() {
                     <p className="text-[10px] font-bold uppercase tracking-wider text-[#2a211d] leading-tight">
                       Kattints a 3D nézethez!
                     </p>
-                    {!isIOS && (
-                      <p className="hidden md:block text-[8px] font-medium text-[#7a675d] uppercase mt-0.5">
-                        Térbeli modell előnézet
-                      </p>
-                    )}
                   </div>
                 </div>
               )}
@@ -553,20 +568,20 @@ export default function EgyediVaszonkepPage() {
 
       </section>
 
-      {/* AR/3D MODAL */}
-      {isARModalOpen && mounted && (
+      {/* 3D MODAL */}
+      {is3DModalOpen && mounted && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsARModalOpen(false)} />
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIs3DModalOpen(false)} />
           <div className="relative w-full h-[85vh] max-w-5xl bg-[#f8f3ef] rounded-[32px] overflow-hidden flex flex-col shadow-2xl">
             <div className="p-5 border-b border-[#dccfc5] flex justify-between items-center bg-white z-10">
                 <h3 className="font-bold text-sm text-[#2a211d] uppercase tracking-wide">3D Modell Előnézet</h3>
-                <button onClick={() => setIsARModalOpen(false)} className="bg-[#2a211d] text-white w-9 h-9 rounded-xl font-bold transition-transform active:scale-90">✕</button>
+                <button onClick={() => setIs3DModalOpen(false)} className="bg-[#2a211d] text-white w-9 h-9 rounded-xl font-bold transition-transform active:scale-90">✕</button>
             </div>
             <div className="flex-1 relative bg-[#efebe6]">
               <CustomCanvasViewer 
                 modelUrl={activeRatio === "triptych" ? "/models/canvas-three-piece.glb" : `/models/canvas-${activeRatio}.glb`}
                 iosModelUrl="" 
-                disableAr={isIOS}
+                disableAr={true}
                 textureUrl={savedConfig?.previewUrl}
                 triptychTextures={savedConfig?.triptychUrls}
               />

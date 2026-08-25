@@ -40,7 +40,7 @@ export default function NewsletterPopup() {
   const copyToClipboard = () => {
     navigator.clipboard.writeText(generatedCode);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,7 +66,7 @@ export default function NewsletterPopup() {
         .from("coupons")
         .insert([{ 
           code: newCode, 
-          discount_value: 10, 
+          discount_value: 25, 
           discount_type: 'percentage',
           expires_at: expiresAt.toISOString(),
           is_one_time: true 
@@ -90,10 +90,10 @@ export default function NewsletterPopup() {
         <button onClick={handleClose} className="absolute right-4 top-4 text-2xl text-[#3b2b24]">×</button>
 
         <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#d1845c]">
-          {status === "success" ? "Gratulálunk!" : "Kedvezmény első rendelésre"}
+          {status === "success" ? "Gratulálunk!" : "Egyszeri ajánlat"}
         </p>
         <h2 className="text-3xl font-semibold text-[#1f1720]">
-          {status === "success" ? "Íme a saját kódod!" : "Iratkozz fel és kapj -10%-ot"}
+          {status === "success" ? "Íme a saját kódod!" : "Villámajánlat: 25% kedvezmény az első rendelésedből"}
         </h2>
 
         {status === "success" ? (
@@ -113,7 +113,7 @@ export default function NewsletterPopup() {
           </div>
         ) : (
           <>
-            <p className="mt-4 text-sm text-[#6f625c]">Küldünk egy egyedi kupont, amit 24 órán belül használhatsz fel.</p>
+            <p className="mt-4 text-sm text-[#6f625c]">Iratkozz fel, és küldünk egy egyedi, 25%-os kupont, amit 24 órán belül használhatsz fel.</p>
             <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3 sm:flex-row">
               <input
                 type="email"
@@ -121,7 +121,6 @@ export default function NewsletterPopup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="E-mail címed"
-                // w-full biztosítja a szélességet mobilon, text-base a zoom ellen
                 className="h-14 w-full sm:flex-1 rounded-xl border border-[#dcc9b9] bg-white px-5 text-base outline-none focus:border-[#d1845c]"
               />
               <button type="submit" disabled={status === "loading"} className="h-14 w-full sm:w-auto rounded-xl bg-[#de8c63] px-8 font-bold text-white transition hover:bg-[#cc7b53] disabled:opacity-50">

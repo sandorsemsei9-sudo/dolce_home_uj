@@ -45,7 +45,7 @@ export default function SikerPage() {
         </h1>
 
         <p className="text-gray-500 font-bold mb-10 text-xs leading-relaxed uppercase tracking-widest">
-          Köszönjük a bizalmad! Hamarosan küldjük a visszaigazolást e-mailben.
+          Köszönjük a rendelésed! 24 órán belül feldolgozzuk, és e-mailben elküldjük a rendelés visszaigazolását a szállítási adatokkal együtt.
         </p>
 
         <Link

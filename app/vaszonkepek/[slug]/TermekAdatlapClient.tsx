@@ -100,7 +100,7 @@ export default function TermekAdatlapClient({ initialProduct, initialVariants }:
       case 'square': return "/models/canvas-square.glb";
       case 'panorama': return "/models/canvas-panorama.glb";
       case 'landscape':
-      default: return "/models/canvas-landscape-2.glb";
+      default: return "/models/canvas-landscape.glb";
     }
   };
 

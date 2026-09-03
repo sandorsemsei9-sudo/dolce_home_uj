@@ -147,7 +147,6 @@ export default function Hero({ products, formatPrice }: HeroProps) {
 Egész hónapban!
 
           </div>
-
           <h1 className="animate-hero-text delay-1 text-4xl font-semibold leading-[1.1] tracking-tight text-[#2a211d] md:text-6xl">
             Egyedi vászonképek saját fotóból és <br /> akciós vászonképek készletről
           </h1>

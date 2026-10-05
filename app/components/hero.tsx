@@ -143,7 +143,7 @@ export default function Hero({ products, formatPrice }: HeroProps) {
         <div className="max-w-xl mb-10 md:mb-0">
           {/* SEO-barát felső akció sáv */}
           <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full bg-[#faedec] text-[#d17d58] text-xs font-bold uppercase tracking-wider">
-            🍂 Szeptemberi akció – 15% kedvezmény az OSZ15 kuponkóddal
+            🍂 Októberi akció – 15% kedvezmény az OSZ15 kuponkóddal
 Egész hónapban!
 
           </div>

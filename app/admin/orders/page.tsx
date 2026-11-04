@@ -5,8 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 const statusMap: Record<string, { label: string; color: string }> = {
-  waiting_for_payment: { label: "Utalásra vár", color: "bg-cyan-50 text-cyan-700 border-cyan-100" },
-  pending: { label: "Függőben / Fizetve", color: "bg-amber-50 text-amber-700 border-amber-100" },
+  pending: { label: "Függőben", color: "bg-amber-50 text-amber-700 border-amber-100" },
   processing: { label: "Feldolgozás", color: "bg-blue-50 text-blue-700 border-blue-100" },
   shipped: { label: "Feladva", color: "bg-purple-50 text-purple-700 border-purple-100" },
   delivered: { label: "Kézbesítve", color: "bg-emerald-50 text-emerald-700 border-emerald-100" },
@@ -61,7 +60,7 @@ export default function AdminOrdersPage() {
           </div>
           
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-            {["all", "waiting_for_payment", "pending", "shipped", "delivered"].map((s) => (
+            {["all", "pending", "shipped", "delivered"].map((s) => (
               <button
                 key={s}
                 onClick={() => setFilter(s)}
@@ -112,9 +111,6 @@ export default function AdminOrdersPage() {
                     <div className="flex justify-between items-center pt-2 border-t border-gray-50">
                       <p className="font-black text-gray-900">{formatPrice(order.total_amount)}</p>
                       <div className="flex gap-2">
-                        {order.status === "waiting_for_payment" && (
-                          <button onClick={() => markAsPaid(order.id)} className="bg-emerald-500 text-white h-9 px-4 rounded-full text-[9px] font-black uppercase">Fizetve ✅</button>
-                        )}
                         <Link href={`/admin/orders/${order.id}`} className="bg-black text-white h-9 px-5 rounded-full text-[9px] font-black uppercase flex items-center">Részletek</Link>
                       </div>
                     </div>
@@ -166,11 +162,15 @@ export default function AdminOrdersPage() {
               </td>
               
               {/* MÓD */}
-              <td className="px-4 py-4">
-                <span className="text-[9px] font-black text-gray-400 uppercase whitespace-nowrap">
-                  {order.payment_method === 'card' ? '💳 CARD' : '🏦 BANK'}
-                </span>
-              </td>
+<td className="px-4 py-4">
+  <span className="text-[9px] font-black text-gray-400 uppercase whitespace-nowrap">
+    {order.payment_method === 'card' 
+      ? '💳 Bankkártyás' 
+      : order.payment_method === 'cash_on_delivery' 
+      ? '📦 Utánvétel' 
+      : '🏦 Átutalás'}
+  </span>
+</td>
               
               {/* ÖSSZEG */}
               <td className="px-4 py-4 text-center font-black text-gray-900 text-sm whitespace-nowrap">

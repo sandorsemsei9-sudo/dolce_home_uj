@@ -16,11 +16,12 @@ export default function AdminLayout({
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  const menuItems = [
+const menuItems = [
     { name: "Dashboard", href: "/admin" },
     { name: "Rendelések", href: "/admin/orders" },
     { name: "Termékek", href: "/admin/products" },
     { name: "Kategóriák", href: "/admin/categories" },
+    { name: "Statisztika", href: "/admin/statisztika" }, // ← Ezt szúrd be ide
     { name: "Kuponok", href: "/admin/coupons" },
     { name: "Hírlevél", href: "/admin/newsletter" },
     { name: 'Blog', href: "/admin/blog"},

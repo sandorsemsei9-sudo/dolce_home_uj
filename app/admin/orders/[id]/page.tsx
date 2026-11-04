@@ -122,8 +122,7 @@ export default function OrderDetailsPage() {
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="flex-1 h-14 bg-gray-50 rounded-2xl px-5 text-[11px] font-black uppercase outline-none border-2 border-transparent focus:border-blue-500 transition-all"
             >
-              <option value="waiting_for_payment">Utalásra vár</option>
-              <option value="pending">Fizetve / Függőben</option>
+              <option value="pending">Függőben</option>
               <option value="processing">Gyártás alatt</option>
               <option value="shipped">Kiszállítás alatt</option>
               <option value="delivered">Kézbesítve</option>
@@ -198,20 +197,49 @@ export default function OrderDetailsPage() {
           </div>
         </div>
 
-        {/* TERMÉKEK (KOSÁR) */}
-        <div className="space-y-3">
-          <h2 className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-4">Kosár tartalma</h2>
-          {items.map((item) => (
-            <div key={item.id} className="bg-white p-6 rounded-[30px] border border-gray-100 flex justify-between items-center shadow-sm">
-              <div>
-                <h3 className="font-black text-sm uppercase tracking-tight leading-none mb-1">{item.product_name}</h3>
-                <p className="text-[10px] font-bold text-gray-400 uppercase italic">{item.size_name}</p>
-                <p className="text-[10px] font-black text-blue-500 mt-2 bg-blue-50 w-fit px-2 py-0.5 rounded">{item.quantity} db × {formatPrice(item.price)}</p>
-              </div>
-              <p className="font-black text-xl italic tracking-tighter">{formatPrice(item.quantity * item.price)}</p>
+{/* TERMÉKEK (KOSÁR) */}
+<div className="space-y-3">
+  <h2 className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-4">Kosár tartalma</h2>
+  {items.map((item) => {
+    // Megnézzük, hogy ez a tétel szerepel-e az egyedi gyártású fájlok között (pl. product_name vagy egyedi azonosító alapján)
+    const isCustomItem = customFiles.some(cf => cf.product_name === item.product_name);
+
+    // Slug generálás a normál termék nevéből
+    const slug = item.product_name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    return (
+      <div key={item.id} className="bg-white p-6 rounded-[30px] border border-gray-100 flex justify-between items-center shadow-sm">
+        <div>
+          {!isCustomItem ? (
+            <a 
+              href={`/vaszonkepek/${slug}`} 
+              target="_blank" 
+              rel="noreferrer"
+              className="font-black text-sm uppercase tracking-tight leading-none mb-1 hover:text-blue-600 transition-colors block"
+            >
+              {item.product_name} ↗
+            </a>
+          ) : (
+            <div>
+              <h3 className="font-black text-sm uppercase tracking-tight leading-none mb-1">
+                {item.product_name}
+              </h3>
+              <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Egyedi gyártású kép</span>
             </div>
-          ))}
+          )}
+          <p className="text-[10px] font-bold text-gray-400 uppercase italic mt-1">{item.size_name}</p>
+          <p className="text-[10px] font-black text-blue-500 mt-2 bg-blue-50 w-fit px-2 py-0.5 rounded">{item.quantity} db × {formatPrice(item.price)}</p>
         </div>
+        <p className="font-black text-xl italic tracking-tighter">{formatPrice(item.quantity * item.price)}</p>
+      </div>
+    );
+  })}
+</div>
 
         {/* ÖSSZESÍTŐ */}
         <div className="bg-black p-12 rounded-[55px] text-white flex flex-col items-center shadow-2xl relative overflow-hidden group">

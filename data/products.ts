@@ -3,8 +3,8 @@ import type { Product } from "@/app/types/product";
 export const products: Product[] = [
     {
     id: 1,
-    name: "Absztrakt Luxus – 3 Részes Bézs-Arany Vászonkép",
-    slug: "absztrakt-luxus-3-reszes-bezsarany-vaszonkep",
+    name: "Absztrakt Arany Harmónia – 3 Részes Modern Vászonkép",
+    slug: "absztrakt-aranylo-kod-3-reszes-modern-vaszonkep",
     price: 16990,
     category: "Absztrakt",
     image: "/images/3-reszes-absztrakt.webp",

@@ -89,39 +89,200 @@ export default function EditProductPage() {
     if (id) loadData();
   }, [id, supabase]);
 
+
 const handleFileUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>, 
-    type: 'cover' | 'hover' | 'texture' | 'texture2' | 'texture3', 
-    setUploadingFn: (b: boolean) => void
-  ) => {
+  e: React.ChangeEvent<HTMLInputElement>,
+  type: "cover" | "hover" | "texture" | "texture2" | "texture3",
+  setUploadingFn: (b: boolean) => void
+) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  setUploadingFn(true);
+
+  const bucket = "products";
+
+  const fields = {
+    cover: "cover_image",
+    hover: "hover_image",
+    texture: "texture_image",
+    texture2: "texture_image_2",
+    texture3: "texture_image_3",
+  } as const;
+
+  const field = fields[type];
+
+  // Storage fájl elérési útja a publikus URL-ből
+  const getStoragePath = (imageUrl: string): string | null => {
+    if (!imageUrl) return null;
+
     try {
-      setUploadingFn(true);
-      if (!e.target.files || e.target.files.length === 0) return;
-      const file = e.target.files[0];
-      
-      // Használjuk a termék slug-ját mappaként, vagy fallback-ként az id-t, ha még üres a slug
-      const folderName = product.slug.trim() !== "" ? product.slug : id;
-      const fileName = `${folderName}/${Date.now()}-${type}-${file.name.replace(/\s+/g, '-').toLowerCase()}`;
-      
-      const { error: uploadError } = await supabase.storage.from("products").upload(fileName, file);
-      if (uploadError) throw uploadError;
+      const url = new URL(imageUrl);
+      const marker = `/storage/v1/object/public/${bucket}/`;
 
-      const { data } = supabase.storage.from("products").getPublicUrl(fileName);
-      
-      let field = 'cover_image';
-      if (type === 'hover') field = 'hover_image';
-      else if (type === 'texture') field = 'texture_image';
-      else if (type === 'texture2') field = 'texture_image_2';
-      else if (type === 'texture3') field = 'texture_image_3';
+      if (url.origin !== new URL(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!
+      ).origin) {
+        return null;
+      }
 
-      setProduct(prev => ({ ...prev, [field]: data.publicUrl }));
+      const index = url.pathname.indexOf(marker);
+      if (index === -1) return null;
 
-    } catch (error: any) {
-      alert("Hiba: " + error.message);
-    } finally {
-      setUploadingFn(false);
+      return decodeURIComponent(
+        url.pathname.slice(index + marker.length)
+      );
+    } catch {
+      return null;
     }
   };
+
+  let newFilePath: string | null = null;
+
+  try {
+    // 1. Régi kép helyének meghatározása
+    const oldImageUrl = product[field] || "";
+    const oldFilePath = getStoragePath(oldImageUrl);
+
+    if (oldImageUrl && !oldFilePath) {
+      throw new Error(
+        "A régi kép Storage útvonala nem azonosítható."
+      );
+    }
+
+    // 2. A termék MÁR MEGLÉVŐ mappájának megkeresése
+    const existingImages = [
+      product.cover_image,
+      product.hover_image,
+      product.texture_image,
+      product.texture_image_2,
+      product.texture_image_3,
+    ];
+
+    const existingPath =
+      oldFilePath ||
+      existingImages
+        .map(getStoragePath)
+        .find((path) => path !== null);
+
+    // Ha már van kép, annak mappáját használjuk
+    const folderName = existingPath
+      ? existingPath.split("/").slice(0, -1).join("/")
+      : String(id);
+
+    // 3. Új kép feltöltése ugyanabba a mappába
+    const extension =
+      file.name.split(".").pop()?.toLowerCase() || "jpg";
+
+    const uniqueName = crypto.randomUUID();
+
+    newFilePath = [
+      folderName,
+      `${type}-${uniqueName}.${extension}`,
+    ].filter(Boolean).join("/");
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(newFilePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type || undefined,
+      });
+
+    if (uploadError) throw uploadError;
+
+    // 4. Új kép URL
+    const { data: urlData } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(newFilePath);
+
+    const newImageUrl = urlData.publicUrl;
+
+    // 5. Adatbázis frissítése
+    const { error: updateError } = await supabase
+      .from("products")
+      .update({ [field]: newImageUrl })
+      .eq("id", id);
+
+    if (updateError) {
+      await supabase.storage
+        .from(bucket)
+        .remove([newFilePath]);
+
+      throw updateError;
+    }
+
+    // 6. Felület frissítése
+    setProduct((prev) => ({
+      ...prev,
+      [field]: newImageUrl,
+    }));
+
+    // 7. Régi kép törlése, ha már nincs használatban
+    if (oldFilePath && oldFilePath !== newFilePath) {
+      const imageFields = [
+        "cover_image",
+        "hover_image",
+        "texture_image",
+        "texture_image_2",
+        "texture_image_3",
+      ] as const;
+
+      // Ellenőrizzük, hivatkozik-e még rá termék
+      const filters = imageFields
+        .map((key) =>
+          `${key}.eq.${JSON.stringify(oldImageUrl)}`
+        )
+        .join(",");
+
+      const { data: references, error: refError } =
+        await supabase
+          .from("products")
+          .select("id")
+          .or(filters)
+          .limit(1);
+
+      if (refError) {
+        console.warn(
+          "Nem sikerült ellenőrizni a régi képet:",
+          refError
+        );
+        alert(
+          "Az új kép mentve, de a régi kép törlése " +
+          "nem történt meg. Ellenőrizd a konzolt."
+        );
+      } else if (references?.length === 0) {
+        const { error: deleteError } =
+          await supabase.storage
+            .from(bucket)
+            .remove([oldFilePath]);
+
+        if (deleteError) {
+          console.error(
+            "Régi kép törlési hiba:",
+            deleteError
+          );
+          alert(
+            "Az új kép mentve, de a régi fájl " +
+            "törlése sikertelen: " + deleteError.message
+          );
+        }
+      }
+    }
+
+  } catch (error: any) {
+    console.error("Képfeltöltési hiba:", error);
+
+    alert(
+      "Hiba a képfeltöltésnél: " +
+      (error.message || "Ismeretlen hiba")
+    );
+  } finally {
+    setUploadingFn(false);
+    e.target.value = "";
+  }
+};
+
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();

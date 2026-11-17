@@ -180,14 +180,41 @@ export default function CanvasViewer({
         }
 
         // A képeket ráhelyezzük a vászonra.
-        for (const item of loadedTextures) {
-          const material = materials[item.index];
 
-          material.pbrMetallicRoughness
-            .baseColorTexture.setTexture(
-              item.texture
-            );
-        }
+for (const item of loadedTextures) {
+  const material = materials[item.index];
+
+  // A vászon képfelülete ne legyen átlátszó.
+  material.setAlphaMode("OPAQUE");
+
+  // A képfelület mindkét oldala látható legyen.
+  material.setDoubleSided(true);
+
+  // Teljes színintenzitás és 100% fedettség.
+  material.pbrMetallicRoughness.setBaseColorFactor([
+    1, 1, 1, 1
+  ]);
+
+  // A vászon ne legyen fémes.
+  material.pbrMetallicRoughness.setMetallicFactor(0);
+
+  // Matt vászonfelület.
+  material.pbrMetallicRoughness.setRoughnessFactor(1);
+
+  // Feltöltött termékkép ráhelyezése.
+  material.pbrMetallicRoughness
+    .baseColorTexture.setTexture(item.texture);
+
+  console.log(
+    "Dolce Home - Textúra alkalmazva:",
+    material.name,
+    "Alpha:",
+    material.getAlphaMode(),
+    "Kétoldalas:",
+    material.getDoubleSided()
+  );
+}
+
 
         if (
           cancelled ||
